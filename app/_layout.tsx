@@ -16,12 +16,20 @@ import { CommunityProvider } from "@/contexts/CommunityContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import { initializeNotifications } from "@/lib/notifications";
+import * as Notifications from 'expo-notifications';
+import { Platform, StyleSheet } from 'react-native';
 import TrialStarter from "@/components/TrialStarter";
 
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 function RootLayoutNav() {
   return (
@@ -58,13 +66,44 @@ export default function RootLayout() {
       } catch (error) {
         console.error('❌ Storage cleanup failed:', error);
       } finally {
-
         await initializeNotifications();
         SplashScreen.hideAsync();
       }
     };
     
     initializeApp();
+
+    // Set up notification listeners for mobile
+    let notificationListener: Notifications.Subscription | undefined;
+    let responseListener: Notifications.Subscription | undefined;
+
+    if (Platform.OS !== 'web') {
+      // Listen for notifications received while app is running
+      notificationListener = Notifications.addNotificationReceivedListener(notification => {
+        console.log('[Notifications] Received:', notification);
+      });
+
+      // Listen for user interactions with notifications
+      responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('[Notifications] User interacted:', response);
+        // Handle notification tap - could navigate to specific screen
+        const data = response.notification.request.content.data;
+        if (data?.type) {
+          console.log(`[Notifications] User tapped ${data.type} reminder`);
+          // You could add navigation logic here if needed
+        }
+      });
+    }
+
+    // Cleanup listeners on unmount
+    return () => {
+      if (notificationListener) {
+        Notifications.removeNotificationSubscription(notificationListener);
+      }
+      if (responseListener) {
+        Notifications.removeNotificationSubscription(responseListener);
+      }
+    };
   }, []);
 
   return (
@@ -78,7 +117,7 @@ export default function RootLayout() {
                     <SkincareProvider>
                       <StyleProvider>
                         <SubscriptionProvider>
-                          <GestureHandlerRootView style={{ flex: 1 }}>
+                          <GestureHandlerRootView style={styles.container}>
                             <CommunityProvider>
                               <TrialStarter />
                               <RootLayoutNav />
