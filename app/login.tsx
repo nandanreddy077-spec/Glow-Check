@@ -16,14 +16,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
-import { Eye, EyeOff, Mail, Lock, Heart, Sparkles, Star } from 'lucide-react-native';
+import { Eye, EyeOff, Mail, Lock, Heart, Sparkles, Star, Wifi } from 'lucide-react-native';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
+import { testSupabaseConnection } from '@/lib/supabase';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'testing' | 'connected' | 'failed'>('unknown');
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
   const { signIn } = useAuth();
@@ -65,11 +67,25 @@ export default function LoginScreen() {
     sparkleAnimation.start();
     floatingAnimation.start();
     
+    // Test Supabase connection on component mount
+    testConnection();
+    
     return () => {
       sparkleAnimation.stop();
       floatingAnimation.stop();
     };
   }, [sparkleAnim, floatingAnim]);
+  
+  const testConnection = async () => {
+    setConnectionStatus('testing');
+    try {
+      const isConnected = await testSupabaseConnection();
+      setConnectionStatus(isConnected ? 'connected' : 'failed');
+    } catch (error) {
+      console.error('Connection test error:', error);
+      setConnectionStatus('failed');
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -82,7 +98,20 @@ export default function LoginScreen() {
     setIsLoading(false);
 
     if (error) {
-      Alert.alert('Welcome Back', 'Please check your credentials and try again. We\'re excited to have you back!');
+      console.log('Login error details:', error);
+      let errorMessage = 'Please check your credentials and try again.';
+      
+      if (error.message?.includes('Failed to fetch')) {
+        errorMessage = 'Connection issue. Please check your internet connection and try again.';
+      } else if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please check your credentials.';
+      } else if (error.isRateLimit) {
+        errorMessage = error.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Sign In Issue', errorMessage);
     } else {
       router.replace('/(tabs)');
     }
@@ -183,6 +212,22 @@ export default function LoginScreen() {
                 <Sparkles color={palette.primary} size={16} fill={palette.blush} />
                 <Text style={styles.welcomeBadgeText}>Your glow awaits</Text>
               </View>
+              
+              {/* Connection Status Indicator */}
+              <TouchableOpacity onPress={testConnection} style={styles.connectionStatus}>
+                <Wifi 
+                  size={16} 
+                  color={connectionStatus === 'connected' ? '#10B981' : connectionStatus === 'failed' ? '#EF4444' : palette.textMuted} 
+                />
+                <Text style={[
+                  styles.connectionText,
+                  { color: connectionStatus === 'connected' ? '#10B981' : connectionStatus === 'failed' ? '#EF4444' : palette.textMuted }
+                ]}>
+                  {connectionStatus === 'testing' ? 'Testing...' : 
+                   connectionStatus === 'connected' ? 'Connected' : 
+                   connectionStatus === 'failed' ? 'Connection Failed' : 'Tap to test'}
+                </Text>
+              </TouchableOpacity>
             </Animated.View>
 
             <Animated.View 
@@ -441,5 +486,21 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     top: 220,
     right: 80,
     zIndex: 1,
+  },
+  
+  // Connection status
+  connectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
+    backgroundColor: palette.overlayLight,
+  },
+  connectionText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

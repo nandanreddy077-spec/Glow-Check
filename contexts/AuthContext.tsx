@@ -33,7 +33,10 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
 
       try {
         // Test connection first
+        console.log('Testing Supabase connection in AuthContext...');
         const connectionOk = await testSupabaseConnection();
+        console.log('Connection test result:', connectionOk);
+        
         if (!connectionOk && retryCount < maxRetries) {
           retryCount++;
           console.log(`Connection test failed, retrying... (${retryCount}/${maxRetries})`);
@@ -47,7 +50,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
+          console.error('Error getting session:', error.message || error);
           if (error.message?.includes('Failed to fetch') && retryCount < maxRetries) {
             retryCount++;
             console.log(`Session fetch failed, retrying... (${retryCount}/${maxRetries})`);
@@ -63,8 +66,8 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
           setUser(session?.user ?? null);
           setLoading(false);
         }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
+      } catch (error: any) {
+        console.error('Auth initialization error:', error.message || error);
         if (mounted) setLoading(false);
       }
     };
