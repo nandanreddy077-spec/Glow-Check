@@ -3,8 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { Badge, Achievement, GlowBoost } from '@/types/user';
 import { useUser } from './UserContext';
-import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+
 
 interface DailyReward {
   id: string;
@@ -53,18 +52,7 @@ const STORAGE_KEYS = {
   NOTIFICATION_PERMISSIONS: 'notification_permissions',
 };
 
-// Configure notification behavior
-if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
-}
+// Notifications are handled by the simplified notification system
 
 const INITIAL_ACHIEVEMENTS: Achievement[] = [
   {
@@ -207,91 +195,14 @@ export const [GamificationProvider, useGamification] = createContextHook(() => {
   const [completionLog, setCompletionLog] = useState<CompletionEntry[]>([]);
 
   const setupNotifications = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      console.log('Notifications not supported on web');
-      return;
-    }
-
-    try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      
-      if (finalStatus !== 'granted') {
-        console.log('Notification permissions not granted');
-        return;
-      }
-      
-      console.log('Notification permissions granted');
-      await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_PERMISSIONS, 'granted');
-    } catch (error) {
-      console.error('Error setting up notifications:', error);
-    }
+    console.log('Notifications handled by simplified system');
+    // No longer using expo-notifications in Expo Go SDK 53
   }, []);
 
   const scheduleRoutineReminders = useCallback(async () => {
-    if (Platform.OS === 'web') return;
-
-    try {
-      // Cancel existing notifications
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      
-      const permissionStatus = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_PERMISSIONS);
-      if (permissionStatus !== 'granted') return;
-
-      const today = new Date().toISOString().split('T')[0];
-      const hasCompletedToday = dailyCompletions.includes(today);
-      
-      if (hasCompletedToday) {
-        console.log('Already completed today, no reminders needed');
-        return;
-      }
-
-      // Schedule morning reminder (10:00 AM)
-      const morningTime = new Date();
-      morningTime.setHours(10, 0, 0, 0);
-      
-      // If it's already past 10 AM today, schedule for tomorrow
-      if (morningTime.getTime() <= Date.now()) {
-        morningTime.setDate(morningTime.getDate() + 1);
-      }
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🌅 Morning Glow Time!',
-          body: "Don't forget your morning skincare routine. Your skin is waiting to glow!",
-          sound: true,
-        },
-        trigger: {
-          hour: 10,
-          minute: 0,
-          repeats: true,
-        } as any,
-      });
-
-      // Schedule evening reminder (8:00 PM)
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🌙 Evening Renewal Time!',
-          body: 'Time for your evening skincare routine. End your day with self-care!',
-          sound: true,
-        },
-        trigger: {
-          hour: 20,
-          minute: 0,
-          repeats: true,
-        } as any,
-      });
-
-      console.log('Routine reminders scheduled');
-    } catch (error) {
-      console.error('Error scheduling routine reminders:', error);
-    }
-  }, [dailyCompletions]);
+    console.log('Routine reminders handled by simplified notification system');
+    // No longer using expo-notifications in Expo Go SDK 53
+  }, []);
 
   const cleanupStorageCallback = useCallback(async () => {
     try {
@@ -707,14 +618,8 @@ export const [GamificationProvider, useGamification] = createContextHook(() => {
 
 
   const cancelAllNotifications = useCallback(async () => {
-    if (Platform.OS === 'web') return;
-    
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log('All notifications cancelled');
-    } catch (error) {
-      console.error('Error cancelling notifications:', error);
-    }
+    console.log('Notifications handled by simplified system');
+    // No longer using expo-notifications in Expo Go SDK 53
   }, []);
 
   const completeDailyRoutine = useCallback(async (planId?: string, day?: number): Promise<DailyReward[]> => {

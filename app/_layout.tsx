@@ -16,17 +16,9 @@ import { CommunityProvider } from "@/contexts/CommunityContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import { initializeNotifications } from "@/lib/notifications";
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-// Conditional import for expo-notifications to avoid Expo Go issues
-let Notifications: any = null;
-try {
-  if (Platform.OS !== 'web') {
-    Notifications = require('expo-notifications');
-  }
-} catch (error) {
-  console.log('[App] expo-notifications not available:', error);
-}
+// Notifications are handled in the simplified notification system
 import TrialStarter from "@/components/TrialStarter";
 
 
@@ -82,49 +74,8 @@ export default function RootLayout() {
     
     initializeApp();
 
-    // Set up notification listeners for mobile (only if available)
-    let notificationListener: any = undefined;
-    let responseListener: any = undefined;
-
-    if (Platform.OS !== 'web' && Notifications) {
-      try {
-        // Listen for notifications received while app is running
-        notificationListener = Notifications.addNotificationReceivedListener((notification: any) => {
-          console.log('[Notifications] Received:', notification);
-        });
-
-        // Listen for user interactions with notifications
-        responseListener = Notifications.addNotificationResponseReceivedListener((response: any) => {
-          console.log('[Notifications] User interacted:', response);
-          // Handle notification tap - could navigate to specific screen
-          const data = response.notification.request.content.data;
-          if (data?.type) {
-            console.log(`[Notifications] User tapped ${data.type} reminder`);
-            // You could add navigation logic here if needed
-          }
-        });
-      } catch (error) {
-        console.log('[App] Failed to set up notification listeners:', error);
-      }
-    }
-
-    // Cleanup listeners on unmount
-    return () => {
-      if (notificationListener && Notifications) {
-        try {
-          Notifications.removeNotificationSubscription(notificationListener);
-        } catch (error) {
-          console.log('[App] Error removing notification listener:', error);
-        }
-      }
-      if (responseListener && Notifications) {
-        try {
-          Notifications.removeNotificationSubscription(responseListener);
-        } catch (error) {
-          console.log('[App] Error removing response listener:', error);
-        }
-      }
-    };
+    // Notification listeners not needed in simplified system
+    // Web notifications are handled directly in the notification system
   }, []);
 
   return (
