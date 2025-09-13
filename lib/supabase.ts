@@ -9,29 +9,43 @@ if (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.EXPO_PUBLIC_SUPABASE_A
   console.warn('Supabase environment variables not configured. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env file.');
 }
 
-// Enhanced configuration with better error handling and timeouts
+// Enhanced configuration with better error handling and rate limiting
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
-    // Add retry configuration
     flowType: 'pkce',
+    // Add rate limiting and retry configuration
+    debug: __DEV__,
   },
   global: {
     headers: {
-      'X-Client-Info': `${Platform.OS}/${Platform.Version}`,
+      'X-Client-Info': `glow-app-${Platform.OS}/${Platform.Version}`,
+      'apikey': supabaseAnonKey,
+    },
+    // Add fetch configuration with timeout and retry
+    fetch: (url, options = {}) => {
+      return fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'Content-Type': 'application/json',
+        },
+        // Add timeout
+        signal: AbortSignal.timeout(30000), // 30 second timeout
+      });
     },
   },
-  // Add database configuration with connection pooling
+  // Add database configuration
   db: {
     schema: 'public',
   },
-  // Add realtime configuration
+  // Add realtime configuration with reduced frequency
   realtime: {
     params: {
-      eventsPerSecond: 2,
+      eventsPerSecond: 1,
     },
   },
 });

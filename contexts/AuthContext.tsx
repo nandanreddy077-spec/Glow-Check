@@ -121,6 +121,20 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         });
 
         if (error) {
+          // Handle rate limiting specifically
+          if (error.message?.includes('For security purposes, you can only request this after')) {
+            const match = error.message.match(/(\d+) seconds/);
+            const waitTime = match ? parseInt(match[1]) : 60;
+            return { 
+              error: { 
+                ...error, 
+                message: `Please wait ${waitTime} seconds before trying again. This is a security measure to prevent spam.`,
+                isRateLimit: true,
+                waitTime
+              } 
+            };
+          }
+          
           // Check if it's a network error and retry
           if ((error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) && retryCount < maxRetries) {
             retryCount++;
@@ -171,6 +185,20 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
         });
 
         if (error) {
+          // Handle rate limiting specifically
+          if (error.message?.includes('For security purposes, you can only request this after')) {
+            const match = error.message.match(/(\d+) seconds/);
+            const waitTime = match ? parseInt(match[1]) : 60;
+            return { 
+              error: { 
+                ...error, 
+                message: `Please wait ${waitTime} seconds before trying again. This is a security measure to prevent spam.`,
+                isRateLimit: true,
+                waitTime
+              } 
+            };
+          }
+          
           // Check if it's a network error and retry
           if ((error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) && retryCount < maxRetries) {
             retryCount++;
