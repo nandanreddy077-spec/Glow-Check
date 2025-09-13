@@ -1,17 +1,29 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 
-// Configure notification handler
-if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+// Conditional import for expo-notifications to avoid Expo Go issues
+let Notifications: any = null;
+let isNotificationsAvailable = false;
+
+// Try to import expo-notifications, but handle gracefully if it fails
+try {
+  if (Platform.OS !== 'web') {
+    Notifications = require('expo-notifications');
+    isNotificationsAvailable = true;
+    
+    // Configure notification handler only if available
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }
+} catch (error: any) {
+  console.log('[Notifications] expo-notifications not available in this environment:', error?.message || 'Unknown error');
+  isNotificationsAvailable = false;
 }
 
 const MORNING_HOUR = 10;
@@ -101,6 +113,12 @@ async function requestPermission(): Promise<boolean> {
     }
   }
 
+  // Check if notifications are available (not in Expo Go SDK 53)
+  if (!isNotificationsAvailable || !Notifications) {
+    console.log('[Notifications] expo-notifications not available in this environment (likely Expo Go SDK 53)');
+    return false;
+  }
+
   try {
     const settings = await Notifications.getPermissionsAsync();
     console.log('[Notifications] Current permissions:', settings);
@@ -130,6 +148,13 @@ export type RoutineType = 'morning' | 'evening';
 export async function initializeNotifications() {
   console.log('[Notifications] Initializing notifications...');
   
+  // Check if we're in an environment that supports notifications
+  if (!isNotificationsAvailable) {
+    console.log('[Notifications] Notifications not available in this environment (likely Expo Go SDK 53)');
+    console.log('[Notifications] For full notification support, use a development build or production app');
+    return false;
+  }
+  
   try {
     const ok = await requestPermission();
     console.log('[Notifications] Permission granted:', ok);
@@ -139,7 +164,7 @@ export async function initializeNotifications() {
       return false;
     }
 
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' && Notifications) {
       try {
         await Notifications.setNotificationChannelAsync('reminders', {
           name: 'Skincare Reminders',
@@ -216,6 +241,12 @@ export async function scheduleDailyReminder(type: RoutineType) {
     return;
   }
 
+  // Check if notifications are available
+  if (!isNotificationsAvailable || !Notifications) {
+    console.log(`[Notifications] Cannot schedule ${type} notification - expo-notifications not available`);
+    return;
+  }
+
   try {
     const idKey = type === 'morning' ? STORAGE_KEYS.morningNotifId : STORAGE_KEYS.eveningNotifId;
     const existingId = await getItem(idKey);
@@ -228,7 +259,7 @@ export async function scheduleDailyReminder(type: RoutineType) {
       }
     }
 
-    const notificationContent: Notifications.NotificationContentInput = {
+    const notificationContent = {
       title,
       body,
       sound: 'default',
@@ -237,7 +268,7 @@ export async function scheduleDailyReminder(type: RoutineType) {
 
     const trigger = {
       date: when,
-    } as Notifications.DateTriggerInput;
+    };
 
     // Add channelId for Android
     if (Platform.OS === 'android') {
@@ -266,13 +297,13 @@ export async function markRoutineDone(type: RoutineType, date = new Date()) {
   await setItem(key, '1');
   console.log('[Notifications] marked done', type, getLocalDateKey(date));
 
-  if (Platform.OS !== 'web') {
+  if (Platform.OS !== 'web' && isNotificationsAvailable && Notifications) {
     try {
       const idKey = type === 'morning' ? STORAGE_KEYS.morningNotifId : STORAGE_KEYS.eveningNotifId;
       const existingId = await getItem(idKey);
       if (existingId) await Notifications.cancelScheduledNotificationAsync(existingId);
     } catch {}
-  } else {
+  } else if (Platform.OS === 'web') {
     // Clear web timeout
     const timeoutKey = `${type}_timeout`;
     const existingTimeout = (globalThis as any)[timeoutKey];
@@ -300,6 +331,7 @@ export async function startDailyNotifications() {
     const initialized = await initializeNotifications();
     if (!initialized) {
       console.log('[Notifications] Failed to initialize, skipping scheduling');
+      console.log('[Notifications] Note: In Expo Go SDK 53, notifications require a development build');
       return false;
     }
 
@@ -326,7 +358,7 @@ export async function getNotificationStatus() {
   try {
     if (Platform.OS === 'web') {
       status.permissionGranted = 'Notification' in globalThis && Notification.permission === 'granted';
-    } else {
+    } else if (isNotificationsAvailable && Notifications) {
       const permissions = await Notifications.getPermissionsAsync();
       status.permissionGranted = permissions.granted || permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
       
@@ -336,8 +368,10 @@ export async function getNotificationStatus() {
       const morningId = await getItem(STORAGE_KEYS.morningNotifId);
       const eveningId = await getItem(STORAGE_KEYS.eveningNotifId);
       
-      status.morningScheduled = !!morningId && scheduled.some(n => n.identifier === morningId);
-      status.eveningScheduled = !!eveningId && scheduled.some(n => n.identifier === eveningId);
+      status.morningScheduled = !!morningId && scheduled.some((n: any) => n.identifier === morningId);
+      status.eveningScheduled = !!eveningId && scheduled.some((n: any) => n.identifier === eveningId);
+    } else {
+      console.log('[Notifications] expo-notifications not available for status check');
     }
   } catch (e) {
     console.log('[Notifications] Error getting status:', e);
@@ -361,6 +395,11 @@ export async function testNotification() {
     return;
   }
 
+  if (!isNotificationsAvailable || !Notifications) {
+    console.log('[Notifications] Cannot test notification - expo-notifications not available');
+    return;
+  }
+
   try {
     const permissions = await Notifications.getPermissionsAsync();
     if (!permissions.granted && permissions.ios?.status !== Notifications.IosAuthorizationStatus.PROVISIONAL) {
@@ -376,7 +415,7 @@ export async function testNotification() {
       },
       trigger: {
         seconds: 1,
-      } as Notifications.TimeIntervalTriggerInput,
+      },
     });
     
     console.log('[Notifications] Test notification scheduled for 1 second');
@@ -399,6 +438,14 @@ export async function clearAllNotifications() {
       }
     });
     console.log('[Notifications] Web timeouts cleared');
+    return;
+  }
+
+  if (!isNotificationsAvailable || !Notifications) {
+    console.log('[Notifications] Cannot clear notifications - expo-notifications not available');
+    // Still clear stored IDs
+    await removeItem(STORAGE_KEYS.morningNotifId);
+    await removeItem(STORAGE_KEYS.eveningNotifId);
     return;
   }
 
