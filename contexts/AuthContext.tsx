@@ -1,7 +1,7 @@
 import { Session, User } from '@supabase/supabase-js';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
-import { supabase } from '@/lib/supabase';
+import { supabase, testSupabaseConnection } from '@/lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -19,97 +19,187 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if Supabase is configured
-    if (!process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder')) {
-      console.log('Supabase not configured, skipping auth initialization');
-      setLoading(false);
-      return;
+    let mounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const initializeAuth = async () => {
+      // Check if Supabase is configured
+      if (!process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+        console.log('Supabase not configured, skipping auth initialization');
+        if (mounted) setLoading(false);
+        return;
+      }
+
+      try {
+        // Test connection first
+        const connectionOk = await testSupabaseConnection();
+        if (!connectionOk && retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Connection test failed, retrying... (${retryCount}/${maxRetries})`);
+          setTimeout(() => {
+            if (mounted) initializeAuth();
+          }, 2000 * retryCount); // Exponential backoff
+          return;
+        }
+
+        // Get initial session with retry logic
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          if (error.message?.includes('Failed to fetch') && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Session fetch failed, retrying... (${retryCount}/${maxRetries})`);
+            setTimeout(() => {
+              if (mounted) initializeAuth();
+            }, 2000 * retryCount);
+            return;
+          }
+        }
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes with error handling
+    let subscription: any;
+    try {
+      const { data } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('Auth state changed:', event, session?.user?.email);
+          if (mounted) {
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+          }
+        }
+      );
+      subscription = data.subscription;
+    } catch (error) {
+      console.error('Error setting up auth state listener:', error);
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('Error getting session:', error);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    return () => {
+      mounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
       }
-    );
-
-    return () => subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {
-    try {
-      setLoading(true);
-      
-      // Check if Supabase is properly configured
-      if (!process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder')) {
-        return { error: { message: 'Supabase is not configured. Please set up your Supabase credentials.' } };
-      }
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    const attemptSignUp = async (): Promise<{ error: any }> => {
+      try {
+        setLoading(true);
+        
+        // Check if Supabase is properly configured
+        if (!process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+          return { error: { message: 'Supabase is not configured. Please set up your Supabase credentials.' } };
+        }
+        
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            },
           },
-        },
-      });
+        });
 
-      if (error) {
-        console.error('Sign up error:', error);
+        if (error) {
+          // Check if it's a network error and retry
+          if ((error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Sign up failed, retrying... (${retryCount}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+            return attemptSignUp();
+          }
+          console.error('Sign up error:', error);
+          return { error };
+        }
+
+        console.log('Sign up successful:', data.user?.email);
+        return { error: null };
+      } catch (error: any) {
+        // Check if it's a network error and retry
+        if ((error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) && retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Sign up exception, retrying... (${retryCount}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+          return attemptSignUp();
+        }
+        console.error('Sign up exception:', error);
         return { error };
+      } finally {
+        setLoading(false);
       }
-
-      console.log('Sign up successful:', data.user?.email);
-      return { error: null };
-    } catch (error) {
-      console.error('Sign up exception:', error);
-      return { error };
-    } finally {
-      setLoading(false);
-    }
+    };
+    
+    return attemptSignUp();
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      
-      // Check if Supabase is properly configured
-      if (!process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder')) {
-        return { error: { message: 'Supabase is not configured. Please set up your Supabase credentials.' } };
-      }
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    const attemptSignIn = async (): Promise<{ error: any }> => {
+      try {
+        setLoading(true);
+        
+        // Check if Supabase is properly configured
+        if (!process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+          return { error: { message: 'Supabase is not configured. Please set up your Supabase credentials.' } };
+        }
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (error) {
-        console.error('Sign in error:', error);
+        if (error) {
+          // Check if it's a network error and retry
+          if ((error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Sign in failed, retrying... (${retryCount}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+            return attemptSignIn();
+          }
+          console.error('Sign in error:', error);
+          return { error };
+        }
+
+        console.log('Sign in successful:', data.user?.email);
+        return { error: null };
+      } catch (error: any) {
+        // Check if it's a network error and retry
+        if ((error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) && retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Sign in exception, retrying... (${retryCount}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+          return attemptSignIn();
+        }
+        console.error('Sign in exception:', error);
         return { error };
+      } finally {
+        setLoading(false);
       }
-
-      console.log('Sign in successful:', data.user?.email);
-      return { error: null };
-    } catch (error) {
-      console.error('Sign in exception:', error);
-      return { error };
-    } finally {
-      setLoading(false);
-    }
+    };
+    
+    return attemptSignIn();
   }, []);
 
   const signOut = useCallback(async () => {
