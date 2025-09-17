@@ -74,22 +74,19 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
     return !hasAccess && !isPublicRoute && showPaywall;
   }, [hasAccess, isPublicRoute, showPaywall]);
 
-  // Auto-redirect to subscription page after 3 scans or trial expiry
+  // Auto-redirect to subscription page after trial expiry
   useEffect(() => {
-    const shouldShowSubscription = (
-      (state.hasStartedTrial && state.scanCount >= 3) || 
-      isTrialExpired
-    ) && !state.isPremium;
+    const shouldShowSubscription = isTrialExpired && !state.isPremium;
 
-    if (shouldShowSubscription && !pathname.includes('/subscribe')) {
+    if (shouldShowSubscription && !pathname.includes('/unlock-glow') && !pathname.includes('/plan-selection')) {
       // Small delay to ensure smooth navigation
       const timer = setTimeout(() => {
-        router.push('/subscribe');
+        router.push('/unlock-glow');
       }, 500);
       
       return () => clearTimeout(timer);
     }
-  }, [state.hasStartedTrial, state.scanCount, isTrialExpired, state.isPremium, pathname]);
+  }, [isTrialExpired, state.isPremium, pathname]);
 
   useEffect(() => {
     // Only redirect if we don't want to show paywall inline

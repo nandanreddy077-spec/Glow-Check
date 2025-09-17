@@ -44,7 +44,7 @@ const DEVICE_TRIAL_KEY = 'glowcheck_device_trials';
 const DEFAULT_STATE: SubscriptionState = {
   isPremium: false,
   scanCount: 0,
-  maxScansInTrial: 3,
+  maxScansInTrial: 999, // Unlimited scans during trial
   hasStartedTrial: false,
 };
 
@@ -89,15 +89,27 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         
         const hasDeviceUsedTrial = trialUsedDevices.includes(deviceId);
         
-        // If device has used trial before, mark trial as used
-        if (hasDeviceUsedTrial && !currentState.hasStartedTrial) {
-          currentState = {
-            ...currentState,
-            hasStartedTrial: true,
-            scanCount: 3, // Max out scans to force subscription
-            deviceId,
-            trialUsedDevices
-          };
+        // If device has used trial before, check if trial is still active
+        if (hasDeviceUsedTrial) {
+          // If trial was started but no end date, or trial has expired, mark as expired
+          if (!currentState.trialEndsAt || new Date(currentState.trialEndsAt).getTime() <= Date.now()) {
+            currentState = {
+              ...currentState,
+              hasStartedTrial: true,
+              deviceId,
+              trialUsedDevices,
+              // Clear trial dates if expired
+              trialStartedAt: undefined,
+              trialEndsAt: undefined
+            };
+          } else {
+            // Trial is still active
+            currentState = {
+              ...currentState,
+              deviceId,
+              trialUsedDevices
+            };
+          }
         } else {
           currentState = {
             ...currentState,
@@ -233,25 +245,26 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
   const canScan = useMemo(() => {
     if (state.isPremium) return true;
     
-    // Check if device has already used trial
+    // Check if device has already used trial and trial is expired
     if (state.deviceId && state.trialUsedDevices?.includes(state.deviceId)) {
       // Device has used trial, only allow if currently in trial period
-      return inTrial && state.scanCount < state.maxScansInTrial;
+      return inTrial;
     }
     
     if (!state.hasStartedTrial) return true; // First time user can scan to start trial
-    return inTrial && state.scanCount < state.maxScansInTrial;
-  }, [state.isPremium, state.hasStartedTrial, state.deviceId, state.trialUsedDevices, inTrial, state.scanCount, state.maxScansInTrial]);
+    return inTrial; // During trial, unlimited scans
+  }, [state.isPremium, state.hasStartedTrial, state.deviceId, state.trialUsedDevices, inTrial]);
 
   const scansLeft = useMemo(() => {
     if (state.isPremium) return Infinity;
-    return Math.max(0, state.maxScansInTrial - state.scanCount);
-  }, [state.isPremium, state.maxScansInTrial, state.scanCount]);
+    if (inTrial) return Infinity; // Unlimited during trial
+    return 0; // No scans after trial expires
+  }, [state.isPremium, inTrial]);
 
   const incrementScanCount = useCallback(async () => {
     const deviceId = await getDeviceId();
     
-    // Check if device has already used trial
+    // Check if device has already used trial and trial is expired
     if (state.trialUsedDevices?.includes(deviceId) && !state.isPremium && !inTrial) {
       // Device has used trial and it's expired, force subscription
       const { router } = await import('expo-router');
@@ -265,18 +278,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       return;
     }
     
+    // Just increment scan count for analytics, no limits during trial
     const next: SubscriptionState = { 
       ...state, 
       scanCount: state.scanCount + 1 
     };
     await persist(next);
-    
-    // Check if user has reached scan limit and should see subscription screen
-    if (next.scanCount >= next.maxScansInTrial && !next.isPremium) {
-      // Import router dynamically to avoid circular dependency
-      const { router } = await import('expo-router');
-      router.push('/unlock-glow');
-    }
   }, [persist, state, startLocalTrial, inTrial]);
 
   const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string }> => {
@@ -288,58 +295,28 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         return { success: false };
       }
       
-      // For development, simulate successful payment
-      if (__DEV__) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const mockPurchaseToken = `dev_purchase_${Date.now()}`;
-        const mockTransactionId = `dev_transaction_${Date.now()}`;
-        
-        await setPremium(true, type);
-        await setSubscriptionData({
-          purchaseToken: mockPurchaseToken,
-          originalTransactionId: mockTransactionId,
-        });
-        
-        return { 
-          success: true, 
-          purchaseToken: mockPurchaseToken,
-          originalTransactionId: mockTransactionId 
-        };
-      }
+      // Simulate payment processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // In production, you would integrate with:
-      // 1. Apple App Store (StoreKit) for iOS
-      // 2. Google Play Billing for Android
-      // 3. Stripe for web payments
+      // For demo purposes, simulate successful payment
+      // In a real app, you would use react-native-iap or expo-in-app-purchases
+      const purchaseToken = `purchase_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const transactionId = `transaction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      try {
-        // For now, simulate production payment processing
-        // In a real app, you would use expo-in-app-purchases or react-native-iap
-        console.log('Production payment processing would happen here');
-        
-        // Simulate payment processing delay
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        // For demo purposes, simulate successful payment
-        const purchaseToken = `prod_purchase_${Date.now()}`;
-        const transactionId = `prod_transaction_${Date.now()}`;
-        
-        await setPremium(true, type);
-        await setSubscriptionData({
-          purchaseToken,
-          originalTransactionId: transactionId,
-        });
-        
-        return { 
-          success: true, 
-          purchaseToken,
-          originalTransactionId: transactionId 
-        };
-        
-      } catch (paymentError) {
-        console.error('Payment processing error:', paymentError);
-        return { success: false };
-      }
+      await setPremium(true, type);
+      await setSubscriptionData({
+        purchaseToken,
+        originalTransactionId: transactionId,
+      });
+      
+      console.log(`Successfully processed ${type} subscription`);
+      
+      return { 
+        success: true, 
+        purchaseToken,
+        originalTransactionId: transactionId 
+      };
+      
     } catch (error) {
       console.error('In-app purchase error:', error);
       return { success: false };

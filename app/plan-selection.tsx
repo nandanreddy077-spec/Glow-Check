@@ -52,9 +52,9 @@ export default function PlanSelectionScreen() {
     router.back();
   }, []);
 
-  const trialDaysLeft = state.trialStartedAt 
-    ? Math.max(0, 3 - Math.floor((Date.now() - Number(new Date(state.trialStartedAt))) / (1000 * 60 * 60 * 24)))
-    : 3;
+  const trialDaysLeft = state.trialEndsAt 
+    ? Math.max(0, Math.ceil((new Date(state.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
 
   return (
     <View style={styles.container}>
@@ -89,7 +89,7 @@ export default function PlanSelectionScreen() {
             <View style={styles.trialContent}>
               <Text style={styles.trialTitle}>Trial Active</Text>
               <Text style={styles.trialText}>
-                {state.scanCount}/3 scans used • {trialDaysLeft > 0 ? `${trialDaysLeft} days left` : 'NaN days left'}
+                {trialDaysLeft > 0 ? `${trialDaysLeft} days left` : 'Trial expired'}
               </Text>
             </View>
           </View>
