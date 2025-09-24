@@ -170,15 +170,27 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       
       if (Platform.OS === 'web') {
         console.log('In-app purchases not available on web');
-        return { success: false, error: 'In-app purchases not supported on web' };
+        return { success: false, error: 'In-app purchases not supported on web. Please use the mobile app.' };
       }
       
       // For development and Expo Go testing, simulate successful purchase
-      if (__DEV__ || Platform.OS === 'ios' || Platform.OS === 'android') {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const mockPurchaseToken = `mock_purchase_${Date.now()}`;
-        const mockTransactionId = `mock_transaction_${Date.now()}`;
+      // This simulates the real purchase flow for testing purposes
+      console.log('Simulating purchase flow for development/testing...');
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // For testing purposes, you can force success/failure by changing this
+      // Set to true to always succeed, false to always fail, or use Math.random() > 0.1 for 90% success rate
+      const shouldSucceed = true; // Change this to test different scenarios
+      
+      if (shouldSucceed) {
+        const mockPurchaseToken = `mock_purchase_${Date.now()}_${type}`;
+        const mockTransactionId = `mock_transaction_${Date.now()}_${type}`;
         
+        console.log('Mock purchase successful:', { type, mockPurchaseToken, mockTransactionId });
+        
+        // Update subscription state
         await setPremium(true, type);
         await setSubscriptionData({
           purchaseToken: mockPurchaseToken,
@@ -190,14 +202,21 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
           purchaseToken: mockPurchaseToken,
           originalTransactionId: mockTransactionId 
         };
+      } else {
+        // Simulate purchase failure
+        console.log('Mock purchase failed for testing');
+        return { 
+          success: false, 
+          error: 'Payment was declined. Please check your payment method and try again.' 
+        };
       }
       
-      // This should not be reached in Expo Go
-      console.log('Production in-app purchase requires native build');
-      return { success: false, error: 'Native build required for production purchases' };
     } catch (error) {
       console.error('In-app purchase error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.' 
+      };
     }
   }, [setPremium, setSubscriptionData]);
 

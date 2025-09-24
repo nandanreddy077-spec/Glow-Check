@@ -71,37 +71,59 @@ export default function SubscribeScreen() {
     
     if (Platform.OS === 'web') {
       Alert.alert(
-        'In-App Purchase Required',
-        'Please use the mobile app to subscribe. In-app purchases are not available on web.',
-        [{ text: 'OK', style: 'default' }]
+        'Mobile App Required',
+        'Subscriptions are only available in the mobile app. Please download our app from the App Store or Google Play to subscribe.',
+        [{ text: 'Got it', style: 'default' }]
       );
       return;
     }
     
     setIsProcessing(true);
+    console.log(`Starting ${type} subscription process...`);
+    
     try {
       const result = await processInAppPurchase(type);
+      console.log('Purchase result:', result);
+      
       if (result.success) {
         Alert.alert(
           '🎉 Welcome to Premium!', 
           `Your ${type} subscription is now active. Enjoy unlimited access to all premium features!`,
-          [{ text: 'Start Your Journey ✨', style: 'default', onPress: () => router.back() }]
+          [{ 
+            text: 'Start Your Journey ✨', 
+            style: 'default', 
+            onPress: () => {
+              console.log('User confirmed premium activation');
+              router.back();
+            }
+          }]
         );
       } else {
         const errorMessage = result.error || 'We couldn\'t process your purchase. Please try again.';
+        console.log('Purchase failed:', errorMessage);
         Alert.alert(
           'Purchase Failed', 
           errorMessage,
-          [{ text: 'Try Again', style: 'default' }]
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Try Again', style: 'default', onPress: () => handleSubscribe(type) }
+          ]
         );
       }
     } catch (err) {
       console.error('Subscription error:', err);
-      Alert.alert('Error', 'Something went wrong. Please try again later.');
+      Alert.alert(
+        'Connection Error', 
+        'Unable to connect to the payment service. Please check your internet connection and try again.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Retry', style: 'default', onPress: () => handleSubscribe(type) }
+        ]
+      );
     } finally {
       setIsProcessing(false);
     }
-  }, [isProcessing, processInAppPurchase]);
+  }, [isProcessing, processInAppPurchase, router]);
 
   const handleManage = useCallback(async () => {
     Alert.alert(
