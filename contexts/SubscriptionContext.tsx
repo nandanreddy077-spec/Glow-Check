@@ -32,7 +32,7 @@ export interface SubscriptionContextType {
   setSubscriptionData: (data: Partial<SubscriptionState>) => Promise<void>;
   incrementScanCount: () => Promise<void>;
   reset: () => Promise<void>;
-  processInAppPurchase: (type: 'monthly' | 'yearly') => Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string }>;
+  processInAppPurchase: (type: 'monthly' | 'yearly') => Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }>;
 }
 
 const STORAGE_KEY = 'glowcheck_subscription_state';
@@ -164,17 +164,17 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     }
   }, [persist, state, startLocalTrial, isTrialExpired]);
 
-  const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string }> => {
+  const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }> => {
     try {
       console.log(`Processing ${type} in-app purchase...`);
       
       if (Platform.OS === 'web') {
         console.log('In-app purchases not available on web');
-        return { success: false };
+        return { success: false, error: 'In-app purchases not supported on web' };
       }
       
-      // For development, simulate successful purchase
-      if (__DEV__) {
+      // For development and Expo Go testing, simulate successful purchase
+      if (__DEV__ || Platform.OS === 'ios' || Platform.OS === 'android') {
         await new Promise(resolve => setTimeout(resolve, 2000));
         const mockPurchaseToken = `mock_purchase_${Date.now()}`;
         const mockTransactionId = `mock_transaction_${Date.now()}`;
@@ -192,13 +192,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         };
       }
       
-      // In production, this would integrate with expo-in-app-purchases
-      // or react-native-iap for actual App Store/Play Store purchases
-      console.log('Production in-app purchase would be processed here');
-      return { success: false };
+      // This should not be reached in Expo Go
+      console.log('Production in-app purchase requires native build');
+      return { success: false, error: 'Native build required for production purchases' };
     } catch (error) {
       console.error('In-app purchase error:', error);
-      return { success: false };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }, [setPremium, setSubscriptionData]);
 

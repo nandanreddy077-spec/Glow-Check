@@ -88,9 +88,10 @@ export default function SubscribeScreen() {
           [{ text: 'Start Your Journey ✨', style: 'default', onPress: () => router.back() }]
         );
       } else {
+        const errorMessage = result.error || 'We couldn\'t process your purchase. Please try again.';
         Alert.alert(
           'Purchase Failed', 
-          'We couldn\'t process your purchase. Please try again.',
+          errorMessage,
           [{ text: 'Try Again', style: 'default' }]
         );
       }
