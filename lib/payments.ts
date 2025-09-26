@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, Linking, Alert } from 'react-native';
 
 // Product IDs for App Store and Google Play
 export const PRODUCT_IDS = {
@@ -129,28 +129,29 @@ class PaymentService {
         };
       }
 
-      // Simulate purchase process
-      // In a real app, this would trigger the native payment flow
-      console.log('Starting native payment flow...');
+      // For Expo Go, we need to redirect users to the actual App Store/Play Store
+      // since in-app purchases require a production build
+      console.log('Redirecting to store for subscription...');
       
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // For development/testing, simulate successful purchase
-      // In production, this would be handled by the actual payment SDK
-      const mockResult: PurchaseResult = {
-        success: true,
-        transactionId: `txn_${Date.now()}_${productId}`,
-        purchaseToken: `token_${Date.now()}_${productId}`,
-        productId,
-      };
-
-      console.log('Purchase completed:', mockResult);
+      const storeUrl = this.getStoreSubscriptionUrl();
+      const canOpen = await Linking.canOpenURL(storeUrl);
       
-      // In a real app, you would verify the purchase with your backend here
-      await this.verifyPurchase(mockResult);
-      
-      return mockResult;
+      if (canOpen) {
+        await Linking.openURL(storeUrl);
+        
+        // Since we can't complete the purchase in Expo Go,
+        // we'll return a special result indicating store redirect
+        return {
+          success: false,
+          error: 'STORE_REDIRECT',
+          productId,
+        };
+      } else {
+        return {
+          success: false,
+          error: 'Unable to open app store. Please visit the App Store or Google Play Store manually to subscribe.',
+        };
+      }
     } catch (error) {
       console.error('Purchase failed:', error);
       return {
@@ -229,18 +230,57 @@ class PaymentService {
     }
   }
 
+  private getStoreSubscriptionUrl(): string {
+    if (Platform.OS === 'ios') {
+      // iOS App Store - you'll need to replace 'YOUR_APP_ID' with your actual App Store app ID
+      // For now, redirect to App Store search for your app name
+      return `https://apps.apple.com/search?term=glow%20check%20beauty`;
+    } else {
+      // Google Play Store subscription URL
+      return `https://play.google.com/store/apps/details?id=${GOOGLE_PLAY_CONFIG.PACKAGE_NAME}`;
+    }
+  }
+
+  async openSubscriptionManagement(): Promise<boolean> {
+    try {
+      console.log('Opening subscription management...');
+      
+      let url: string;
+      if (Platform.OS === 'ios') {
+        // iOS subscription management
+        url = 'https://apps.apple.com/account/subscriptions';
+      } else {
+        // Android subscription management
+        url = 'https://play.google.com/store/account/subscriptions';
+      }
+      
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Failed to open subscription management:', error);
+      return false;
+    }
+  }
+
   async cancelSubscription(): Promise<boolean> {
     try {
-      console.log('Cancelling subscription...');
+      console.log('Directing user to cancel subscription...');
       
-      // In a real app, you would direct users to the appropriate platform
-      // to cancel their subscription
-      if (Platform.OS === 'ios') {
-        console.log('Directing user to App Store subscription management');
-        // You could open the App Store subscription management URL here
-      } else if (Platform.OS === 'android') {
-        console.log('Directing user to Google Play subscription management');
-        // You could open the Google Play subscription management URL here
+      const opened = await this.openSubscriptionManagement();
+      if (!opened) {
+        // Fallback: Show instructions
+        Alert.alert(
+          'Manage Subscription',
+          Platform.OS === 'ios' 
+            ? 'To cancel your subscription:\n\n1. Open Settings on your device\n2. Tap your Apple ID\n3. Tap Subscriptions\n4. Find Glow Check and tap Cancel'
+            : 'To cancel your subscription:\n\n1. Open Google Play Store\n2. Tap Menu → Subscriptions\n3. Find Glow Check and tap Cancel',
+          [{ text: 'OK' }]
+        );
       }
       
       return true;

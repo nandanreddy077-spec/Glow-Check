@@ -211,6 +211,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
           success: false, 
           error: 'Purchase cancelled' 
         };
+      } else if (result.error === 'STORE_REDIRECT') {
+        console.log('User redirected to app store');
+        return { 
+          success: false, 
+          error: 'STORE_REDIRECT' 
+        };
       } else {
         console.log('Purchase failed:', result.error);
         return { 

@@ -98,6 +98,19 @@ export default function SubscribeScreen() {
             }
           }]
         );
+      } else if (result.error === 'STORE_REDIRECT') {
+        Alert.alert(
+          '🏪 Redirected to Store', 
+          `You've been redirected to the ${Platform.OS === 'ios' ? 'App Store' : 'Google Play Store'} to complete your subscription. After subscribing, return to the app to enjoy premium features!`,
+          [{ 
+            text: 'Got it! ✨', 
+            style: 'default', 
+            onPress: () => {
+              console.log('User acknowledged store redirect');
+              router.back();
+            }
+          }]
+        );
       } else {
         const errorMessage = result.error || 'We couldn\'t process your purchase. Please try again.';
         console.log('Purchase failed:', errorMessage);
