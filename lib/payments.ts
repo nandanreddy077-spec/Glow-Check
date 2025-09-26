@@ -1,5 +1,15 @@
 import { Platform, Linking, Alert } from 'react-native';
 
+// Note: In production build, you'll need to install react-native-purchases
+// For Expo managed workflow, use: expo install react-native-purchases
+// import Purchases from 'react-native-purchases';
+
+// RevenueCat Configuration
+export const REVENUECAT_CONFIG = {
+  API_KEY: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY || 'YOUR_REVENUECAT_PUBLIC_API_KEY',
+  ENTITLEMENT_ID: 'premium', // This should match your RevenueCat entitlement
+} as const;
+
 // Product IDs for App Store and Google Play
 export const PRODUCT_IDS = {
   MONTHLY: 'com.glowcheck.app.premium.monthly',
@@ -67,8 +77,16 @@ class PaymentService {
         return false;
       }
 
-      // In a real app, you would initialize the payment SDK here
-      // For now, we'll simulate initialization
+      // In production build with react-native-purchases:
+      /*
+      await Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+      await Purchases.configure({
+        apiKey: REVENUECAT_CONFIG.API_KEY,
+        appUserID: null, // Optional: set user ID
+      });
+      */
+      
+      // For Expo Go, we'll simulate initialization
       this.isInitialized = true;
       console.log('Payment service initialized successfully');
       return true;
@@ -129,29 +147,82 @@ class PaymentService {
         };
       }
 
-      // For Expo Go, we need to redirect users to the actual App Store/Play Store
-      // since in-app purchases require a production build
-      console.log('Redirecting to store for subscription...');
-      
-      const storeUrl = this.getStoreSubscriptionUrl();
-      const canOpen = await Linking.canOpenURL(storeUrl);
-      
-      if (canOpen) {
-        await Linking.openURL(storeUrl);
+      // Check if running in Expo Go (development)
+      const isExpoGo = __DEV__ && (Platform.OS === 'ios' ? 
+        (await import('expo-constants')).default.appOwnership === 'expo' : 
+        true);
+
+      if (isExpoGo) {
+        // For Expo Go, redirect to store
+        console.log('Running in Expo Go - redirecting to store for subscription...');
         
-        // Since we can't complete the purchase in Expo Go,
-        // we'll return a special result indicating store redirect
-        return {
-          success: false,
-          error: 'STORE_REDIRECT',
-          productId,
-        };
-      } else {
-        return {
-          success: false,
-          error: 'Unable to open app store. Please visit the App Store or Google Play Store manually to subscribe.',
-        };
+        const storeUrl = this.getStoreSubscriptionUrl();
+        const canOpen = await Linking.canOpenURL(storeUrl);
+        
+        if (canOpen) {
+          await Linking.openURL(storeUrl);
+          return {
+            success: false,
+            error: 'STORE_REDIRECT',
+            productId,
+          };
+        } else {
+          return {
+            success: false,
+            error: 'Unable to open app store. Please visit the App Store or Google Play Store manually to subscribe.',
+          };
+        }
       }
+
+      // Production build with react-native-purchases:
+      /*
+      try {
+        const offerings = await Purchases.getOfferings();
+        const currentOffering = offerings.current;
+        
+        if (!currentOffering) {
+          throw new Error('No offerings available');
+        }
+        
+        const packageToPurchase = currentOffering.availablePackages.find(
+          pkg => pkg.product.identifier === productId
+        );
+        
+        if (!packageToPurchase) {
+          throw new Error(`Product ${productId} not found`);
+        }
+        
+        const purchaseResult = await Purchases.purchasePackage(packageToPurchase);
+        
+        if (purchaseResult.customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID]) {
+          return {
+            success: true,
+            transactionId: purchaseResult.transaction?.transactionIdentifier,
+            productId: productId,
+          };
+        } else {
+          return {
+            success: false,
+            error: 'Purchase completed but entitlement not active',
+          };
+        }
+      } catch (purchaseError: any) {
+        if (purchaseError.userCancelled) {
+          return {
+            success: false,
+            cancelled: true,
+            error: 'Purchase cancelled by user',
+          };
+        }
+        throw purchaseError;
+      }
+      */
+      
+      // Fallback for development
+      return {
+        success: false,
+        error: 'Payment system not configured for development environment',
+      };
     } catch (error) {
       console.error('Purchase failed:', error);
       return {
@@ -173,8 +244,27 @@ class PaymentService {
         return [];
       }
 
-      // In a real app, this would restore purchases from the platform
-      // For now, return empty array (no previous purchases)
+      // Production build with react-native-purchases:
+      /*
+      try {
+        const customerInfo = await Purchases.restorePurchases();
+        const activeEntitlements = Object.values(customerInfo.entitlements.active);
+        
+        return activeEntitlements.map(entitlement => ({
+          isActive: true,
+          productId: entitlement.productIdentifier,
+          purchaseDate: entitlement.originalPurchaseDate,
+          expiryDate: entitlement.expirationDate || '',
+          isTrialPeriod: entitlement.isTrialPeriod,
+          autoRenewing: entitlement.willRenew,
+          originalTransactionId: entitlement.originalTransactionId,
+        }));
+      } catch (error) {
+        console.error('Failed to restore purchases:', error);
+      }
+      */
+      
+      // For development, return empty array
       return [];
     } catch (error) {
       console.error('Failed to restore purchases:', error);
@@ -194,8 +284,29 @@ class PaymentService {
         return null;
       }
 
-      // In a real app, this would check the current subscription status
-      // For now, return null (no active subscription)
+      // Production build with react-native-purchases:
+      /*
+      try {
+        const customerInfo = await Purchases.getCustomerInfo();
+        const entitlement = customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID];
+        
+        if (entitlement) {
+          return {
+            isActive: true,
+            productId: entitlement.productIdentifier,
+            purchaseDate: entitlement.originalPurchaseDate,
+            expiryDate: entitlement.expirationDate || '',
+            isTrialPeriod: entitlement.isTrialPeriod,
+            autoRenewing: entitlement.willRenew,
+            originalTransactionId: entitlement.originalTransactionId,
+          };
+        }
+      } catch (error) {
+        console.error('Failed to get customer info:', error);
+      }
+      */
+      
+      // For development, return null (no active subscription)
       return null;
     } catch (error) {
       console.error('Failed to get subscription status:', error);
