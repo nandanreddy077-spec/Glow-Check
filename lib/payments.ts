@@ -14,20 +14,20 @@ export const REVENUECAT_CONFIG = {
 
 // Product IDs for App Store and Google Play
 export const PRODUCT_IDS = {
-  MONTHLY: 'com.glowcheck.app.premium.monthly',
-  YEARLY: 'com.glowcheck.app.premium.annual',
+  MONTHLY: process.env.EXPO_PUBLIC_IAP_MONTHLY_PRODUCT_ID || 'com.glowcheck.app.premium.monthly',
+  YEARLY: process.env.EXPO_PUBLIC_IAP_YEARLY_PRODUCT_ID || 'com.glowcheck.app.premium.annual',
 } as const;
 
 // App Store Connect Configuration
 export const APP_STORE_CONFIG = {
-  TEAM_ID: '2V4DJQD8G3',
-  BUNDLE_ID: 'com.glowcheck01.app',
-  SHARED_SECRET: '5063e6dd7c174550b12001c140f6b803',
+  TEAM_ID: process.env.EXPO_PUBLIC_APP_STORE_TEAM_ID || '2V4DJQD8G3',
+  BUNDLE_ID: process.env.EXPO_PUBLIC_APP_STORE_BUNDLE_ID || 'com.glowcheck01.app',
+  SHARED_SECRET: process.env.EXPO_PUBLIC_APP_STORE_SHARED_SECRET || '5063e6dd7c174550b12001c140f6b803',
 } as const;
 
 // Google Play Configuration
 export const GOOGLE_PLAY_CONFIG = {
-  PACKAGE_NAME: 'com.glowcheck01.app',
+  PACKAGE_NAME: process.env.EXPO_PUBLIC_GOOGLE_PLAY_PACKAGE_NAME || 'com.glowcheck01.app',
   SERVICE_ACCOUNT_KEY: 'google-services.json',
 } as const;
 
