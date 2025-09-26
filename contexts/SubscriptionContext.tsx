@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { Platform } from 'react-native';
 import { paymentService, PRODUCT_IDS, trackPurchaseEvent, trackTrialStartEvent } from '@/lib/payments';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface SubscriptionState {
   isPremium: boolean;
@@ -47,19 +49,26 @@ const DEFAULT_STATE: SubscriptionState = {
 
 export const [SubscriptionProvider, useSubscription] = createContextHook<SubscriptionContextType>(() => {
   const [state, setState] = useState<SubscriptionState>(DEFAULT_STATE);
+  const { user } = useAuth();
 
   useEffect(() => {
     (async () => {
       try {
+        // Load local state first
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           setState(JSON.parse(raw) as SubscriptionState);
+        }
+        
+        // Sync with backend if user is authenticated
+        if (user?.id) {
+          await syncSubscriptionStatus();
         }
       } catch (e) {
         console.log('Failed to load subscription state', e);
       }
     })();
-  }, []);
+  }, [user?.id]);
 
   const persist = useCallback(async (next: SubscriptionState) => {
     setState(next);
@@ -165,6 +174,41 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     }
   }, [persist, state, startLocalTrial, isTrialExpired]);
 
+  // Sync subscription status with backend
+  const syncSubscriptionStatus = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('Syncing subscription status with backend...');
+      
+      // Get subscription status from Supabase
+      const { data, error } = await supabase
+        .rpc('get_user_subscription_status', { user_id: user.id });
+      
+      if (error) {
+        console.error('Failed to get subscription status:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const subscription = data[0];
+        console.log('Backend subscription status:', subscription);
+        
+        // Update local state with backend data
+        const backendState: Partial<SubscriptionState> = {
+          isPremium: subscription.is_premium,
+          subscriptionType: subscription.subscription_product_id?.includes('annual') ? 'yearly' : 'monthly',
+          subscriptionPrice: subscription.subscription_product_id?.includes('annual') ? 99 : 8.99,
+          nextBillingDate: subscription.expires_at,
+        };
+        
+        await setSubscriptionData(backendState);
+      }
+    } catch (error) {
+      console.error('Failed to sync subscription status:', error);
+    }
+  }, [user?.id, setSubscriptionData]);
+  
   const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }> => {
     try {
       console.log(`Processing ${type} in-app purchase...`);
@@ -200,6 +244,25 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
           originalTransactionId: result.transactionId,
         });
         
+        // Sync with backend after successful purchase
+        if (user?.id) {
+          try {
+            // Update user's RevenueCat user ID in Supabase
+            await supabase
+              .from('user_profiles')
+              .update({ 
+                revenuecat_user_id: user.id,
+                subscription_status: 'premium',
+                subscription_product_id: productId,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', user.id);
+          } catch (backendError) {
+            console.error('Failed to update backend subscription status:', backendError);
+            // Don't fail the purchase if backend update fails
+          }
+        }
+        
         return { 
           success: true, 
           purchaseToken: result.purchaseToken,
@@ -232,7 +295,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         error: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.' 
       };
     }
-  }, [setPremium, setSubscriptionData]);
+  }, [setPremium, setSubscriptionData, user?.id]);
 
   // Can view results (not blurred)
   const canViewResults = useMemo(() => {

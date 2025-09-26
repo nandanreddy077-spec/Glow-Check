@@ -1,12 +1,14 @@
 import { Platform, Linking, Alert } from 'react-native';
 
-// Note: In production build, you'll need to install react-native-purchases
-// For Expo managed workflow, use: expo install react-native-purchases
+// Production imports - these will be available in standalone builds
 // import Purchases from 'react-native-purchases';
+// import { PurchasesOffering, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 
 // RevenueCat Configuration
 export const REVENUECAT_CONFIG = {
-  API_KEY: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY || 'YOUR_REVENUECAT_PUBLIC_API_KEY',
+  // You'll need to get these from RevenueCat dashboard
+  API_KEY_IOS: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || 'appl_YOUR_IOS_API_KEY',
+  API_KEY_ANDROID: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID || 'goog_YOUR_ANDROID_API_KEY',
   ENTITLEMENT_ID: 'premium', // This should match your RevenueCat entitlement
 } as const;
 
@@ -77,16 +79,35 @@ class PaymentService {
         return false;
       }
 
-      // In production build with react-native-purchases:
+      // Check if running in Expo Go
+      const isExpoGo = __DEV__ && (Platform.OS === 'ios' ? 
+        (await import('expo-constants')).default.appOwnership === 'expo' : 
+        true);
+
+      if (isExpoGo) {
+        console.log('Running in Expo Go - payment service will redirect to stores');
+        this.isInitialized = true;
+        return true;
+      }
+
+      // Production build with react-native-purchases:
       /*
+      const Purchases = (await import('react-native-purchases')).default;
+      
       await Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+      
+      const apiKey = Platform.OS === 'ios' 
+        ? REVENUECAT_CONFIG.API_KEY_IOS 
+        : REVENUECAT_CONFIG.API_KEY_ANDROID;
+      
       await Purchases.configure({
-        apiKey: REVENUECAT_CONFIG.API_KEY,
-        appUserID: null, // Optional: set user ID
+        apiKey,
+        appUserID: null, // Optional: set user ID for cross-platform syncing
       });
+      
+      console.log('RevenueCat initialized with API key:', apiKey.substring(0, 10) + '...');
       */
       
-      // For Expo Go, we'll simulate initialization
       this.isInitialized = true;
       console.log('Payment service initialized successfully');
       return true;
@@ -102,7 +123,65 @@ class PaymentService {
         await this.initialize();
       }
 
-      // In a real app, this would fetch actual product information from the stores
+      // Check if running in Expo Go
+      const isExpoGo = __DEV__ && (Platform.OS === 'ios' ? 
+        (await import('expo-constants')).default.appOwnership === 'expo' : 
+        true);
+
+      if (isExpoGo) {
+        // Return mock products for Expo Go
+        const products = [
+          {
+            productId: PRODUCT_IDS.MONTHLY,
+            price: PRICING.MONTHLY.price,
+            currency: PRICING.MONTHLY.currency,
+            title: 'Monthly Glow Premium',
+            description: 'Unlimited scans, AI coach, and premium features',
+            subscriptionPeriod: PRICING.MONTHLY.period,
+            freeTrialPeriod: PRICING.MONTHLY.trialPeriod,
+          },
+          {
+            productId: PRODUCT_IDS.YEARLY,
+            price: PRICING.YEARLY.price,
+            currency: PRICING.YEARLY.currency,
+            title: 'Yearly Glow Premium',
+            description: 'Unlimited scans, AI coach, and premium features - Best Value!',
+            subscriptionPeriod: PRICING.YEARLY.period,
+            freeTrialPeriod: PRICING.YEARLY.trialPeriod,
+          },
+        ];
+        console.log('Retrieved mock products for Expo Go:', products);
+        return products;
+      }
+
+      // Production build with react-native-purchases:
+      /*
+      const Purchases = (await import('react-native-purchases')).default;
+      
+      const offerings = await Purchases.getOfferings();
+      const currentOffering = offerings.current;
+      
+      if (!currentOffering) {
+        console.log('No current offering available');
+        return [];
+      }
+      
+      const products = currentOffering.availablePackages.map(pkg => ({
+        productId: pkg.product.identifier,
+        price: pkg.product.price,
+        currency: pkg.product.currencyCode,
+        title: pkg.product.title,
+        description: pkg.product.description,
+        subscriptionPeriod: pkg.product.subscriptionPeriod,
+        freeTrialPeriod: pkg.product.introPrice?.period,
+        package: pkg, // Store the full package for purchasing
+      }));
+      
+      console.log('Retrieved products from RevenueCat:', products);
+      return products;
+      */
+      
+      // Fallback mock products
       const products = [
         {
           productId: PRODUCT_IDS.MONTHLY,
@@ -123,8 +202,7 @@ class PaymentService {
           freeTrialPeriod: PRICING.YEARLY.trialPeriod,
         },
       ];
-
-      console.log('Retrieved products:', products);
+      console.log('Retrieved fallback products:', products);
       return products;
     } catch (error) {
       console.error('Failed to get products:', error);
@@ -177,6 +255,8 @@ class PaymentService {
       // Production build with react-native-purchases:
       /*
       try {
+        const Purchases = (await import('react-native-purchases')).default;
+        
         const offerings = await Purchases.getOfferings();
         const currentOffering = offerings.current;
         
@@ -192,12 +272,16 @@ class PaymentService {
           throw new Error(`Product ${productId} not found`);
         }
         
+        console.log('Purchasing package:', packageToPurchase.product.identifier);
         const purchaseResult = await Purchases.purchasePackage(packageToPurchase);
+        
+        console.log('Purchase completed:', purchaseResult);
         
         if (purchaseResult.customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID]) {
           return {
             success: true,
             transactionId: purchaseResult.transaction?.transactionIdentifier,
+            purchaseToken: purchaseResult.transaction?.transactionIdentifier,
             productId: productId,
           };
         } else {
@@ -207,6 +291,8 @@ class PaymentService {
           };
         }
       } catch (purchaseError: any) {
+        console.log('Purchase error:', purchaseError);
+        
         if (purchaseError.userCancelled) {
           return {
             success: false,
@@ -214,6 +300,33 @@ class PaymentService {
             error: 'Purchase cancelled by user',
           };
         }
+        
+        // Handle other RevenueCat errors
+        if (purchaseError.code) {
+          switch (purchaseError.code) {
+            case 'PURCHASE_NOT_ALLOWED_ERROR':
+              return {
+                success: false,
+                error: 'Purchases are not allowed on this device',
+              };
+            case 'PAYMENT_PENDING_ERROR':
+              return {
+                success: false,
+                error: 'Payment is pending approval',
+              };
+            case 'PRODUCT_NOT_AVAILABLE_FOR_PURCHASE_ERROR':
+              return {
+                success: false,
+                error: 'Product is not available for purchase',
+              };
+            default:
+              return {
+                success: false,
+                error: purchaseError.message || 'Purchase failed',
+              };
+          }
+        }
+        
         throw purchaseError;
       }
       */
@@ -247,10 +360,15 @@ class PaymentService {
       // Production build with react-native-purchases:
       /*
       try {
+        const Purchases = (await import('react-native-purchases')).default;
+        
+        console.log('Restoring purchases...');
         const customerInfo = await Purchases.restorePurchases();
+        
+        console.log('Customer info:', customerInfo);
         const activeEntitlements = Object.values(customerInfo.entitlements.active);
         
-        return activeEntitlements.map(entitlement => ({
+        const subscriptions = activeEntitlements.map(entitlement => ({
           isActive: true,
           productId: entitlement.productIdentifier,
           purchaseDate: entitlement.originalPurchaseDate,
@@ -259,8 +377,12 @@ class PaymentService {
           autoRenewing: entitlement.willRenew,
           originalTransactionId: entitlement.originalTransactionId,
         }));
+        
+        console.log('Restored subscriptions:', subscriptions);
+        return subscriptions;
       } catch (error) {
         console.error('Failed to restore purchases:', error);
+        return [];
       }
       */
       
@@ -287,11 +409,15 @@ class PaymentService {
       // Production build with react-native-purchases:
       /*
       try {
+        const Purchases = (await import('react-native-purchases')).default;
+        
         const customerInfo = await Purchases.getCustomerInfo();
+        console.log('Customer info:', customerInfo);
+        
         const entitlement = customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID];
         
         if (entitlement) {
-          return {
+          const subscription = {
             isActive: true,
             productId: entitlement.productIdentifier,
             purchaseDate: entitlement.originalPurchaseDate,
@@ -300,9 +426,16 @@ class PaymentService {
             autoRenewing: entitlement.willRenew,
             originalTransactionId: entitlement.originalTransactionId,
           };
+          
+          console.log('Active subscription:', subscription);
+          return subscription;
         }
+        
+        console.log('No active subscription found');
+        return null;
       } catch (error) {
         console.error('Failed to get customer info:', error);
+        return null;
       }
       */
       
@@ -343,12 +476,13 @@ class PaymentService {
 
   private getStoreSubscriptionUrl(): string {
     if (Platform.OS === 'ios') {
-      // iOS App Store - you'll need to replace 'YOUR_APP_ID' with your actual App Store app ID
-      // For now, redirect to App Store search for your app name
+      // iOS App Store - Replace with your actual App Store app ID when available
+      // Format: https://apps.apple.com/app/id{APP_ID}
+      // For now, redirect to App Store search
       return `https://apps.apple.com/search?term=glow%20check%20beauty`;
     } else {
       // Google Play Store subscription URL
-      return `https://play.google.com/store/apps/details?id=${GOOGLE_PLAY_CONFIG.PACKAGE_NAME}`;
+      return `https://play.google.com/store/apps/details?id=${GOOGLE_PLAY_CONFIG.PACKAGE_NAME}&hl=en&gl=US`;
     }
   }
 
