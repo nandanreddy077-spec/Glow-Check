@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { Platform } from 'react-native';
+import { paymentService, PRODUCT_IDS, trackPurchaseEvent, trackTrialStartEvent } from '@/lib/payments';
 
 export interface SubscriptionState {
   isPremium: boolean;
@@ -83,7 +84,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
   }, [persist, state]);
 
   const setPremium = useCallback(async (value: boolean, type: 'monthly' | 'yearly' = 'monthly') => {
-    const price = type === 'yearly' ? 99 : 8.90;
+    const price = type === 'yearly' ? 99 : 8.99;
     const nextBillingDate = new Date();
     if (type === 'yearly') {
       nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
@@ -173,41 +174,48 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         return { success: false, error: 'In-app purchases not supported on web. Please use the mobile app.' };
       }
       
-      // For development and Expo Go testing, simulate successful purchase
-      // This simulates the real purchase flow for testing purposes
-      console.log('Simulating purchase flow for development/testing...');
+      // Initialize payment service
+      const initialized = await paymentService.initialize();
+      if (!initialized) {
+        return { success: false, error: 'Payment service unavailable. Please try again later.' };
+      }
       
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Get the product ID for the subscription type
+      const productId = type === 'monthly' ? PRODUCT_IDS.MONTHLY : PRODUCT_IDS.YEARLY;
       
-      // For testing purposes, you can force success/failure by changing this
-      // Set to true to always succeed, false to always fail, or use Math.random() > 0.1 for 90% success rate
-      const shouldSucceed = true; // Change this to test different scenarios
+      // Attempt the purchase
+      const result = await paymentService.purchaseProduct(productId);
       
-      if (shouldSucceed) {
-        const mockPurchaseToken = `mock_purchase_${Date.now()}_${type}`;
-        const mockTransactionId = `mock_transaction_${Date.now()}_${type}`;
+      if (result.success && result.transactionId && result.purchaseToken) {
+        console.log('Purchase successful:', result);
         
-        console.log('Mock purchase successful:', { type, mockPurchaseToken, mockTransactionId });
+        // Track the purchase event
+        const price = type === 'yearly' ? 99 : 8.99;
+        trackPurchaseEvent(productId, price, 'USD');
         
         // Update subscription state
         await setPremium(true, type);
         await setSubscriptionData({
-          purchaseToken: mockPurchaseToken,
-          originalTransactionId: mockTransactionId,
+          purchaseToken: result.purchaseToken,
+          originalTransactionId: result.transactionId,
         });
         
         return { 
           success: true, 
-          purchaseToken: mockPurchaseToken,
-          originalTransactionId: mockTransactionId 
+          purchaseToken: result.purchaseToken,
+          originalTransactionId: result.transactionId 
         };
-      } else {
-        // Simulate purchase failure
-        console.log('Mock purchase failed for testing');
+      } else if (result.cancelled) {
+        console.log('Purchase cancelled by user');
         return { 
           success: false, 
-          error: 'Payment was declined. Please check your payment method and try again.' 
+          error: 'Purchase cancelled' 
+        };
+      } else {
+        console.log('Purchase failed:', result.error);
+        return { 
+          success: false, 
+          error: result.error || 'Payment failed. Please try again.' 
         };
       }
       

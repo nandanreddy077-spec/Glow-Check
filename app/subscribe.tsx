@@ -326,7 +326,7 @@ export default function SubscribeScreen() {
                   </View>
                 </View>
                 <View style={styles.planPricing}>
-                  <Text style={[styles.planPrice, { color: selectedPlan === 'monthly' ? palette.textPrimary : palette.textPrimary }]}>$8.90</Text>
+                  <Text style={[styles.planPrice, { color: selectedPlan === 'monthly' ? palette.textPrimary : palette.textPrimary }]}>$8.99</Text>
                   <Text style={[styles.planPeriod, { color: selectedPlan === 'monthly' ? palette.textSecondary : palette.textMuted }]}>/month</Text>
                 </View>
               </View>
@@ -351,7 +351,7 @@ export default function SubscribeScreen() {
             </Text>
             {!state.isPremium && !isProcessing && (
               <Text style={[styles.subscribePrice, { color: palette.textSecondary }]}>
-                {selectedPlan === 'yearly' ? '$99/year after trial' : '$8.90/month after trial'}
+                {selectedPlan === 'yearly' ? '$99/year after trial' : '$8.99/month after trial'}
               </Text>
             )}
           </LinearGradient>
