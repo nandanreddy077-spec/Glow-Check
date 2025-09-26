@@ -6,7 +6,7 @@ import { Platform, Linking, Alert } from 'react-native';
 
 // RevenueCat Configuration
 export const REVENUECAT_CONFIG = {
-  // You'll need to get these from RevenueCat dashboard
+  // Production RevenueCat API Keys - Get these from RevenueCat dashboard
   API_KEY_IOS: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || 'appl_YOUR_IOS_API_KEY',
   API_KEY_ANDROID: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID || 'goog_YOUR_ANDROID_API_KEY',
   ENTITLEMENT_ID: 'premium', // This should match your RevenueCat entitlement
@@ -91,22 +91,30 @@ class PaymentService {
       }
 
       // Production build with react-native-purchases:
-      /*
-      const Purchases = (await import('react-native-purchases')).default;
-      
-      await Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
-      
-      const apiKey = Platform.OS === 'ios' 
-        ? REVENUECAT_CONFIG.API_KEY_IOS 
-        : REVENUECAT_CONFIG.API_KEY_ANDROID;
-      
-      await Purchases.configure({
-        apiKey,
-        appUserID: null, // Optional: set user ID for cross-platform syncing
-      });
-      
-      console.log('RevenueCat initialized with API key:', apiKey.substring(0, 10) + '...');
-      */
+      try {
+        const Purchases = (await import('react-native-purchases')).default;
+        
+        await Purchases.setLogLevel(Purchases.LOG_LEVEL.INFO);
+        
+        const apiKey = Platform.OS === 'ios' 
+          ? REVENUECAT_CONFIG.API_KEY_IOS 
+          : REVENUECAT_CONFIG.API_KEY_ANDROID;
+        
+        if (!apiKey || apiKey.includes('YOUR_')) {
+          console.warn('RevenueCat API key not configured properly');
+          this.isInitialized = true;
+          return true;
+        }
+        
+        await Purchases.configure({
+          apiKey,
+          appUserID: null, // Optional: set user ID for cross-platform syncing
+        });
+        
+        console.log('RevenueCat initialized successfully');
+      } catch (importError) {
+        console.log('RevenueCat not available, using fallback mode');
+      }
       
       this.isInitialized = true;
       console.log('Payment service initialized successfully');
@@ -115,6 +123,31 @@ class PaymentService {
       console.error('Failed to initialize payment service:', error);
       return false;
     }
+  }
+
+  private getFallbackProducts(): any[] {
+    const products = [
+      {
+        productId: PRODUCT_IDS.MONTHLY,
+        price: PRICING.MONTHLY.price,
+        currency: PRICING.MONTHLY.currency,
+        title: 'Monthly Glow Premium',
+        description: 'Unlimited scans, AI coach, and premium features',
+        subscriptionPeriod: PRICING.MONTHLY.period,
+        freeTrialPeriod: PRICING.MONTHLY.trialPeriod,
+      },
+      {
+        productId: PRODUCT_IDS.YEARLY,
+        price: PRICING.YEARLY.price,
+        currency: PRICING.YEARLY.currency,
+        title: 'Yearly Glow Premium',
+        description: 'Unlimited scans, AI coach, and premium features - Best Value!',
+        subscriptionPeriod: PRICING.YEARLY.period,
+        freeTrialPeriod: PRICING.YEARLY.trialPeriod,
+      },
+    ];
+    console.log('Retrieved fallback products:', products);
+    return products;
   }
 
   async getProducts(): Promise<any[]> {
@@ -129,81 +162,38 @@ class PaymentService {
         true);
 
       if (isExpoGo) {
-        // Return mock products for Expo Go
-        const products = [
-          {
-            productId: PRODUCT_IDS.MONTHLY,
-            price: PRICING.MONTHLY.price,
-            currency: PRICING.MONTHLY.currency,
-            title: 'Monthly Glow Premium',
-            description: 'Unlimited scans, AI coach, and premium features',
-            subscriptionPeriod: PRICING.MONTHLY.period,
-            freeTrialPeriod: PRICING.MONTHLY.trialPeriod,
-          },
-          {
-            productId: PRODUCT_IDS.YEARLY,
-            price: PRICING.YEARLY.price,
-            currency: PRICING.YEARLY.currency,
-            title: 'Yearly Glow Premium',
-            description: 'Unlimited scans, AI coach, and premium features - Best Value!',
-            subscriptionPeriod: PRICING.YEARLY.period,
-            freeTrialPeriod: PRICING.YEARLY.trialPeriod,
-          },
-        ];
-        console.log('Retrieved mock products for Expo Go:', products);
-        return products;
+        return this.getFallbackProducts();
       }
 
       // Production build with react-native-purchases:
-      /*
-      const Purchases = (await import('react-native-purchases')).default;
-      
-      const offerings = await Purchases.getOfferings();
-      const currentOffering = offerings.current;
-      
-      if (!currentOffering) {
-        console.log('No current offering available');
-        return [];
+      try {
+        const Purchases = (await import('react-native-purchases')).default;
+        
+        const offerings = await Purchases.getOfferings();
+        const currentOffering = offerings.current;
+        
+        if (!currentOffering) {
+          console.log('No current offering available, using fallback products');
+          return this.getFallbackProducts();
+        }
+        
+        const products = currentOffering.availablePackages.map(pkg => ({
+          productId: pkg.product.identifier,
+          price: pkg.product.price,
+          currency: pkg.product.currencyCode,
+          title: pkg.product.title,
+          description: pkg.product.description,
+          subscriptionPeriod: pkg.product.subscriptionPeriod,
+          freeTrialPeriod: pkg.product.introPrice?.period,
+          package: pkg, // Store the full package for purchasing
+        }));
+        
+        console.log('Retrieved products from RevenueCat:', products);
+        return products;
+      } catch (error) {
+        console.log('Failed to get RevenueCat products, using fallback:', error);
+        return this.getFallbackProducts();
       }
-      
-      const products = currentOffering.availablePackages.map(pkg => ({
-        productId: pkg.product.identifier,
-        price: pkg.product.price,
-        currency: pkg.product.currencyCode,
-        title: pkg.product.title,
-        description: pkg.product.description,
-        subscriptionPeriod: pkg.product.subscriptionPeriod,
-        freeTrialPeriod: pkg.product.introPrice?.period,
-        package: pkg, // Store the full package for purchasing
-      }));
-      
-      console.log('Retrieved products from RevenueCat:', products);
-      return products;
-      */
-      
-      // Fallback mock products
-      const products = [
-        {
-          productId: PRODUCT_IDS.MONTHLY,
-          price: PRICING.MONTHLY.price,
-          currency: PRICING.MONTHLY.currency,
-          title: 'Monthly Glow Premium',
-          description: 'Unlimited scans, AI coach, and premium features',
-          subscriptionPeriod: PRICING.MONTHLY.period,
-          freeTrialPeriod: PRICING.MONTHLY.trialPeriod,
-        },
-        {
-          productId: PRODUCT_IDS.YEARLY,
-          price: PRICING.YEARLY.price,
-          currency: PRICING.YEARLY.currency,
-          title: 'Yearly Glow Premium',
-          description: 'Unlimited scans, AI coach, and premium features - Best Value!',
-          subscriptionPeriod: PRICING.YEARLY.period,
-          freeTrialPeriod: PRICING.YEARLY.trialPeriod,
-        },
-      ];
-      console.log('Retrieved fallback products:', products);
-      return products;
     } catch (error) {
       console.error('Failed to get products:', error);
       return [];
@@ -253,7 +243,6 @@ class PaymentService {
       }
 
       // Production build with react-native-purchases:
-      /*
       try {
         const Purchases = (await import('react-native-purchases')).default;
         
@@ -327,15 +316,11 @@ class PaymentService {
           }
         }
         
-        throw purchaseError;
+        return {
+          success: false,
+          error: purchaseError.message || 'Purchase failed',
+        };
       }
-      */
-      
-      // Fallback for development
-      return {
-        success: false,
-        error: 'Payment system not configured for development environment',
-      };
     } catch (error) {
       console.error('Purchase failed:', error);
       return {
@@ -358,7 +343,6 @@ class PaymentService {
       }
 
       // Production build with react-native-purchases:
-      /*
       try {
         const Purchases = (await import('react-native-purchases')).default;
         
@@ -384,10 +368,6 @@ class PaymentService {
         console.error('Failed to restore purchases:', error);
         return [];
       }
-      */
-      
-      // For development, return empty array
-      return [];
     } catch (error) {
       console.error('Failed to restore purchases:', error);
       return [];
@@ -407,7 +387,6 @@ class PaymentService {
       }
 
       // Production build with react-native-purchases:
-      /*
       try {
         const Purchases = (await import('react-native-purchases')).default;
         
@@ -437,10 +416,6 @@ class PaymentService {
         console.error('Failed to get customer info:', error);
         return null;
       }
-      */
-      
-      // For development, return null (no active subscription)
-      return null;
     } catch (error) {
       console.error('Failed to get subscription status:', error);
       return null;
