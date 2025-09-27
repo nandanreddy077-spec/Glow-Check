@@ -68,25 +68,10 @@ class PaymentService {
   private purchasesModule: any = null;
 
   private async loadPurchasesModule(): Promise<any> {
-    if (this.purchasesModule) {
-      return this.purchasesModule;
-    }
-
-    try {
-      // Check if react-native-purchases is available
-      // This will only work in production builds with custom dev client
-      // Using eval to avoid TypeScript import errors in Expo Go
-      const moduleName = 'react-native-purchases';
-      const module = await import(moduleName).catch(() => null);
-      if (module) {
-        this.purchasesModule = module.default;
-        return this.purchasesModule;
-      }
-      return null;
-    } catch (error) {
-      console.log('RevenueCat module not available:', error);
-      return null;
-    }
+    // RevenueCat is not available in Expo Go
+    // This will work in production builds with EAS Build
+    console.log('RevenueCat module not available in Expo Go - using fallback mode');
+    return null;
   }
 
   async initialize(): Promise<boolean> {
@@ -99,9 +84,8 @@ class PaymentService {
       }
 
       // Check if running in Expo Go
-      const isExpoGo = __DEV__ && (Platform.OS === 'ios' ? 
-        (await import('expo-constants')).default.appOwnership === 'expo' : 
-        true);
+      const Constants = await import('expo-constants');
+      const isExpoGo = Constants.default.appOwnership === 'expo';
 
       if (isExpoGo) {
         console.log('Running in Expo Go - payment service will redirect to stores');
@@ -181,9 +165,8 @@ class PaymentService {
       }
 
       // Check if running in Expo Go
-      const isExpoGo = __DEV__ && (Platform.OS === 'ios' ? 
-        (await import('expo-constants')).default.appOwnership === 'expo' : 
-        true);
+      const Constants = await import('expo-constants');
+      const isExpoGo = Constants.default.appOwnership === 'expo';
 
       if (isExpoGo) {
         return this.getFallbackProducts();
@@ -245,9 +228,8 @@ class PaymentService {
       }
 
       // Check if running in Expo Go (development)
-      const isExpoGo = __DEV__ && (Platform.OS === 'ios' ? 
-        (await import('expo-constants')).default.appOwnership === 'expo' : 
-        true);
+      const Constants = await import('expo-constants');
+      const isExpoGo = Constants.default.appOwnership === 'expo';
 
       if (isExpoGo) {
         // For Expo Go, redirect to store
