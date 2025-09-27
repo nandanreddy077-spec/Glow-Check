@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { Platform } from 'react-native';
-import { paymentService, PRODUCT_IDS, trackPurchaseEvent, trackTrialStartEvent } from '@/lib/payments';
+// import { paymentService, PRODUCT_IDS, trackPurchaseEvent, trackTrialStartEvent } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -60,15 +60,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
           setState(JSON.parse(raw) as SubscriptionState);
         }
         
-        // Sync with backend if user is authenticated
-        if (user?.id) {
-          await syncSubscriptionStatus();
-        }
+        // Skip backend sync for now to avoid circular dependency
+        // TODO: Implement proper backend sync after fixing dependency issues
+        console.log('Subscription state loaded from local storage');
       } catch (e) {
         console.log('Failed to load subscription state', e);
       }
     })();
-  }, [user?.id]);
+  }, []);
 
   const persist = useCallback(async (next: SubscriptionState) => {
     setState(next);
@@ -218,24 +217,27 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         return { success: false, error: 'In-app purchases not supported on web. Please use the mobile app.' };
       }
       
-      // Initialize payment service
-      const initialized = await paymentService.initialize();
-      if (!initialized) {
-        return { success: false, error: 'Payment service unavailable. Please try again later.' };
-      }
+      // TODO: Initialize payment service when RevenueCat is properly set up
+      // const initialized = await paymentService.initialize();
+      // if (!initialized) {
+      //   return { success: false, error: 'Payment service unavailable. Please try again later.' };
+      // }
       
       // Get the product ID for the subscription type
-      const productId = type === 'monthly' ? PRODUCT_IDS.MONTHLY : PRODUCT_IDS.YEARLY;
+      const productId = type === 'monthly' ? 'com.glowcheck01.app.premium.monthly' : 'com.glowcheck01.app.premium.annual';
       
-      // Attempt the purchase
-      const result = await paymentService.purchaseProduct(productId);
+      // TODO: Attempt the purchase when RevenueCat is properly set up
+      // const result = await paymentService.purchaseProduct(productId);
+      
+      // For now, simulate a successful purchase for testing
+      const result = { success: true, transactionId: 'test_' + Date.now(), purchaseToken: 'test_token_' + Date.now() };
       
       if (result.success && result.transactionId && result.purchaseToken) {
         console.log('Purchase successful:', result);
         
-        // Track the purchase event
-        const price = type === 'yearly' ? 99 : 8.99;
-        trackPurchaseEvent(productId, price, 'USD');
+        // TODO: Track the purchase event when analytics is set up
+        // const price = type === 'yearly' ? 99 : 8.99;
+        // trackPurchaseEvent(productId, price, 'USD');
         
         // Update subscription state
         await setPremium(true, type);
@@ -268,23 +270,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
           purchaseToken: result.purchaseToken,
           originalTransactionId: result.transactionId 
         };
-      } else if (result.cancelled) {
-        console.log('Purchase cancelled by user');
-        return { 
-          success: false, 
-          error: 'Purchase cancelled' 
-        };
-      } else if (result.error === 'STORE_REDIRECT') {
-        console.log('User redirected to app store');
-        return { 
-          success: false, 
-          error: 'STORE_REDIRECT' 
-        };
       } else {
-        console.log('Purchase failed:', result.error);
+        // For testing, this branch won't be reached, but keeping for future RevenueCat integration
+        console.log('Purchase failed');
         return { 
           success: false, 
-          error: result.error || 'Payment failed. Please try again.' 
+          error: 'Payment failed. Please try again.' 
         };
       }
       
