@@ -2,16 +2,16 @@ import { Platform, Linking, Alert } from 'react-native';
 
 // RevenueCat Configuration
 export const REVENUECAT_CONFIG = {
-  // Production RevenueCat API Keys - Get these from RevenueCat dashboard
-  API_KEY_IOS: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || 'appl_YOUR_IOS_API_KEY',
-  API_KEY_ANDROID: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID || 'goog_YOUR_ANDROID_API_KEY',
+  // Production RevenueCat API Keys - Configured for production
+  API_KEY_IOS: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || 'appl_UpDZroTEjwQSDDRJdqLgYihNxsh',
+  API_KEY_ANDROID: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID || 'goog_xCXiGuMlJXxLNPQUlodNDLnAAYZ',
   ENTITLEMENT_ID: 'premium', // This should match your RevenueCat entitlement
 } as const;
 
 // Product IDs for App Store and Google Play
 export const PRODUCT_IDS = {
-  MONTHLY: process.env.EXPO_PUBLIC_IAP_MONTHLY_PRODUCT_ID || 'com.glowcheck.app.premium.monthly',
-  YEARLY: process.env.EXPO_PUBLIC_IAP_YEARLY_PRODUCT_ID || 'com.glowcheck.app.premium.annual',
+  MONTHLY: process.env.EXPO_PUBLIC_IAP_MONTHLY_PRODUCT_ID || 'com.glowcheck01.app.premium.monthly',
+  YEARLY: process.env.EXPO_PUBLIC_IAP_YEARLY_PRODUCT_ID || 'com.glowcheck01.app.premium.annual',
 } as const;
 
 // App Store Connect Configuration
