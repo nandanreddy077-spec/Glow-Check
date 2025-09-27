@@ -1,9 +1,5 @@
 import { Platform, Linking, Alert } from 'react-native';
 
-// Production imports - these will be available in standalone builds
-// import Purchases from 'react-native-purchases';
-// import { PurchasesOffering, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
-
 // RevenueCat Configuration
 export const REVENUECAT_CONFIG = {
   // Production RevenueCat API Keys - Get these from RevenueCat dashboard
@@ -69,6 +65,27 @@ export interface SubscriptionInfo {
 
 class PaymentService {
   private isInitialized = false;
+  private purchasesModule: any = null;
+
+  private async loadPurchasesModule(): Promise<any> {
+    if (this.purchasesModule) {
+      return this.purchasesModule;
+    }
+
+    try {
+      // Use dynamic import with proper error handling
+      // @ts-ignore - Dynamic import for optional dependency
+      const module = await import('react-native-purchases').catch(() => null);
+      if (module) {
+        this.purchasesModule = module.default;
+        return this.purchasesModule;
+      }
+      return null;
+    } catch (error) {
+      console.log('RevenueCat module not available:', error);
+      return null;
+    }
+  }
 
   async initialize(): Promise<boolean> {
     try {
@@ -92,7 +109,13 @@ class PaymentService {
 
       // Production build with react-native-purchases:
       try {
-        const Purchases = (await import('react-native-purchases')).default;
+        const Purchases = await this.loadPurchasesModule();
+        
+        if (!Purchases) {
+          console.log('RevenueCat not available, using fallback mode');
+          this.isInitialized = true;
+          return true;
+        }
         
         await Purchases.setLogLevel(Purchases.LOG_LEVEL.INFO);
         
@@ -112,8 +135,8 @@ class PaymentService {
         });
         
         console.log('RevenueCat initialized successfully');
-      } catch (importError) {
-        console.log('RevenueCat not available, using fallback mode');
+      } catch (error) {
+        console.log('RevenueCat not available, using fallback mode:', error);
       }
       
       this.isInitialized = true;
@@ -167,7 +190,12 @@ class PaymentService {
 
       // Production build with react-native-purchases:
       try {
-        const Purchases = (await import('react-native-purchases')).default;
+        const Purchases = await this.loadPurchasesModule();
+        
+        if (!Purchases) {
+          console.log('RevenueCat not available, using fallback products');
+          return this.getFallbackProducts();
+        }
         
         const offerings = await Purchases.getOfferings();
         const currentOffering = offerings.current;
@@ -177,7 +205,7 @@ class PaymentService {
           return this.getFallbackProducts();
         }
         
-        const products = currentOffering.availablePackages.map(pkg => ({
+        const products = currentOffering.availablePackages.map((pkg: any) => ({
           productId: pkg.product.identifier,
           price: pkg.product.price,
           currency: pkg.product.currencyCode,
@@ -244,7 +272,27 @@ class PaymentService {
 
       // Production build with react-native-purchases:
       try {
-        const Purchases = (await import('react-native-purchases')).default;
+        const Purchases = await this.loadPurchasesModule();
+        
+        if (!Purchases) {
+          console.log('RevenueCat not available, redirecting to store');
+          const storeUrl = this.getStoreSubscriptionUrl();
+          const canOpen = await Linking.canOpenURL(storeUrl);
+          
+          if (canOpen) {
+            await Linking.openURL(storeUrl);
+            return {
+              success: false,
+              error: 'STORE_REDIRECT',
+              productId,
+            };
+          } else {
+            return {
+              success: false,
+              error: 'Unable to open app store. Please visit the App Store or Google Play Store manually to subscribe.',
+            };
+          }
+        }
         
         const offerings = await Purchases.getOfferings();
         const currentOffering = offerings.current;
@@ -254,7 +302,7 @@ class PaymentService {
         }
         
         const packageToPurchase = currentOffering.availablePackages.find(
-          pkg => pkg.product.identifier === productId
+          (pkg: any) => pkg.product.identifier === productId
         );
         
         if (!packageToPurchase) {
@@ -344,7 +392,12 @@ class PaymentService {
 
       // Production build with react-native-purchases:
       try {
-        const Purchases = (await import('react-native-purchases')).default;
+        const Purchases = await this.loadPurchasesModule();
+        
+        if (!Purchases) {
+          console.log('RevenueCat not available for restore purchases');
+          return [];
+        }
         
         console.log('Restoring purchases...');
         const customerInfo = await Purchases.restorePurchases();
@@ -352,7 +405,7 @@ class PaymentService {
         console.log('Customer info:', customerInfo);
         const activeEntitlements = Object.values(customerInfo.entitlements.active);
         
-        const subscriptions = activeEntitlements.map(entitlement => ({
+        const subscriptions = activeEntitlements.map((entitlement: any) => ({
           isActive: true,
           productId: entitlement.productIdentifier,
           purchaseDate: entitlement.originalPurchaseDate,
@@ -388,12 +441,17 @@ class PaymentService {
 
       // Production build with react-native-purchases:
       try {
-        const Purchases = (await import('react-native-purchases')).default;
+        const Purchases = await this.loadPurchasesModule();
+        
+        if (!Purchases) {
+          console.log('RevenueCat not available for subscription status');
+          return null;
+        }
         
         const customerInfo = await Purchases.getCustomerInfo();
         console.log('Customer info:', customerInfo);
         
-        const entitlement = customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID];
+        const entitlement: any = customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID];
         
         if (entitlement) {
           const subscription = {
@@ -439,7 +497,7 @@ class PaymentService {
       console.log('Verification data:', verificationData);
       
       // Simulate backend verification
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       
       console.log('Purchase verified successfully');
       return true;
@@ -494,13 +552,15 @@ class PaymentService {
       const opened = await this.openSubscriptionManagement();
       if (!opened) {
         // Fallback: Show instructions
-        Alert.alert(
-          'Manage Subscription',
-          Platform.OS === 'ios' 
-            ? 'To cancel your subscription:\n\n1. Open Settings on your device\n2. Tap your Apple ID\n3. Tap Subscriptions\n4. Find Glow Check and tap Cancel'
-            : 'To cancel your subscription:\n\n1. Open Google Play Store\n2. Tap Menu → Subscriptions\n3. Find Glow Check and tap Cancel',
-          [{ text: 'OK' }]
-        );
+        if (Platform.OS !== 'web') {
+          Alert.alert(
+            'Manage Subscription',
+            Platform.OS === 'ios' 
+              ? 'To cancel your subscription:\n\n1. Open Settings on your device\n2. Tap your Apple ID\n3. Tap Subscriptions\n4. Find Glow Check and tap Cancel'
+              : 'To cancel your subscription:\n\n1. Open Google Play Store\n2. Tap Menu → Subscriptions\n3. Find Glow Check and tap Cancel',
+            [{ text: 'OK' }]
+          );
+        }
       }
       
       return true;
@@ -515,6 +575,10 @@ export const paymentService = new PaymentService();
 
 // Helper functions for subscription management
 export const formatPrice = (price: number, currency: string = 'USD'): string => {
+  if (typeof price !== 'number' || price < 0) {
+    return '$0.00';
+  }
+  
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
