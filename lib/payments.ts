@@ -68,10 +68,14 @@ class PaymentService {
   private purchasesModule: any = null;
 
   private async loadPurchasesModule(): Promise<any> {
-    // RevenueCat is not available in Expo Go
-    // This will work in production builds with EAS Build
-    console.log('RevenueCat module not available in Expo Go - using fallback mode');
-    return null;
+    try {
+      // Try to load RevenueCat - this will work in production builds with EAS Build
+      const Purchases = require('react-native-purchases');
+      return Purchases.default || Purchases;
+    } catch (error) {
+      console.log('RevenueCat module not available - using fallback mode:', error);
+      return null;
+    }
   }
 
   async initialize(): Promise<boolean> {
@@ -439,12 +443,12 @@ class PaymentService {
         if (entitlement) {
           const subscription = {
             isActive: true,
-            productId: entitlement.productIdentifier,
-            purchaseDate: entitlement.originalPurchaseDate,
-            expiryDate: entitlement.expirationDate || '',
-            isTrialPeriod: entitlement.isTrialPeriod,
-            autoRenewing: entitlement.willRenew,
-            originalTransactionId: entitlement.originalTransactionId,
+            productId: (entitlement as any).productIdentifier,
+            purchaseDate: (entitlement as any).originalPurchaseDate,
+            expiryDate: (entitlement as any).expirationDate || '',
+            isTrialPeriod: (entitlement as any).isTrialPeriod,
+            autoRenewing: (entitlement as any).willRenew,
+            originalTransactionId: (entitlement as any).originalTransactionId,
           };
           
           console.log('Active subscription:', subscription);
