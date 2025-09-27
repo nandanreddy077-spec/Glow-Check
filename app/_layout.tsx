@@ -61,48 +61,48 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('🚀 Starting app initialization...');
-        
-        // Simplified initialization - just hide splash screen
-        console.log('✅ Hiding splash screen...');
-        await SplashScreen.hideAsync();
-        console.log('✅ App initialization completed');
-        
+        // Validate and clean corrupted storage data on app start
+        await validateAndCleanStorage();
+        console.log('✅ Storage validated and cleaned successfully');
       } catch (error) {
-        console.error('❌ App initialization failed:', error);
-        // Still hide splash screen even if there's an error
-        await SplashScreen.hideAsync();
+        console.error('❌ Storage cleanup failed:', error);
+      } finally {
+        await initializeNotifications();
+        SplashScreen.hideAsync();
       }
     };
     
     initializeApp();
+
+    // Notification listeners not needed in simplified system
+    // Web notifications are handled directly in the notification system
   }, []);
 
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={styles.container}>
-          <ThemeProvider>
+        <ThemeProvider>
             <AuthProvider>
               <UserProvider>
-                <SubscriptionProvider>
-                  <GamificationProvider>
-                    <AnalysisProvider>
-                      <SkincareProvider>
-                        <StyleProvider>
-                          <CommunityProvider>
-                            <TrialStarter />
-                            <RootLayoutNav />
-                          </CommunityProvider>
-                        </StyleProvider>
-                      </SkincareProvider>
-                    </AnalysisProvider>
-                  </GamificationProvider>
-                </SubscriptionProvider>
+                <GamificationProvider>
+                  <AnalysisProvider>
+                    <SkincareProvider>
+                      <StyleProvider>
+                        <SubscriptionProvider>
+                          <GestureHandlerRootView style={styles.container}>
+                            <CommunityProvider>
+                              <TrialStarter />
+                              <RootLayoutNav />
+                            </CommunityProvider>
+                          </GestureHandlerRootView>
+                        </SubscriptionProvider>
+                      </StyleProvider>
+                    </SkincareProvider>
+                  </AnalysisProvider>
+                </GamificationProvider>
               </UserProvider>
             </AuthProvider>
-          </ThemeProvider>
-        </GestureHandlerRootView>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
