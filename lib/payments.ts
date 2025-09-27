@@ -73,9 +73,11 @@ class PaymentService {
     }
 
     try {
-      // Use dynamic import with proper error handling
-      // @ts-ignore - Dynamic import for optional dependency
-      const module = await import('react-native-purchases').catch(() => null);
+      // Check if react-native-purchases is available
+      // This will only work in production builds with custom dev client
+      // Using eval to avoid TypeScript import errors in Expo Go
+      const moduleName = 'react-native-purchases';
+      const module = await import(moduleName).catch(() => null);
       if (module) {
         this.purchasesModule = module.default;
         return this.purchasesModule;
@@ -117,8 +119,7 @@ class PaymentService {
           return true;
         }
         
-        await Purchases.setLogLevel(Purchases.LOG_LEVEL.INFO);
-        
+        // Configure RevenueCat if available
         const apiKey = Platform.OS === 'ios' 
           ? REVENUECAT_CONFIG.API_KEY_IOS 
           : REVENUECAT_CONFIG.API_KEY_ANDROID;
@@ -131,7 +132,7 @@ class PaymentService {
         
         await Purchases.configure({
           apiKey,
-          appUserID: null, // Optional: set user ID for cross-platform syncing
+          appUserID: null,
         });
         
         console.log('RevenueCat initialized successfully');
@@ -213,7 +214,7 @@ class PaymentService {
           description: pkg.product.description,
           subscriptionPeriod: pkg.product.subscriptionPeriod,
           freeTrialPeriod: pkg.product.introPrice?.period,
-          package: pkg, // Store the full package for purchasing
+          package: pkg,
         }));
         
         console.log('Retrieved products from RevenueCat:', products);
@@ -451,7 +452,7 @@ class PaymentService {
         const customerInfo = await Purchases.getCustomerInfo();
         console.log('Customer info:', customerInfo);
         
-        const entitlement: any = customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID];
+        const entitlement = customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID];
         
         if (entitlement) {
           const subscription = {
