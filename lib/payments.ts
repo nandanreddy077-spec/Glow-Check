@@ -70,8 +70,9 @@ class PaymentService {
   private async loadPurchasesModule(): Promise<any> {
     try {
       // Try to load RevenueCat - this will work in production builds with EAS Build
-      const Purchases = require('react-native-purchases');
-      return Purchases.default || Purchases;
+      // For now, we'll use fallback mode since react-native-purchases is not installed
+      console.log('RevenueCat module not available - using fallback mode');
+      return null;
     } catch (error) {
       console.log('RevenueCat module not available - using fallback mode:', error);
       return null;
@@ -441,14 +442,15 @@ class PaymentService {
         const entitlement = customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID];
         
         if (entitlement) {
+          const ent = entitlement as any;
           const subscription = {
             isActive: true,
-            productId: (entitlement as any).productIdentifier,
-            purchaseDate: (entitlement as any).originalPurchaseDate,
-            expiryDate: (entitlement as any).expirationDate || '',
-            isTrialPeriod: (entitlement as any).isTrialPeriod,
-            autoRenewing: (entitlement as any).willRenew,
-            originalTransactionId: (entitlement as any).originalTransactionId,
+            productId: ent.productIdentifier,
+            purchaseDate: ent.originalPurchaseDate,
+            expiryDate: ent.expirationDate || '',
+            isTrialPeriod: ent.isTrialPeriod,
+            autoRenewing: ent.willRenew,
+            originalTransactionId: ent.originalTransactionId,
           };
           
           console.log('Active subscription:', subscription);
