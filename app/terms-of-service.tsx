@@ -53,7 +53,7 @@ export default function TermsOfServiceScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>4. Subscriptions, Payments, and Refunds</Text>
-          <Text style={styles.paragraph}>Payments are processed by Stripe. By subscribing you agree that:</Text>
+          <Text style={styles.paragraph}>Payments are processed by Apple App Store (iOS) or Google Play Store (Android). By subscribing you agree that:</Text>
           <Text style={styles.bulletPoint}>• Recurring charges occur until you cancel</Text>
           <Text style={styles.bulletPoint}>• Prices may change with prior notice</Text>
           <Text style={styles.bulletPoint}>• Taxes may apply based on your location</Text>

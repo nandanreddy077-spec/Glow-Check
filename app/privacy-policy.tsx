@@ -53,8 +53,8 @@ export default function PrivacyPolicyScreen() {
           <Text style={styles.bulletPoint}>• In-app actions and interactions for analytics and product improvement</Text>
 
           <Text style={styles.subTitle}>Payment & Subscription</Text>
-          <Text style={styles.bulletPoint}>• Subscription status, plan, and invoices processed by Stripe</Text>
-          <Text style={styles.bulletPoint}>• We never store raw card numbers; Stripe tokenizes and processes payments</Text>
+          <Text style={styles.bulletPoint}>• Subscription status and plan managed through Apple App Store or Google Play Store</Text>
+          <Text style={styles.bulletPoint}>• Payment processing is handled entirely by Apple/Google; we never access your payment information</Text>
 
           <Text style={styles.subTitle}>Communications</Text>
           <Text style={styles.bulletPoint}>• Emails, push notification preferences, and customer support messages</Text>
@@ -65,7 +65,7 @@ export default function PrivacyPolicyScreen() {
           <Text style={styles.bulletPoint}>• Provide core App features, accounts, and communities</Text>
           <Text style={styles.bulletPoint}>• Perform AI-powered skin and style analysis with your submitted photos</Text>
           <Text style={styles.bulletPoint}>• Personalize routines, tips, and content</Text>
-          <Text style={styles.bulletPoint}>• Process subscriptions and payments via Stripe</Text>
+          <Text style={styles.bulletPoint}>• Process subscriptions through Apple App Store and Google Play Store</Text>
           <Text style={styles.bulletPoint}>• Measure and improve performance, safety, and reliability</Text>
           <Text style={styles.bulletPoint}>• Communicate about updates, security, and support</Text>
           <Text style={styles.bulletPoint}>• Comply with legal obligations and enforce terms</Text>
@@ -82,7 +82,7 @@ export default function PrivacyPolicyScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>4. Processors and Service Providers</Text>
           <Text style={styles.bulletPoint}>• Supabase: database, auth, storage</Text>
-          <Text style={styles.bulletPoint}>• Stripe: payments, subscriptions, refunds</Text>
+          <Text style={styles.bulletPoint}>• Apple App Store / Google Play Store: payments, subscriptions, refunds</Text>
           <Text style={styles.bulletPoint}>• Google Vision API and/or OpenAI API: AI features</Text>
           <Text style={styles.bulletPoint}>• Analytics (optional): Firebase, Amplitude, Mixpanel</Text>
           <Text style={styles.paragraph}>These providers process data under contracts and only per our instructions.</Text>
