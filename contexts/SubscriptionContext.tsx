@@ -220,7 +220,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         .rpc('get_user_subscription_status', { user_id: user.id });
       
       if (error) {
-        console.error('Failed to get subscription status:', error);
+        console.error('Failed to get subscription status:', JSON.stringify(error, null, 2));
         return;
       }
       
@@ -239,7 +239,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         await setSubscriptionData(backendState);
       }
     } catch (error) {
-      console.error('Failed to sync subscription status:', error);
+      console.error('Failed to sync subscription status:', error instanceof Error ? error.message : JSON.stringify(error));
     }
   }, [user?.id, setSubscriptionData]);
   
@@ -283,7 +283,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
           try {
             // Update user's RevenueCat user ID in Supabase
             await supabase
-              .from('user_profiles')
+              .from('profiles')
               .update({ 
                 revenuecat_user_id: user.id,
                 subscription_status: 'premium',

@@ -28,8 +28,9 @@ CREATE INDEX IF NOT EXISTS idx_revenuecat_events_event_type ON revenuecat_events
 CREATE INDEX IF NOT EXISTS idx_revenuecat_events_product_id ON revenuecat_events(product_id);
 CREATE INDEX IF NOT EXISTS idx_revenuecat_events_created_at ON revenuecat_events(created_at);
 
--- Update user_profiles table to include subscription info
-ALTER TABLE user_profiles 
+-- Update profiles table to include subscription info
+-- Note: Using 'profiles' table name to match the main setup
+ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS revenuecat_user_id TEXT,
 ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'free',
 ADD COLUMN IF NOT EXISTS subscription_product_id TEXT,
@@ -39,8 +40,8 @@ ADD COLUMN IF NOT EXISTS auto_renewing BOOLEAN DEFAULT TRUE,
 ADD COLUMN IF NOT EXISTS original_transaction_id TEXT;
 
 -- Create index for subscription queries
-CREATE INDEX IF NOT EXISTS idx_user_profiles_subscription_status ON user_profiles(subscription_status);
-CREATE INDEX IF NOT EXISTS idx_user_profiles_revenuecat_user_id ON user_profiles(revenuecat_user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_subscription_status ON profiles(subscription_status);
+CREATE INDEX IF NOT EXISTS idx_profiles_revenuecat_user_id ON profiles(revenuecat_user_id);
 
 -- Function to handle RevenueCat webhook events
 CREATE OR REPLACE FUNCTION handle_revenuecat_webhook()
@@ -49,7 +50,7 @@ BEGIN
   -- Update user subscription status based on event type
   IF NEW.event_type IN ('INITIAL_PURCHASE', 'RENEWAL', 'PRODUCT_CHANGE') THEN
     -- User has active subscription
-    UPDATE user_profiles 
+    UPDATE profiles 
     SET 
       subscription_status = 'premium',
       subscription_product_id = NEW.product_id,
@@ -63,7 +64,7 @@ BEGIN
     
   ELSIF NEW.event_type IN ('CANCELLATION', 'EXPIRATION') THEN
     -- User subscription ended
-    UPDATE user_profiles 
+    UPDATE profiles 
     SET 
       subscription_status = 'free',
       subscription_product_id = NULL,
@@ -75,7 +76,7 @@ BEGIN
     
   ELSIF NEW.event_type = 'UNCANCELLATION' THEN
     -- User reactivated subscription
-    UPDATE user_profiles 
+    UPDATE profiles 
     SET 
       subscription_status = 'premium',
       auto_renewing = TRUE,
@@ -122,7 +123,7 @@ BEGIN
       THEN EXTRACT(DAY FROM (up.subscription_expires_at - NOW()))::INTEGER
       ELSE NULL 
     END as days_remaining
-  FROM user_profiles up
+  FROM profiles up
   WHERE up.id = user_id;
 END;
 $$ LANGUAGE plpgsql;
