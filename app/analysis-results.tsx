@@ -22,7 +22,7 @@ import BlurredContent from '@/components/BlurredContent';
 
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
-  const { canViewResults, incrementScanCount } = useSubscription();
+  const { canViewResults, incrementScanCount, state } = useSubscription();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
   const [badge, setBadge] = useState<string>('');
@@ -30,13 +30,19 @@ export default function AnalysisResultsScreen() {
   const [streak, setStreak] = useState<number>(0);
   const [streakProtected, setStreakProtected] = useState<boolean>(false);
   const scoreAnim = useRef(new Animated.Value(0)).current;
+  const [hasRedirected, setHasRedirected] = useState<boolean>(false);
   
   const palette = getPalette(theme);
   const gradient = getGradient(theme);
   const styles = createStyles(palette);
 
   const handleStartPlan = () => {
-    router.push('/skincare-plan-selection');
+    // If user has used their scan, redirect to subscription instead
+    if (state.scanCount >= 1 && !state.isPremium) {
+      router.push('/subscribe');
+    } else {
+      router.push('/skincare-plan-selection');
+    }
   };
 
 
@@ -70,6 +76,21 @@ export default function AnalysisResultsScreen() {
       scoreAnim.stopAnimation();
     };
   }, [currentResult?.timestamp, scoreAnim]);
+
+  // Redirect to subscription page after viewing results (if not premium and has used 1 scan)
+  useEffect(() => {
+    if (!currentResult || hasRedirected || state.isPremium) return;
+    
+    // After user has viewed results for 5 seconds, redirect to subscription
+    const redirectTimer = setTimeout(() => {
+      if (state.scanCount >= 1 && !state.isPremium) {
+        setHasRedirected(true);
+        router.push('/subscribe');
+      }
+    }, 5000); // 5 seconds to view results
+    
+    return () => clearTimeout(redirectTimer);
+  }, [currentResult, hasRedirected, state.isPremium, state.scanCount]);
 
   const previousScore = useMemo(() => {
     if (!analysisHistory || analysisHistory.length === 0 || !currentResult) return null as number | null;

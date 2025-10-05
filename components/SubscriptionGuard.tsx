@@ -74,14 +74,14 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
     return !hasAccess && !isPublicRoute && showPaywall;
   }, [hasAccess, isPublicRoute, showPaywall]);
 
-  // Auto-redirect to subscription page after 3 scans or trial expiry
+  // Auto-redirect to subscription page after 1 scan or trial expiry
   useEffect(() => {
     const shouldShowSubscription = (
-      (state.hasStartedTrial && state.scanCount >= 3) || 
+      (state.hasStartedTrial && state.scanCount >= 1) || 
       isTrialExpired
     ) && !state.isPremium;
 
-    if (shouldShowSubscription && !pathname.includes('/subscribe')) {
+    if (shouldShowSubscription && !pathname.includes('/subscribe') && !pathname.includes('/analysis-results')) {
       // Small delay to ensure smooth navigation
       const timer = setTimeout(() => {
         router.push('/subscribe');
