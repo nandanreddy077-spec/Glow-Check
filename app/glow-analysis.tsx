@@ -104,7 +104,7 @@ export default function GlowAnalysisScreen() {
       } else if (isTrialExpired) {
         Alert.alert(
           "Trial Expired",
-          "Your 3-day free trial has ended. Upgrade to Premium to continue analyzing your glow!",
+          "Your 1-day free trial has ended. Upgrade to Premium to continue analyzing your glow!",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Upgrade Now", onPress: () => router.push('/subscribe') }
@@ -113,7 +113,7 @@ export default function GlowAnalysisScreen() {
       } else if (allFreeScansUsed && !state.hasAddedPayment) {
         Alert.alert(
           "Free Trials Used",
-          "You've used all your free trials! Add your payment method to start a 3-day free trial with unlimited scans. You won't be charged until the trial ends.",
+          "You've used all your free trials! Add your payment method to start a 1-day free trial with unlimited scans. You won't be charged until the trial ends.",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
@@ -124,7 +124,7 @@ export default function GlowAnalysisScreen() {
       } else {
         Alert.alert(
           "Add Payment for Trial",
-          "Add your payment info to start your 3-day free trial with unlimited scans. You won't be charged until the trial ends!",
+          "Add your payment info to start your 1-day free trial with unlimited scans. You won't be charged until the trial ends!",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
@@ -234,7 +234,7 @@ export default function GlowAnalysisScreen() {
       } else if (isTrialExpired) {
         Alert.alert(
           "Trial Expired",
-          "Your 3-day free trial has ended. Upgrade to Premium to continue analyzing your glow!",
+          "Your 1-day free trial has ended. Upgrade to Premium to continue analyzing your glow!",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Upgrade Now", onPress: () => router.push('/subscribe') }
@@ -243,7 +243,7 @@ export default function GlowAnalysisScreen() {
       } else if (allFreeScansUsed && !state.hasAddedPayment) {
         Alert.alert(
           "Free Trials Used",
-          "You've used all your free trials! Add your payment method to start a 3-day free trial with unlimited scans. You won't be charged until the trial ends.",
+          "You've used all your free trials! Add your payment method to start a 1-day free trial with unlimited scans. You won't be charged until the trial ends.",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
@@ -254,7 +254,7 @@ export default function GlowAnalysisScreen() {
       } else {
         Alert.alert(
           "Add Payment for Trial",
-          "Add your payment info to start your 3-day free trial with unlimited scans. You won't be charged until the trial ends!",
+          "Add your payment info to start your 1-day free trial with unlimited scans. You won't be charged until the trial ends!",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
@@ -363,7 +363,7 @@ export default function GlowAnalysisScreen() {
                isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
                inTrial && state.hasAddedPayment ? `🎯 Trial Active - Unlimited scans for ${daysLeft} days` :
                state.freeGlowScansUsed < state.maxFreeGlowScans ? `🎁 ${state.maxFreeGlowScans - state.freeGlowScansUsed} free Glow scan${(state.maxFreeGlowScans - state.freeGlowScansUsed) !== 1 ? 's' : ''} left` :
-               '✨ Add payment to start your 3-day free trial'}
+               '✨ Add payment to start your 1-day free trial'}
             </Text>
           </View>
 
@@ -459,7 +459,7 @@ export default function GlowAnalysisScreen() {
                  isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
                  inTrial && state.hasAddedPayment ? `🎯 Trial Active - Unlimited scans for ${daysLeft} days` :
                  state.freeGlowScansUsed < state.maxFreeGlowScans ? `🎁 ${state.maxFreeGlowScans - state.freeGlowScansUsed} free Glow scan${(state.maxFreeGlowScans - state.freeGlowScansUsed) !== 1 ? 's' : ''} left` :
-                 '✨ Add payment to start your 3-day free trial'}
+                 '✨ Add payment to start your 1-day free trial'}
               </Text>
             </View>
             

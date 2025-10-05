@@ -31,12 +31,12 @@ export default function BlurredContent({
 
   const getTrialMessage = () => {
     if (isTrialExpired) {
-      return "Your 3-day trial has ended";
+      return "Your 1-day trial has ended";
     }
     if (inTrial) {
       return `${daysLeft} day${daysLeft === 1 ? '' : 's'} left in trial`;
     }
-    return "Start your 3-day free trial";
+    return "Start your 1-day free trial";
   };
 
   const upgradeMessage = isTrialExpired 
@@ -105,7 +105,7 @@ export default function BlurredContent({
             )}
             
             <Text style={[styles.legalText, { color: palette.textMuted }]}>
-              {!isTrialExpired ? '3-day free trial • ' : ''}Cancel anytime
+              {!isTrialExpired ? '1-day free trial • ' : ''}Cancel anytime
             </Text>
           </View>
         </LinearGradient>

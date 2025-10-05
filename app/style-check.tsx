@@ -43,7 +43,7 @@ export default function StyleCheckScreen() {
       } else if (isTrialExpired) {
         Alert.alert(
           "Trial Expired",
-          "Your 3-day free trial has ended. Upgrade to Premium to continue checking your style!",
+          "Your 1-day free trial has ended. Upgrade to Premium to continue checking your style!",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Upgrade Now", onPress: () => router.push('/subscribe') }
@@ -52,7 +52,7 @@ export default function StyleCheckScreen() {
       } else if (allFreeScansUsed && !state.hasAddedPayment) {
         Alert.alert(
           "Free Trials Used",
-          "You've used all your free trials! Add your payment method to start a 3-day free trial with unlimited scans. You won't be charged until the trial ends.",
+          "You've used all your free trials! Add your payment method to start a 1-day free trial with unlimited scans. You won't be charged until the trial ends.",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
@@ -63,7 +63,7 @@ export default function StyleCheckScreen() {
       } else {
         Alert.alert(
           "Add Payment for Trial",
-          "Add your payment info to start your 3-day free trial with unlimited scans. You won't be charged until the trial ends!",
+          "Add your payment info to start your 1-day free trial with unlimited scans. You won't be charged until the trial ends!",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
@@ -121,7 +121,7 @@ export default function StyleCheckScreen() {
       } else if (isTrialExpired) {
         Alert.alert(
           "Trial Expired",
-          "Your 3-day free trial has ended. Upgrade to Premium to continue checking your style!",
+          "Your 1-day free trial has ended. Upgrade to Premium to continue checking your style!",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Upgrade Now", onPress: () => router.push('/subscribe') }
@@ -130,7 +130,7 @@ export default function StyleCheckScreen() {
       } else if (allFreeScansUsed && !state.hasAddedPayment) {
         Alert.alert(
           "Free Trials Used",
-          "You've used all your free trials! Add your payment method to start a 3-day free trial with unlimited scans. You won't be charged until the trial ends.",
+          "You've used all your free trials! Add your payment method to start a 1-day free trial with unlimited scans. You won't be charged until the trial ends.",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
@@ -141,7 +141,7 @@ export default function StyleCheckScreen() {
       } else {
         Alert.alert(
           "Add Payment for Trial",
-          "Add your payment info to start your 3-day free trial with unlimited scans. You won't be charged until the trial ends!",
+          "Add your payment info to start your 1-day free trial with unlimited scans. You won't be charged until the trial ends!",
           [
             { text: "Maybe Later", style: "cancel" },
             { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
@@ -242,7 +242,7 @@ export default function StyleCheckScreen() {
              isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
              inTrial && state.hasAddedPayment ? `🎯 Trial Active - Unlimited scans for ${daysLeft} days` :
              state.freeStyleScansUsed < state.maxFreeStyleScans ? `🎁 ${state.maxFreeStyleScans - state.freeStyleScansUsed} free Style scan${(state.maxFreeStyleScans - state.freeStyleScansUsed) !== 1 ? 's' : ''} left` :
-             '✨ Add payment to start your 3-day free trial'}
+             '✨ Add payment to start your 1-day free trial'}
           </Text>
         </View>
       </View>

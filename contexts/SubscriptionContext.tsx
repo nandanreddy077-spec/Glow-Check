@@ -142,7 +142,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     }
   }, []);
 
-  const startLocalTrial = useCallback(async (days: number = 3) => {
+  const startLocalTrial = useCallback(async (days: number = 1) => {
     const now = new Date();
     const ends = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
     const next: SubscriptionState = {

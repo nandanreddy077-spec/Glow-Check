@@ -12,13 +12,13 @@ export default function TrialStarter(): React.ReactElement | null {
       startedRef.current = true;
       (async () => {
         try {
-          await startLocalTrial(3);
+          await startLocalTrial(1);
           if (Platform.OS !== 'web') {
-            Alert.alert('Free Trial Started', 'Your 3-day free trial has started. Enjoy full access!');
+            Alert.alert('Free Trial Started', 'Your 1-day free trial has started. Enjoy full access!');
           } else {
-            alert('Your 3-day free trial has started. Enjoy full access!');
+            alert('Your 1-day free trial has started. Enjoy full access!');
           }
-          console.log('3-day trial started automatically for new user');
+          console.log('1-day trial started automatically for new user');
         } catch (e) {
           console.log('Failed to auto-start trial', e);
         }

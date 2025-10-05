@@ -55,10 +55,10 @@ export default function SubscribeScreen() {
 
   const handleStartTrial = useCallback(async () => {
     try {
-      await startLocalTrial(3);
+      await startLocalTrial(1);
       Alert.alert(
         '🌟 Trial Started!', 
-        'Your 3-day free trial has started! You can now scan and view results for 3 days.',
+        'Your 1-day free trial has started! You can now scan and view results for 1 day.',
         [{ text: 'Start Glowing ✨', style: 'default', onPress: () => router.back() }]
       );
     } catch {
@@ -192,7 +192,7 @@ export default function SubscribeScreen() {
             Start Your Beauty Journey
           </Text>
           <Text style={[styles.heroText, { color: palette.textSecondary }]}>
-            3-day free trial, then choose your perfect plan
+            1-day free trial, then choose your perfect plan
           </Text>
         </View>
 
@@ -246,7 +246,7 @@ export default function SubscribeScreen() {
             >
               <Gift color={palette.textPrimary} size={20} strokeWidth={2.5} />
               <Text style={[styles.buttonText, { color: palette.textPrimary }]}>Start Free Trial</Text>
-              <Text style={[styles.buttonSubtext, { color: palette.textPrimary }]}>3 days free • No payment required</Text>
+              <Text style={[styles.buttonSubtext, { color: palette.textPrimary }]}>1 day free • No payment required</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -267,7 +267,7 @@ export default function SubscribeScreen() {
               </Text>
               {!state.isPremium && (
                 <Text style={[styles.statusText, { color: palette.textSecondary }]}>
-                  {state.scanCount}/3 scans used • {state.trialStartedAt ? `${3 - Math.floor((Date.now() - Number(state.trialStartedAt)) / (1000 * 60 * 60 * 24))} days left` : '3 days left'}
+                  Trial active • {state.trialStartedAt ? `${1 - Math.floor((Date.now() - Number(state.trialStartedAt)) / (1000 * 60 * 60 * 24))} days left` : '1 day left'}
                 </Text>
               )}
             </View>
@@ -393,7 +393,7 @@ export default function SubscribeScreen() {
         {/* Legal Text */}
         <Text style={[styles.legalText, { color: palette.textMuted }]}>
           By continuing, you agree to our Terms of Service and Privacy Policy.
-          {!state.hasStartedTrial && !state.isPremium ? ' Your 3-day free trial starts immediately. No payment required during trial.' : ''}
+          {!state.hasStartedTrial && !state.isPremium ? ' Your 1-day free trial starts immediately. No payment required during trial.' : ''}
           {Platform.OS !== 'web' ? ' Subscription will be charged to your App Store/Play Store account.' : ''}
         </Text>
         </Animated.View>
