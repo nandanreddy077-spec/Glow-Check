@@ -1,15 +1,14 @@
--- Complete Supabase Database Setup for Glow App
--- Run these queries in your Supabase SQL Editor
--- This includes all tables, functions, triggers, and policies
+-- =====================================================
+-- COMPLETE SUPABASE DATABASE SETUP FOR GLOW APP
+-- Run this in your Supabase SQL Editor
+-- =====================================================
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Enable Row Level Security (RLS) for all tables
--- This ensures users can only access their own data
-
--- 1. Create profiles table to store additional user information
+-- =====================================================
+-- 1. PROFILES TABLE
+-- =====================================================
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
@@ -19,10 +18,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on profiles table
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Create policy for profiles - users can only see and edit their own profile
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
@@ -35,7 +32,9 @@ DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile" ON public.profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
--- 2. Create glow_analyses table to store beauty analysis results
+-- =====================================================
+-- 2. GLOW ANALYSES TABLE
+-- =====================================================
 CREATE TABLE IF NOT EXISTS public.glow_analyses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -49,10 +48,8 @@ CREATE TABLE IF NOT EXISTS public.glow_analyses (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on glow_analyses table
 ALTER TABLE public.glow_analyses ENABLE ROW LEVEL SECURITY;
 
--- Create policy for glow_analyses - users can only see their own analyses
 DROP POLICY IF EXISTS "Users can view own analyses" ON public.glow_analyses;
 CREATE POLICY "Users can view own analyses" ON public.glow_analyses
   FOR SELECT USING (auth.uid() = user_id);
@@ -61,7 +58,9 @@ DROP POLICY IF EXISTS "Users can insert own analyses" ON public.glow_analyses;
 CREATE POLICY "Users can insert own analyses" ON public.glow_analyses
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 3. Create style_analyses table to store outfit analysis results
+-- =====================================================
+-- 3. STYLE ANALYSES TABLE
+-- =====================================================
 CREATE TABLE IF NOT EXISTS public.style_analyses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -78,10 +77,8 @@ CREATE TABLE IF NOT EXISTS public.style_analyses (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on style_analyses table
 ALTER TABLE public.style_analyses ENABLE ROW LEVEL SECURITY;
 
--- Create policy for style_analyses - users can only see their own analyses
 DROP POLICY IF EXISTS "Users can view own style analyses" ON public.style_analyses;
 CREATE POLICY "Users can view own style analyses" ON public.style_analyses
   FOR SELECT USING (auth.uid() = user_id);
@@ -90,23 +87,23 @@ DROP POLICY IF EXISTS "Users can insert own style analyses" ON public.style_anal
 CREATE POLICY "Users can insert own style analyses" ON public.style_analyses
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 4. Create skincare_plans table to store personalized skincare plans
+-- =====================================================
+-- 4. SKINCARE PLANS TABLE
+-- =====================================================
 CREATE TABLE IF NOT EXISTS public.skincare_plans (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   plan_name TEXT NOT NULL,
-  plan_type TEXT NOT NULL, -- 'acne', 'anti-aging', 'hydration', etc.
+  plan_type TEXT NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,
-  plan_data JSONB, -- stores the complete plan structure
-  progress JSONB, -- stores user progress data
+  plan_data JSONB,
+  progress JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on skincare_plans table
 ALTER TABLE public.skincare_plans ENABLE ROW LEVEL SECURITY;
 
--- Create policy for skincare_plans - users can only see their own plans
 DROP POLICY IF EXISTS "Users can view own skincare plans" ON public.skincare_plans;
 CREATE POLICY "Users can view own skincare plans" ON public.skincare_plans
   FOR SELECT USING (auth.uid() = user_id);
@@ -123,7 +120,9 @@ DROP POLICY IF EXISTS "Users can delete own skincare plans" ON public.skincare_p
 CREATE POLICY "Users can delete own skincare plans" ON public.skincare_plans
   FOR DELETE USING (auth.uid() = user_id);
 
--- 5. Create user_stats table to store gamification data
+-- =====================================================
+-- 5. USER STATS TABLE (GAMIFICATION)
+-- =====================================================
 CREATE TABLE IF NOT EXISTS public.user_stats (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   total_analyses INTEGER DEFAULT 0,
@@ -138,10 +137,8 @@ CREATE TABLE IF NOT EXISTS public.user_stats (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on user_stats table
 ALTER TABLE public.user_stats ENABLE ROW LEVEL SECURITY;
 
--- Create policy for user_stats - users can only see and edit their own stats
 DROP POLICY IF EXISTS "Users can view own stats" ON public.user_stats;
 CREATE POLICY "Users can view own stats" ON public.user_stats
   FOR SELECT USING (auth.uid() = id);
@@ -154,16 +151,142 @@ DROP POLICY IF EXISTS "Users can insert own stats" ON public.user_stats;
 CREATE POLICY "Users can insert own stats" ON public.user_stats
   FOR INSERT WITH CHECK (auth.uid() = id);
 
--- 6. Create subscriptions table to track user subscription status
+-- =====================================================
+-- 6. CIRCLES TABLE (COMMUNITY)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.circles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  cover_image TEXT,
+  creator_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  member_count INTEGER DEFAULT 1,
+  is_private BOOLEAN DEFAULT FALSE,
+  tags TEXT[] DEFAULT '{}',
+  location_name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.circles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view public circles" ON public.circles;
+CREATE POLICY "Anyone can view public circles" ON public.circles
+  FOR SELECT USING (NOT is_private OR creator_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can create circles" ON public.circles;
+CREATE POLICY "Users can create circles" ON public.circles
+  FOR INSERT WITH CHECK (auth.uid() = creator_id);
+
+DROP POLICY IF EXISTS "Creators can update their circles" ON public.circles;
+CREATE POLICY "Creators can update their circles" ON public.circles
+  FOR UPDATE USING (auth.uid() = creator_id);
+
+-- =====================================================
+-- 7. USER MEMBERSHIPS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.user_memberships (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  circle_id UUID REFERENCES public.circles(id) ON DELETE CASCADE NOT NULL,
+  role TEXT DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, circle_id)
+);
+
+ALTER TABLE public.user_memberships ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their memberships" ON public.user_memberships;
+CREATE POLICY "Users can view their memberships" ON public.user_memberships
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can join circles" ON public.user_memberships;
+CREATE POLICY "Users can join circles" ON public.user_memberships
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- =====================================================
+-- 8. POSTS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.posts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  circle_id UUID REFERENCES public.circles(id) ON DELETE CASCADE NOT NULL,
+  author_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  caption TEXT NOT NULL,
+  image_url TEXT,
+  location_name TEXT,
+  coords JSONB,
+  reactions JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Members can view circle posts" ON public.posts;
+CREATE POLICY "Members can view circle posts" ON public.posts
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.user_memberships 
+      WHERE user_id = auth.uid() AND circle_id = posts.circle_id
+    )
+  );
+
+DROP POLICY IF EXISTS "Members can create posts" ON public.posts;
+CREATE POLICY "Members can create posts" ON public.posts
+  FOR INSERT WITH CHECK (
+    auth.uid() = author_id AND
+    EXISTS (
+      SELECT 1 FROM public.user_memberships 
+      WHERE user_id = auth.uid() AND circle_id = posts.circle_id
+    )
+  );
+
+-- =====================================================
+-- 9. COMMENTS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.comments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID REFERENCES public.posts(id) ON DELETE CASCADE NOT NULL,
+  author_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  text TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Members can view comments" ON public.comments;
+CREATE POLICY "Members can view comments" ON public.comments
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.posts p
+      JOIN public.user_memberships um ON p.circle_id = um.circle_id
+      WHERE p.id = comments.post_id AND um.user_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Members can create comments" ON public.comments;
+CREATE POLICY "Members can create comments" ON public.comments
+  FOR INSERT WITH CHECK (
+    auth.uid() = author_id AND
+    EXISTS (
+      SELECT 1 FROM public.posts p
+      JOIN public.user_memberships um ON p.circle_id = um.circle_id
+      WHERE p.id = comments.post_id AND um.user_id = auth.uid()
+    )
+  );
+
+-- =====================================================
+-- 10. SUBSCRIPTIONS TABLE
+-- =====================================================
 CREATE TABLE IF NOT EXISTS public.subscriptions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   platform TEXT NOT NULL CHECK (platform IN ('ios', 'android', 'web')),
-  product_id TEXT NOT NULL, -- e.g., 'glow_premium_monthly', 'glow_premium_yearly'
-  transaction_id TEXT UNIQUE, -- App Store/Play Store transaction ID
-  original_transaction_id TEXT, -- For renewals
-  purchase_token TEXT, -- Play Store purchase token
-  receipt_data TEXT, -- App Store receipt data
+  product_id TEXT NOT NULL,
+  transaction_id TEXT UNIQUE,
+  original_transaction_id TEXT,
+  purchase_token TEXT,
+  receipt_data TEXT,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled', 'pending', 'grace_period', 'on_hold')),
   expires_at TIMESTAMP WITH TIME ZONE,
   purchased_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -174,10 +297,8 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on subscriptions table
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 
--- Create policies for subscriptions
 DROP POLICY IF EXISTS "Users can view own subscriptions" ON public.subscriptions;
 CREATE POLICY "Users can view own subscriptions" ON public.subscriptions
   FOR SELECT USING (auth.uid() = user_id);
@@ -190,22 +311,26 @@ DROP POLICY IF EXISTS "Users can update own subscriptions" ON public.subscriptio
 CREATE POLICY "Users can update own subscriptions" ON public.subscriptions
   FOR UPDATE USING (auth.uid() = user_id);
 
--- 7. Create trial_tracking table to track free trial usage
+-- =====================================================
+-- 11. TRIAL TRACKING TABLE
+-- =====================================================
 CREATE TABLE IF NOT EXISTS public.trial_tracking (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   trial_started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   trial_ends_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '3 days'),
-  analyses_used INTEGER DEFAULT 0,
-  max_analyses INTEGER DEFAULT 3,
+  glow_analyses_used INTEGER DEFAULT 0,
+  style_analyses_used INTEGER DEFAULT 0,
+  max_glow_analyses INTEGER DEFAULT 1,
+  max_style_analyses INTEGER DEFAULT 1,
   is_trial_expired BOOLEAN DEFAULT FALSE,
+  has_added_payment BOOLEAN DEFAULT FALSE,
+  payment_added_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on trial_tracking table
 ALTER TABLE public.trial_tracking ENABLE ROW LEVEL SECURITY;
 
--- Create policies for trial_tracking
 DROP POLICY IF EXISTS "Users can view own trial tracking" ON public.trial_tracking;
 CREATE POLICY "Users can view own trial tracking" ON public.trial_tracking
   FOR SELECT USING (auth.uid() = id);
@@ -218,49 +343,16 @@ DROP POLICY IF EXISTS "Users can update own trial tracking" ON public.trial_trac
 CREATE POLICY "Users can update own trial tracking" ON public.trial_tracking
   FOR UPDATE USING (auth.uid() = id);
 
--- 8. Create usage_tracking table to track feature usage and limits
-CREATE TABLE IF NOT EXISTS public.usage_tracking (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  feature_type TEXT NOT NULL CHECK (feature_type IN ('glow_analysis', 'style_analysis', 'skincare_plan', 'ai_coach')),
-  usage_count INTEGER DEFAULT 0,
-  last_reset_date DATE DEFAULT CURRENT_DATE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(user_id, feature_type)
-);
+-- =====================================================
+-- 12. FUNCTIONS
+-- =====================================================
 
--- Enable RLS on usage_tracking table
-ALTER TABLE public.usage_tracking ENABLE ROW LEVEL SECURITY;
-
--- Create policies for usage_tracking
-DROP POLICY IF EXISTS "Users can view own usage tracking" ON public.usage_tracking;
-CREATE POLICY "Users can view own usage tracking" ON public.usage_tracking
-  FOR SELECT USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can insert own usage tracking" ON public.usage_tracking;
-CREATE POLICY "Users can insert own usage tracking" ON public.usage_tracking
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can update own usage tracking" ON public.usage_tracking;
-CREATE POLICY "Users can update own usage tracking" ON public.usage_tracking
-  FOR UPDATE USING (auth.uid() = user_id);
-
--- 9. Create function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- 10. Create function to automatically create profile and stats when user signs up
+-- Function to handle new user creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name)
-  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email));
+  VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name');
   
   INSERT INTO public.user_stats (id)
   VALUES (NEW.id);
@@ -269,69 +361,25 @@ BEGIN
   VALUES (NEW.id);
   
   RETURN NEW;
-EXCEPTION
-  WHEN OTHERS THEN
-    -- Log the error but don't fail the user creation
-    RAISE WARNING 'Error in handle_new_user: %', SQLERRM;
-    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create trigger to call the function when a new user is created
+-- Trigger for new user creation
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 11. Create function to check if user has active subscription
-CREATE OR REPLACE FUNCTION public.has_active_subscription(user_uuid UUID)
-RETURNS BOOLEAN AS $$
-DECLARE
-  active_sub_count INTEGER;
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
 BEGIN
-  SELECT COUNT(*)
-  INTO active_sub_count
-  FROM public.subscriptions
-  WHERE user_id = user_uuid
-    AND status = 'active'
-    AND (expires_at IS NULL OR expires_at > NOW());
-  
-  RETURN active_sub_count > 0;
+  NEW.updated_at = NOW();
+  RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
--- 12. Create function to check if user is in trial period
-CREATE OR REPLACE FUNCTION public.is_in_trial_period(user_uuid UUID)
-RETURNS BOOLEAN AS $$
-DECLARE
-  trial_valid BOOLEAN := FALSE;
-BEGIN
-  SELECT (trial_ends_at > NOW() AND NOT is_trial_expired)
-  INTO trial_valid
-  FROM public.trial_tracking
-  WHERE id = user_uuid;
-  
-  RETURN COALESCE(trial_valid, FALSE);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 13. Create function to increment trial usage
-CREATE OR REPLACE FUNCTION public.increment_trial_usage(user_uuid UUID)
-RETURNS VOID AS $$
-BEGIN
-  UPDATE public.trial_tracking
-  SET 
-    analyses_used = analyses_used + 1,
-    is_trial_expired = CASE
-      WHEN analyses_used + 1 >= max_analyses OR NOW() > trial_ends_at THEN TRUE
-      ELSE FALSE
-    END,
-    updated_at = NOW()
-  WHERE id = user_uuid;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 14. Create triggers for updated_at columns
+-- Triggers for updated_at columns
 DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON public.profiles
@@ -352,17 +400,179 @@ CREATE TRIGGER update_subscriptions_updated_at
   BEFORE UPDATE ON public.subscriptions
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_usage_tracking_updated_at ON public.usage_tracking;
-CREATE TRIGGER update_usage_tracking_updated_at
-  BEFORE UPDATE ON public.usage_tracking
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
 DROP TRIGGER IF EXISTS update_trial_tracking_updated_at ON public.trial_tracking;
 CREATE TRIGGER update_trial_tracking_updated_at
   BEFORE UPDATE ON public.trial_tracking
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- 15. Create indexes for better performance
+DROP TRIGGER IF EXISTS update_circles_updated_at ON public.circles;
+CREATE TRIGGER update_circles_updated_at
+  BEFORE UPDATE ON public.circles
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_posts_updated_at ON public.posts;
+CREATE TRIGGER update_posts_updated_at
+  BEFORE UPDATE ON public.posts
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Function to check if user has active subscription
+CREATE OR REPLACE FUNCTION public.has_active_subscription(user_uuid UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  active_sub_count INTEGER;
+BEGIN
+  SELECT COUNT(*)
+  INTO active_sub_count
+  FROM public.subscriptions
+  WHERE user_id = user_uuid
+    AND status = 'active'
+    AND (expires_at IS NULL OR expires_at > NOW());
+  
+  RETURN active_sub_count > 0;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if user is in trial period
+CREATE OR REPLACE FUNCTION public.is_in_trial_period(user_uuid UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  trial_valid BOOLEAN := FALSE;
+BEGIN
+  SELECT (trial_ends_at > NOW() AND NOT is_trial_expired AND has_added_payment)
+  INTO trial_valid
+  FROM public.trial_tracking
+  WHERE id = user_uuid;
+  
+  RETURN COALESCE(trial_valid, FALSE);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if user can use glow analysis
+CREATE OR REPLACE FUNCTION public.can_use_glow_analysis(user_uuid UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  has_subscription BOOLEAN;
+  in_trial BOOLEAN;
+  analyses_remaining INTEGER;
+BEGIN
+  has_subscription := public.has_active_subscription(user_uuid);
+  
+  IF has_subscription THEN
+    RETURN TRUE;
+  END IF;
+  
+  SELECT 
+    (trial_ends_at > NOW() AND NOT is_trial_expired AND has_added_payment),
+    (max_glow_analyses - glow_analyses_used)
+  INTO in_trial, analyses_remaining
+  FROM public.trial_tracking
+  WHERE id = user_uuid;
+  
+  RETURN COALESCE(in_trial AND analyses_remaining > 0, FALSE);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if user can use style analysis
+CREATE OR REPLACE FUNCTION public.can_use_style_analysis(user_uuid UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  has_subscription BOOLEAN;
+  in_trial BOOLEAN;
+  analyses_remaining INTEGER;
+BEGIN
+  has_subscription := public.has_active_subscription(user_uuid);
+  
+  IF has_subscription THEN
+    RETURN TRUE;
+  END IF;
+  
+  SELECT 
+    (trial_ends_at > NOW() AND NOT is_trial_expired AND has_added_payment),
+    (max_style_analyses - style_analyses_used)
+  INTO in_trial, analyses_remaining
+  FROM public.trial_tracking
+  WHERE id = user_uuid;
+  
+  RETURN COALESCE(in_trial AND analyses_remaining > 0, FALSE);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to increment glow analysis usage
+CREATE OR REPLACE FUNCTION public.increment_glow_analysis_usage(user_uuid UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.trial_tracking
+  SET 
+    glow_analyses_used = glow_analyses_used + 1,
+    is_trial_expired = CASE
+      WHEN (glow_analyses_used + 1 >= max_glow_analyses AND style_analyses_used >= max_style_analyses) 
+           OR NOW() > trial_ends_at THEN TRUE
+      ELSE FALSE
+    END,
+    updated_at = NOW()
+  WHERE id = user_uuid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to increment style analysis usage
+CREATE OR REPLACE FUNCTION public.increment_style_analysis_usage(user_uuid UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.trial_tracking
+  SET 
+    style_analyses_used = style_analyses_used + 1,
+    is_trial_expired = CASE
+      WHEN (style_analyses_used + 1 >= max_style_analyses AND glow_analyses_used >= max_glow_analyses) 
+           OR NOW() > trial_ends_at THEN TRUE
+      ELSE FALSE
+    END,
+    updated_at = NOW()
+  WHERE id = user_uuid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to mark payment as added
+CREATE OR REPLACE FUNCTION public.mark_payment_added(user_uuid UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.trial_tracking
+  SET 
+    has_added_payment = TRUE,
+    payment_added_at = NOW(),
+    updated_at = NOW()
+  WHERE id = user_uuid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get user subscription status
+CREATE OR REPLACE FUNCTION public.get_subscription_status(user_uuid UUID)
+RETURNS TABLE (
+  has_subscription BOOLEAN,
+  in_trial BOOLEAN,
+  trial_expired BOOLEAN,
+  glow_analyses_remaining INTEGER,
+  style_analyses_remaining INTEGER,
+  trial_ends_at TIMESTAMP WITH TIME ZONE,
+  has_added_payment BOOLEAN
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    public.has_active_subscription(user_uuid) as has_subscription,
+    public.is_in_trial_period(user_uuid) as in_trial,
+    COALESCE(tt.is_trial_expired, FALSE) as trial_expired,
+    GREATEST(0, tt.max_glow_analyses - tt.glow_analyses_used) as glow_analyses_remaining,
+    GREATEST(0, tt.max_style_analyses - tt.style_analyses_used) as style_analyses_remaining,
+    tt.trial_ends_at,
+    COALESCE(tt.has_added_payment, FALSE) as has_added_payment
+  FROM public.trial_tracking tt
+  WHERE tt.id = user_uuid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================
+-- 13. INDEXES FOR PERFORMANCE
+-- =====================================================
 CREATE INDEX IF NOT EXISTS idx_glow_analyses_user_id ON public.glow_analyses(user_id);
 CREATE INDEX IF NOT EXISTS idx_glow_analyses_created_at ON public.glow_analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_style_analyses_user_id ON public.style_analyses(user_id);
@@ -372,27 +582,14 @@ CREATE INDEX IF NOT EXISTS idx_skincare_plans_active ON public.skincare_plans(us
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_expires_at ON public.subscriptions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_usage_tracking_user_feature ON public.usage_tracking(user_id, feature_type);
 CREATE INDEX IF NOT EXISTS idx_trial_tracking_expires ON public.trial_tracking(trial_ends_at);
+CREATE INDEX IF NOT EXISTS idx_circles_creator ON public.circles(creator_id);
+CREATE INDEX IF NOT EXISTS idx_user_memberships_user ON public.user_memberships(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_memberships_circle ON public.user_memberships(circle_id);
+CREATE INDEX IF NOT EXISTS idx_posts_circle ON public.posts(circle_id);
+CREATE INDEX IF NOT EXISTS idx_posts_author ON public.posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_comments_post ON public.comments(post_id);
 
--- 16. Create view for user subscription status
-CREATE OR REPLACE VIEW public.user_subscription_status AS
-SELECT 
-  p.id as user_id,
-  p.full_name,
-  p.is_premium,
-  s.status as subscription_status,
-  s.expires_at as subscription_expires_at,
-  s.is_trial as is_subscription_trial,
-  t.trial_ends_at,
-  t.analyses_used,
-  t.max_analyses,
-  t.is_trial_expired,
-  public.has_active_subscription(p.id) as has_active_subscription,
-  public.is_in_trial_period(p.id) as is_in_trial_period
-FROM public.profiles p
-LEFT JOIN public.subscriptions s ON p.id = s.user_id AND s.status = 'active'
-LEFT JOIN public.trial_tracking t ON p.id = t.id;
-
--- Setup complete!
--- Your Supabase database is now ready for the Glow app.
+-- =====================================================
+-- SETUP COMPLETE
+-- =====================================================
