@@ -71,7 +71,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       
       // Get subscription status from Supabase
       const { data, error } = await supabase
-        .rpc('get_user_subscription_status', { user_uuid: user.id });
+        .rpc('get_subscription_status', { user_uuid: user.id });
       
       if (error) {
         console.error('Failed to get subscription status:', JSON.stringify(error, null, 2));
