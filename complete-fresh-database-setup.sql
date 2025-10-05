@@ -8,18 +8,18 @@
 -- STEP 1: DROP ALL EXISTING OBJECTS
 -- =====================================================
 
--- Drop all functions first
-DROP FUNCTION IF EXISTS public.get_user_subscription_status(UUID);
-DROP FUNCTION IF EXISTS public.get_subscription_status(UUID);
-DROP FUNCTION IF EXISTS public.has_active_subscription(UUID);
-DROP FUNCTION IF EXISTS public.is_in_trial_period(UUID);
-DROP FUNCTION IF EXISTS public.can_use_glow_analysis(UUID);
-DROP FUNCTION IF EXISTS public.can_use_style_analysis(UUID);
-DROP FUNCTION IF EXISTS public.increment_glow_analysis_usage(UUID);
-DROP FUNCTION IF EXISTS public.increment_style_analysis_usage(UUID);
-DROP FUNCTION IF EXISTS public.mark_payment_added(UUID);
-DROP FUNCTION IF EXISTS public.handle_new_user();
-DROP FUNCTION IF EXISTS public.update_updated_at_column();
+-- Drop all functions first (CASCADE to drop dependent triggers)
+DROP FUNCTION IF EXISTS public.get_user_subscription_status(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.get_subscription_status(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.has_active_subscription(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.is_in_trial_period(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.can_use_glow_analysis(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.can_use_style_analysis(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.increment_glow_analysis_usage(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.increment_style_analysis_usage(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.mark_payment_added(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.update_updated_at_column() CASCADE;
 
 -- Drop all tables (in correct order due to foreign keys)
 DROP TABLE IF EXISTS public.comments CASCADE;
