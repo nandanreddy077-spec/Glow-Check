@@ -44,7 +44,6 @@ const lightPalette = {
   error: "#FFB5BC", // Gentle coral
   info: "#AADAEC", // Soft sky blue
   danger: "#E85D75", // Elegant danger red
-  coral: "#FF8A80", // Vibrant coral
   
   // Dividers and borders - more subtle
   divider: "#F2E8E8", // Whisper pink divider
@@ -106,7 +105,6 @@ const darkPalette = {
   error: "#E1959C", // Refined coral
   info: "#8ABACA", // Elegant sky
   danger: "#E85D75", // Elegant danger red
-  coral: "#FF8A80", // Vibrant coral
   
   // Dividers and borders - more sophisticated
   divider: "#2D2732", // Elegant divider
