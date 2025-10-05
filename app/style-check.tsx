@@ -26,53 +26,13 @@ export default function StyleCheckScreen() {
   const palette = getPalette(theme);
   const gradient = getGradient(theme);
   const styles = createStyles(palette);
-  const { needsPremium, isTrialExpired, inTrial, canScanStyleCheck, state, daysLeft, styleScansLeft } = useSubscription();
+  const { needsPremium, isTrialExpired, inTrial } = useSubscription();
 
   React.useEffect(() => {
     resetAnalysis();
   }, [resetAnalysis]);
 
   const handleTakePhoto = async () => {
-    if (!canScanStyleCheck) {
-      const freeScansLeft = state.maxFreeStyleScans - state.freeStyleScansUsed;
-      const allFreeScansUsed = state.freeGlowScansUsed >= state.maxFreeGlowScans && 
-                                state.freeStyleScansUsed >= state.maxFreeStyleScans;
-      
-      if (state.isPremium) {
-        return;
-      } else if (isTrialExpired) {
-        Alert.alert(
-          "Trial Expired",
-          "Your 1-day free trial has ended. Upgrade to Premium to continue checking your style!",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            { text: "Upgrade Now", onPress: () => router.push('/subscribe') }
-          ]
-        );
-      } else if (allFreeScansUsed && !state.hasAddedPayment) {
-        Alert.alert(
-          "Free Trials Used",
-          "You've used all your free trials! Add your payment method to start a 1-day free trial with unlimited scans. You won't be charged until the trial ends.",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
-          ]
-        );
-      } else if (freeScansLeft > 0) {
-        return;
-      } else {
-        Alert.alert(
-          "Add Payment for Trial",
-          "Add your payment info to start your 1-day free trial with unlimited scans. You won't be charged until the trial ends!",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
-          ]
-        );
-      }
-      return;
-    }
-
     if (Platform.OS === 'web') {
       Alert.alert('Camera not available', 'Camera not available on web. Please use upload photo instead.');
       return;
@@ -111,46 +71,6 @@ export default function StyleCheckScreen() {
   };
 
   const handleUploadPhoto = async () => {
-    if (!canScanStyleCheck) {
-      const freeScansLeft = state.maxFreeStyleScans - state.freeStyleScansUsed;
-      const allFreeScansUsed = state.freeGlowScansUsed >= state.maxFreeGlowScans && 
-                                state.freeStyleScansUsed >= state.maxFreeStyleScans;
-      
-      if (state.isPremium) {
-        return;
-      } else if (isTrialExpired) {
-        Alert.alert(
-          "Trial Expired",
-          "Your 1-day free trial has ended. Upgrade to Premium to continue checking your style!",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            { text: "Upgrade Now", onPress: () => router.push('/subscribe') }
-          ]
-        );
-      } else if (allFreeScansUsed && !state.hasAddedPayment) {
-        Alert.alert(
-          "Free Trials Used",
-          "You've used all your free trials! Add your payment method to start a 1-day free trial with unlimited scans. You won't be charged until the trial ends.",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
-          ]
-        );
-      } else if (freeScansLeft > 0) {
-        return;
-      } else {
-        Alert.alert(
-          "Add Payment for Trial",
-          "Add your payment info to start your 1-day free trial with unlimited scans. You won't be charged until the trial ends!",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
-          ]
-        );
-      }
-      return;
-    }
-
     setIsLoading(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -236,15 +156,13 @@ export default function StyleCheckScreen() {
           </TouchableOpacity>
         </View>
         {/* Trial/Access notice */}
-        <View style={styles.trialStatusCard}>
-          <Text style={styles.trialStatusText}>
-            {state.isPremium ? '👑 Premium Active - Unlimited Scans' :
-             isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
-             inTrial && state.hasAddedPayment ? `🎯 Trial Active - Unlimited scans for ${daysLeft} days` :
-             state.freeStyleScansUsed < state.maxFreeStyleScans ? `🎁 ${state.maxFreeStyleScans - state.freeStyleScansUsed} free Style scan${(state.maxFreeStyleScans - state.freeStyleScansUsed) !== 1 ? 's' : ''} left` :
-             '✨ Add payment to start your 1-day free trial'}
-          </Text>
-        </View>
+        {(inTrial || needsPremium) && (
+          <View style={{ paddingHorizontal: 24, marginTop: 8 }}>
+            <Text style={{ textAlign: 'center', color: palette.gold, fontWeight: '700' }}>
+              {isTrialExpired ? 'Trial ended. Upgrade to view full Style Check.' : inTrial ? 'Trial active — enjoy full access.' : 'Start your free trial for full access.'}
+            </Text>
+          </View>
+        )}
       </View>
       </SafeAreaView>
     </SubscriptionGuard>
@@ -363,21 +281,5 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   disabledButton: {
     opacity: 0.6,
-  },
-  trialStatusCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginTop: 24,
-    borderWidth: 1,
-    borderColor: palette.gold,
-    ...shadow.card,
-  },
-  trialStatusText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: palette.gold,
-    textAlign: 'center',
   },
 });

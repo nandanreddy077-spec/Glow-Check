@@ -53,12 +53,12 @@ export default function StartTrialScreen() {
       console.log('Purchase result:', result);
       
       if (result.success) {
-        await startLocalTrial(1);
+        await startLocalTrial(3);
         await setSubscriptionData({ hasAddedPayment: true });
         
         Alert.alert(
           '🎉 Trial Started!', 
-          'Your 1-day free trial is now active! You won\'t be charged until the trial ends. Enjoy unlimited access!',
+          'Your 3-day free trial is now active! You won\'t be charged until the trial ends. Enjoy unlimited access!',
           [{ 
             text: 'Start Glowing ✨', 
             style: 'default', 
@@ -152,7 +152,7 @@ export default function StartTrialScreen() {
               Unlock Your Glow Journey
             </Text>
             <Text style={styles.heroSubtitle}>
-              Start your 1-day free trial • No charge today
+              Start your 3-day free trial • No charge today
             </Text>
           </View>
 
@@ -272,11 +272,11 @@ export default function StartTrialScreen() {
               style={styles.continueGradient}
             >
               <Text style={[styles.continueText, { color: state.isPremium ? '#666666' : '#FFFFFF' }]}>
-                {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Start 1-Day Free Trial'}
+                {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Start 3-Day Free Trial'}
               </Text>
               {!state.isPremium && !isProcessing && (
                 <Text style={styles.continuePrice}>
-                  Free for 1 day, then {selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}
+                  Free for 3 days, then {selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}
                 </Text>
               )}
             </LinearGradient>
@@ -293,7 +293,7 @@ export default function StartTrialScreen() {
             </View>
             <View style={styles.guaranteeItem}>
               <Clock color="#FF8E53" size={16} strokeWidth={2.5} />
-              <Text style={styles.guaranteeText}>No charge for 1 day</Text>
+              <Text style={styles.guaranteeText}>No charge for 3 days</Text>
             </View>
           </View>
 
@@ -309,7 +309,7 @@ export default function StartTrialScreen() {
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
-              <Text style={styles.stepText}>Enjoy unlimited access for 1 day - completely free</Text>
+              <Text style={styles.stepText}>Enjoy unlimited access for 3 days - completely free</Text>
             </View>
             <View style={styles.trialStep}>
               <View style={styles.stepNumber}>

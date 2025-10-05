@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { Platform } from 'react-native';
-import { paymentService, PRODUCT_IDS, trackPurchaseEvent } from '@/lib/payments';
+import { paymentService, PRODUCT_IDS, trackPurchaseEvent, trackTrialStartEvent } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,14 +13,8 @@ export interface SubscriptionState {
   subscriptionType?: 'monthly' | 'yearly';
   subscriptionPrice?: number;
   nextBillingDate?: string;
-  glowAnalysisScans: number;
-  styleCheckScans: number;
-  freeGlowScansUsed: number;
-  freeStyleScansUsed: number;
-  maxFreeGlowScans: number;
-  maxFreeStyleScans: number;
-  maxGlowScansInTrial: number;
-  maxStyleScansInTrial: number;
+  scanCount: number;
+  maxScansInTrial: number;
   hasStartedTrial: boolean;
   hasAddedPayment: boolean;
   trialRequiresPayment: boolean;
@@ -33,18 +27,15 @@ export interface SubscriptionContextType {
   inTrial: boolean;
   daysLeft: number;
   hoursLeft: number;
-  canScanGlowAnalysis: boolean;
-  canScanStyleCheck: boolean;
-  glowScansLeft: number;
-  styleScansLeft: number;
+  canScan: boolean;
+  scansLeft: number;
   isTrialExpired: boolean;
   canViewResults: boolean;
   needsPremium: boolean;
   startLocalTrial: (days?: number) => Promise<void>;
   setPremium: (value: boolean, type?: 'monthly' | 'yearly') => Promise<void>;
   setSubscriptionData: (data: Partial<SubscriptionState>) => Promise<void>;
-  incrementGlowScanCount: () => Promise<void>;
-  incrementStyleScanCount: () => Promise<void>;
+  incrementScanCount: () => Promise<void>;
   reset: () => Promise<void>;
   processInAppPurchase: (type: 'monthly' | 'yearly') => Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }>;
 }
@@ -53,14 +44,8 @@ const STORAGE_KEY = 'glowcheck_subscription_state';
 
 const DEFAULT_STATE: SubscriptionState = {
   isPremium: false,
-  glowAnalysisScans: 0,
-  styleCheckScans: 0,
-  freeGlowScansUsed: 0,
-  freeStyleScansUsed: 0,
-  maxFreeGlowScans: 2,
-  maxFreeStyleScans: 2,
-  maxGlowScansInTrial: 999,
-  maxStyleScansInTrial: 999,
+  scanCount: 0,
+  maxScansInTrial: 1,
   hasStartedTrial: false,
   hasAddedPayment: false,
   trialRequiresPayment: true,
@@ -69,50 +54,6 @@ const DEFAULT_STATE: SubscriptionState = {
 export const [SubscriptionProvider, useSubscription] = createContextHook<SubscriptionContextType>(() => {
   const [state, setState] = useState<SubscriptionState>(DEFAULT_STATE);
   const { user } = useAuth();
-
-  // Sync subscription status with backend
-  const syncSubscriptionStatus = useCallback(async () => {
-    if (!user?.id) return;
-    
-    try {
-      console.log('Syncing subscription status with backend...');
-      
-      // Try to get data directly from subscriptions table
-      const { data: subData, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (subError) {
-        console.log('Subscription query error (non-critical):', subError.message);
-        return;
-      }
-      
-      if (subData) {
-        console.log('Backend subscription found:', subData);
-        const backendState: Partial<SubscriptionState> = {
-          isPremium: subData.status === 'active' && (!subData.expires_at || new Date(subData.expires_at) > new Date()),
-          subscriptionType: subData.product_id?.includes('annual') || subData.product_id?.includes('yearly') ? 'yearly' : 'monthly',
-          subscriptionPrice: subData.product_id?.includes('annual') || subData.product_id?.includes('yearly') ? 99 : 8.99,
-          nextBillingDate: subData.expires_at,
-        };
-        
-        setState(prev => ({ ...prev, ...backendState }));
-        try {
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, ...backendState }));
-        } catch (e) {
-          console.log('Failed to save subscription state', e);
-        }
-      } else {
-        console.log('No subscription found for user');
-      }
-    } catch (error) {
-      console.log('Sync subscription status error (non-critical):', error instanceof Error ? error.message : 'Unknown error');
-    }
-  }, [user?.id, state]);
 
   useEffect(() => {
     (async () => {
@@ -131,7 +72,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         console.log('Failed to load subscription state', e);
       }
     })();
-  }, [user?.id, syncSubscriptionStatus]);
+  }, [user?.id]);
 
   const persist = useCallback(async (next: SubscriptionState) => {
     setState(next);
@@ -142,7 +83,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     }
   }, []);
 
-  const startLocalTrial = useCallback(async (days: number = 1) => {
+  const startLocalTrial = useCallback(async (days: number = 3) => {
     const now = new Date();
     const ends = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
     const next: SubscriptionState = {
@@ -150,8 +91,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       trialStartedAt: now.toISOString(),
       trialEndsAt: ends.toISOString(),
       hasStartedTrial: true,
-      glowAnalysisScans: 0,
-      styleCheckScans: 0,
+      scanCount: 0, // Reset scan count when starting trial
     };
     await persist(next);
   }, [persist, state]);
@@ -206,77 +146,64 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     return !inTrial; // Trial is expired if it was started but is no longer active
   }, [inTrial, state.hasStartedTrial]);
 
-  const canScanGlowAnalysis = useMemo(() => {
+  const canScan = useMemo(() => {
     if (state.isPremium) return true;
-    if (state.freeGlowScansUsed < state.maxFreeGlowScans) return true;
-    if (!state.hasStartedTrial || !state.hasAddedPayment) return false;
-    return inTrial && state.glowAnalysisScans < state.maxGlowScansInTrial;
-  }, [state.isPremium, state.freeGlowScansUsed, state.maxFreeGlowScans, state.hasStartedTrial, state.hasAddedPayment, inTrial, state.glowAnalysisScans, state.maxGlowScansInTrial]);
+    if (!state.hasStartedTrial) return false;
+    return inTrial && state.scanCount < state.maxScansInTrial;
+  }, [state.isPremium, state.hasStartedTrial, inTrial, state.scanCount, state.maxScansInTrial]);
 
-  const canScanStyleCheck = useMemo(() => {
-    if (state.isPremium) return true;
-    if (state.freeStyleScansUsed < state.maxFreeStyleScans) return true;
-    if (!state.hasStartedTrial || !state.hasAddedPayment) return false;
-    return inTrial && state.styleCheckScans < state.maxStyleScansInTrial;
-  }, [state.isPremium, state.freeStyleScansUsed, state.maxFreeStyleScans, state.hasStartedTrial, state.hasAddedPayment, inTrial, state.styleCheckScans, state.maxStyleScansInTrial]);
-
-  const glowScansLeft = useMemo(() => {
+  const scansLeft = useMemo(() => {
     if (state.isPremium) return Infinity;
-    if (state.freeGlowScansUsed < state.maxFreeGlowScans) {
-      return state.maxFreeGlowScans - state.freeGlowScansUsed;
-    }
-    if (!state.hasStartedTrial || !state.hasAddedPayment) return 0;
-    return Math.max(0, state.maxGlowScansInTrial - state.glowAnalysisScans);
-  }, [state.isPremium, state.freeGlowScansUsed, state.maxFreeGlowScans, state.hasStartedTrial, state.hasAddedPayment, state.maxGlowScansInTrial, state.glowAnalysisScans]);
+    return Math.max(0, state.maxScansInTrial - state.scanCount);
+  }, [state.isPremium, state.maxScansInTrial, state.scanCount]);
 
-  const styleScansLeft = useMemo(() => {
-    if (state.isPremium) return Infinity;
-    if (state.freeStyleScansUsed < state.maxFreeStyleScans) {
-      return state.maxFreeStyleScans - state.freeStyleScansUsed;
-    }
-    if (!state.hasStartedTrial || !state.hasAddedPayment) return 0;
-    return Math.max(0, state.maxStyleScansInTrial - state.styleCheckScans);
-  }, [state.isPremium, state.freeStyleScansUsed, state.maxFreeStyleScans, state.hasStartedTrial, state.hasAddedPayment, state.maxStyleScansInTrial, state.styleCheckScans]);
-
-  const incrementGlowScanCount = useCallback(async () => {
-    const isUsingFreeScan = state.freeGlowScansUsed < state.maxFreeGlowScans;
-    
+  const incrementScanCount = useCallback(async () => {
     const next: SubscriptionState = { 
       ...state, 
-      freeGlowScansUsed: isUsingFreeScan ? state.freeGlowScansUsed + 1 : state.freeGlowScansUsed,
-      glowAnalysisScans: !isUsingFreeScan ? state.glowAnalysisScans + 1 : state.glowAnalysisScans
+      scanCount: state.scanCount + 1 
     };
     await persist(next);
     
-    const allFreeScansUsed = next.freeGlowScansUsed >= next.maxFreeGlowScans && 
-                              next.freeStyleScansUsed >= next.maxFreeStyleScans;
-    
-    if (allFreeScansUsed && !next.hasAddedPayment && !next.isPremium) {
+    if (next.scanCount >= next.maxScansInTrial && !next.isPremium) {
       const { router } = await import('expo-router');
-      router.push('/start-trial');
+      router.push('/unlock-glow');
     }
   }, [persist, state]);
 
-  const incrementStyleScanCount = useCallback(async () => {
-    const isUsingFreeScan = state.freeStyleScansUsed < state.maxFreeStyleScans;
+  // Sync subscription status with backend
+  const syncSubscriptionStatus = useCallback(async () => {
+    if (!user?.id) return;
     
-    const next: SubscriptionState = { 
-      ...state, 
-      freeStyleScansUsed: isUsingFreeScan ? state.freeStyleScansUsed + 1 : state.freeStyleScansUsed,
-      styleCheckScans: !isUsingFreeScan ? state.styleCheckScans + 1 : state.styleCheckScans
-    };
-    await persist(next);
-    
-    const allFreeScansUsed = next.freeGlowScansUsed >= next.maxFreeGlowScans && 
-                              next.freeStyleScansUsed >= next.maxFreeStyleScans;
-    
-    if (allFreeScansUsed && !next.hasAddedPayment && !next.isPremium) {
-      const { router } = await import('expo-router');
-      router.push('/start-trial');
+    try {
+      console.log('Syncing subscription status with backend...');
+      
+      // Get subscription status from Supabase
+      const { data, error } = await supabase
+        .rpc('get_user_subscription_status', { user_id: user.id });
+      
+      if (error) {
+        console.error('Failed to get subscription status:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const subscription = data[0];
+        console.log('Backend subscription status:', subscription);
+        
+        // Update local state with backend data
+        const backendState: Partial<SubscriptionState> = {
+          isPremium: subscription.is_premium,
+          subscriptionType: subscription.subscription_product_id?.includes('annual') ? 'yearly' : 'monthly',
+          subscriptionPrice: subscription.subscription_product_id?.includes('annual') ? 99 : 8.99,
+          nextBillingDate: subscription.expires_at,
+        };
+        
+        await setSubscriptionData(backendState);
+      }
+    } catch (error) {
+      console.error('Failed to sync subscription status:', error);
     }
-  }, [persist, state]);
-
-
+  }, [user?.id, setSubscriptionData]);
   
   const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }> => {
     try {
@@ -318,7 +245,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
           try {
             // Update user's RevenueCat user ID in Supabase
             await supabase
-              .from('profiles')
+              .from('user_profiles')
               .update({ 
                 revenuecat_user_id: user.id,
                 subscription_status: 'premium',
@@ -372,29 +299,27 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     return inTrial; // Can view results during trial
   }, [state.isPremium, inTrial]);
 
+  // Needs premium (show paywall)
   const needsPremium = useMemo(() => {
     if (state.isPremium) return false;
-    return isTrialExpired || (!canScanGlowAnalysis && !canScanStyleCheck);
-  }, [state.isPremium, isTrialExpired, canScanGlowAnalysis, canScanStyleCheck]);
+    return isTrialExpired || !canScan;
+  }, [state.isPremium, isTrialExpired, canScan]);
 
   return useMemo(() => ({
     state,
     inTrial,
     daysLeft,
     hoursLeft,
-    canScanGlowAnalysis,
-    canScanStyleCheck,
-    glowScansLeft,
-    styleScansLeft,
+    canScan,
+    scansLeft,
     isTrialExpired,
     canViewResults,
     needsPremium,
     startLocalTrial,
     setPremium,
     setSubscriptionData,
-    incrementGlowScanCount,
-    incrementStyleScanCount,
+    incrementScanCount,
     reset,
     processInAppPurchase,
-  }), [state, inTrial, daysLeft, hoursLeft, canScanGlowAnalysis, canScanStyleCheck, glowScansLeft, styleScansLeft, isTrialExpired, canViewResults, needsPremium, startLocalTrial, setPremium, setSubscriptionData, incrementGlowScanCount, incrementStyleScanCount, reset, processInAppPurchase]);
+  }), [state, inTrial, daysLeft, hoursLeft, canScan, scansLeft, isTrialExpired, canViewResults, needsPremium, startLocalTrial, setPremium, setSubscriptionData, incrementScanCount, reset, processInAppPurchase]);
 });

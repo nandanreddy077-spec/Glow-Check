@@ -17,7 +17,7 @@ interface Props {
 export default function SubscriptionGuard({ children, requiresPremium = false, showPaywall = true, accessMode = 'scan' }: Props) {
   const { theme } = useTheme();
   const palette = getPalette(theme);
-  const { state, canScanGlowAnalysis, inTrial, isTrialExpired, startLocalTrial, processInAppPurchase } = useSubscription();
+  const { state, canScan, inTrial, isTrialExpired, startLocalTrial, processInAppPurchase } = useSubscription();
   const { loading } = useAuth();
   const pathname = usePathname();
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -64,19 +64,22 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
         return inTrial;
       }
       // Scan-gated access respects scan limit
-      return canScanGlowAnalysis;
+      return canScan;
     }
 
     return true;
-  }, [isPublicRoute, state.isPremium, isPremiumRoute, isTrialExpired, canScanGlowAnalysis, accessMode, inTrial]);
+  }, [isPublicRoute, state.isPremium, isPremiumRoute, isTrialExpired, canScan, accessMode, inTrial]);
 
   const shouldShowPaywall = useMemo(() => {
     return !hasAccess && !isPublicRoute && showPaywall;
   }, [hasAccess, isPublicRoute, showPaywall]);
 
-  // Auto-redirect to subscription page after trial expiry
+  // Auto-redirect to subscription page after 3 scans or trial expiry
   useEffect(() => {
-    const shouldShowSubscription = isTrialExpired && !state.isPremium;
+    const shouldShowSubscription = (
+      (state.hasStartedTrial && state.scanCount >= 3) || 
+      isTrialExpired
+    ) && !state.isPremium;
 
     if (shouldShowSubscription && !pathname.includes('/subscribe')) {
       // Small delay to ensure smooth navigation
@@ -86,7 +89,7 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
       
       return () => clearTimeout(timer);
     }
-  }, [isTrialExpired, state.isPremium, pathname]);
+  }, [state.hasStartedTrial, state.scanCount, isTrialExpired, state.isPremium, pathname]);
 
   useEffect(() => {
     // Only redirect if we don't want to show paywall inline
@@ -97,10 +100,10 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
 
   const handleStartTrial = useCallback(async () => {
     try {
-      await startLocalTrial(1);
+      await startLocalTrial(3);
       Alert.alert(
         '🌟 Trial Started!', 
-        'Your 1-day free trial has started! You can now scan and view results for 1 day.',
+        'Your 3-day free trial has started! You can now scan and view results for 3 days.',
         [{ text: 'Start Glowing ✨', style: 'default' }]
       );
     } catch {

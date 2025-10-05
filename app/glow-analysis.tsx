@@ -31,7 +31,7 @@ interface CapturedPhoto {
 export default function GlowAnalysisScreen() {
   const { error } = useLocalSearchParams<{ error?: string }>();
   const { theme } = useTheme();
-  const { canScanGlowAnalysis, needsPremium, glowScansLeft, inTrial, isTrialExpired, state, daysLeft } = useSubscription();
+  const { canScan, needsPremium, scansLeft, inTrial, isTrialExpired } = useSubscription();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showError, setShowError] = useState<boolean>(false);
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
@@ -94,40 +94,23 @@ export default function GlowAnalysisScreen() {
   };
 
   const handleTakePhoto = async () => {
-    if (!canScanGlowAnalysis) {
-      const freeScansLeft = state.maxFreeGlowScans - state.freeGlowScansUsed;
-      const allFreeScansUsed = state.freeGlowScansUsed >= state.maxFreeGlowScans && 
-                                state.freeStyleScansUsed >= state.maxFreeStyleScans;
-      
-      if (state.isPremium) {
-        return;
-      } else if (isTrialExpired) {
+    if (!canScan) {
+      if (isTrialExpired) {
         Alert.alert(
           "Trial Expired",
-          "Your 1-day free trial has ended. Upgrade to Premium to continue analyzing your glow!",
+          "Your 3-day free trial has ended. Upgrade to Premium to continue analyzing your glow!",
           [
             { text: "Maybe Later", style: "cancel" },
-            { text: "Upgrade Now", onPress: () => router.push('/subscribe') }
+            { text: "Upgrade Now", onPress: () => router.push('/plan-selection') }
           ]
         );
-      } else if (allFreeScansUsed && !state.hasAddedPayment) {
-        Alert.alert(
-          "Free Trials Used",
-          "You've used all your free trials! Add your payment method to start a 1-day free trial with unlimited scans. You won't be charged until the trial ends.",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
-          ]
-        );
-      } else if (freeScansLeft > 0) {
-        return;
       } else {
         Alert.alert(
-          "Add Payment for Trial",
-          "Add your payment info to start your 1-day free trial with unlimited scans. You won't be charged until the trial ends!",
+          "Start Your Free Trial",
+          "Add your payment info to start your 3-day free trial. You won't be charged until the trial ends!",
           [
             { text: "Maybe Later", style: "cancel" },
-            { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
+            { text: "Start Free Trial", onPress: () => router.push('/start-trial') }
           ]
         );
       }
@@ -224,40 +207,23 @@ export default function GlowAnalysisScreen() {
   };
 
   const handleUploadPhoto = async () => {
-    if (!canScanGlowAnalysis) {
-      const freeScansLeft = state.maxFreeGlowScans - state.freeGlowScansUsed;
-      const allFreeScansUsed = state.freeGlowScansUsed >= state.maxFreeGlowScans && 
-                                state.freeStyleScansUsed >= state.maxFreeStyleScans;
-      
-      if (state.isPremium) {
-        return;
-      } else if (isTrialExpired) {
+    if (!canScan) {
+      if (isTrialExpired) {
         Alert.alert(
           "Trial Expired",
-          "Your 1-day free trial has ended. Upgrade to Premium to continue analyzing your glow!",
+          "Your 3-day free trial has ended. Upgrade to Premium to continue analyzing your glow!",
           [
             { text: "Maybe Later", style: "cancel" },
-            { text: "Upgrade Now", onPress: () => router.push('/subscribe') }
+            { text: "Upgrade Now", onPress: () => router.push('/plan-selection') }
           ]
         );
-      } else if (allFreeScansUsed && !state.hasAddedPayment) {
-        Alert.alert(
-          "Free Trials Used",
-          "You've used all your free trials! Add your payment method to start a 1-day free trial with unlimited scans. You won't be charged until the trial ends.",
-          [
-            { text: "Maybe Later", style: "cancel" },
-            { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
-          ]
-        );
-      } else if (freeScansLeft > 0) {
-        return;
       } else {
         Alert.alert(
-          "Add Payment for Trial",
-          "Add your payment info to start your 1-day free trial with unlimited scans. You won't be charged until the trial ends!",
+          "Start Your Free Trial",
+          "Add your payment info to start your 3-day free trial. You won't be charged until the trial ends!",
           [
             { text: "Maybe Later", style: "cancel" },
-            { text: "Add Payment & Start Trial", onPress: () => router.push('/start-trial') }
+            { text: "Start Free Trial", onPress: () => router.push('/start-trial') }
           ]
         );
       }
@@ -357,22 +323,22 @@ export default function GlowAnalysisScreen() {
           </Text>
           
           {/* Trial Status for Quick Scan */}
-          <View style={styles.trialStatusCard}>
-            <Text style={styles.trialStatusText}>
-              {state.isPremium ? '👑 Premium Active - Unlimited Scans' :
-               isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
-               inTrial && state.hasAddedPayment ? `🎯 Trial Active - Unlimited scans for ${daysLeft} days` :
-               state.freeGlowScansUsed < state.maxFreeGlowScans ? `🎁 ${state.maxFreeGlowScans - state.freeGlowScansUsed} free Glow scan${(state.maxFreeGlowScans - state.freeGlowScansUsed) !== 1 ? 's' : ''} left` :
-               '✨ Add payment to start your 1-day free trial'}
-            </Text>
-          </View>
+          {(inTrial || needsPremium) && (
+            <View style={styles.trialStatusCard}>
+              <Text style={styles.trialStatusText}>
+                {isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
+                 inTrial ? `🎯 Trial Active - ${scansLeft} scan left` :
+                 '✨ Add payment to start your 3-day free trial'}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[
                 styles.primaryButton, 
-                (isLoading || !canScanGlowAnalysis) && styles.disabledButton,
-                !canScanGlowAnalysis && styles.premiumButton
+                (isLoading || !canScan) && styles.disabledButton,
+                !canScan && styles.premiumButton
               ]}
               onPress={handleTakePhoto}
               disabled={isLoading}
@@ -380,30 +346,23 @@ export default function GlowAnalysisScreen() {
             >
               <Camera color={palette.textLight} size={20} strokeWidth={2.5} />
               <Text style={styles.primaryButtonText}>
-                {!canScanGlowAnalysis ? (
-                  isTrialExpired ? "Upgrade to Continue" : 
-                  state.freeGlowScansUsed >= state.maxFreeGlowScans && state.freeStyleScansUsed >= state.maxFreeStyleScans ? "Add Payment & Start Trial" :
-                  "Take Photo"
-                ) : isLoading ? "Processing..." : "Take Photo"}
+                {!canScan ? (isTrialExpired ? "Upgrade to Continue" : "Add Payment & Start Trial") :
+                 isLoading ? "Processing..." : "Take Photo"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
                 styles.secondaryButton, 
-                (isLoading || !canScanGlowAnalysis) && styles.disabledButton,
-                !canScanGlowAnalysis && styles.premiumSecondaryButton
+                (isLoading || !canScan) && styles.disabledButton,
+                !canScan && styles.premiumSecondaryButton
               ]}
               onPress={handleUploadPhoto}
               disabled={isLoading}
               testID="uploadPhotoBtn"
             >
-              <Text style={[styles.secondaryButtonText, !canScanGlowAnalysis && styles.premiumSecondaryText]}>
-                {!canScanGlowAnalysis ? (
-                  isTrialExpired ? "Upgrade Required" : 
-                  state.freeGlowScansUsed >= state.maxFreeGlowScans && state.freeStyleScansUsed >= state.maxFreeStyleScans ? "Add Payment" :
-                  "Upload Photo"
-                ) : "Upload Photo"}
+              <Text style={[styles.secondaryButtonText, !canScan && styles.premiumSecondaryText]}>
+                {!canScan ? (isTrialExpired ? "Upgrade Required" : "Add Payment") : "Upload Photo"}
               </Text>
             </TouchableOpacity>
             
@@ -453,15 +412,15 @@ export default function GlowAnalysisScreen() {
             </Text>
             
             {/* Trial Status */}
-            <View style={styles.trialStatus}>
-              <Text style={styles.trialStatusText}>
-                {state.isPremium ? '👑 Premium Active - Unlimited Scans' :
-                 isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
-                 inTrial && state.hasAddedPayment ? `🎯 Trial Active - Unlimited scans for ${daysLeft} days` :
-                 state.freeGlowScansUsed < state.maxFreeGlowScans ? `🎁 ${state.maxFreeGlowScans - state.freeGlowScansUsed} free Glow scan${(state.maxFreeGlowScans - state.freeGlowScansUsed) !== 1 ? 's' : ''} left` :
-                 '✨ Add payment to start your 1-day free trial'}
-              </Text>
-            </View>
+            {(inTrial || needsPremium) && (
+              <View style={styles.trialStatus}>
+                <Text style={styles.trialStatusText}>
+                  {isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
+                   inTrial ? `🎯 Trial Active - ${scansLeft} scan left` :
+                   '✨ Add payment to start your free trial'}
+                </Text>
+              </View>
+            )}
             
             <View style={styles.progressBar}>
               <View 
@@ -523,23 +482,18 @@ export default function GlowAnalysisScreen() {
             <TouchableOpacity
               style={[
                 styles.primaryButton, 
-                (isLoading || !canScanGlowAnalysis) && styles.disabledButton,
-                !canScanGlowAnalysis && styles.premiumButton
+                (isLoading || !canScan) && styles.disabledButton,
+                !canScan && styles.premiumButton
               ]}
               onPress={handleTakePhoto}
               disabled={isLoading}
             >
               <Camera color={palette.textLight} size={20} strokeWidth={2.5} />
               <Text style={styles.primaryButtonText}>
-                {!canScanGlowAnalysis ? (
-                  isTrialExpired ? "Upgrade to Continue" : 
-                  state.freeGlowScansUsed >= state.maxFreeGlowScans && state.freeStyleScansUsed >= state.maxFreeStyleScans ? "Add Payment & Start Trial" :
-                  isLoading ? "Processing..." : 
-                  completedCount === totalAngles ? "Start Analysis" :
-                  `Capture ${currentInstructions.title}`
-                ) : isLoading ? "Processing..." : 
-                completedCount === totalAngles ? "Start Analysis" :
-                `Capture ${currentInstructions.title}`}
+                {!canScan ? (isTrialExpired ? "Upgrade to Continue" : "Add Payment & Start Trial") :
+                 isLoading ? "Processing..." : 
+                 completedCount === totalAngles ? "Start Analysis" :
+                 `Capture ${currentInstructions.title}`}
               </Text>
             </TouchableOpacity>
 
@@ -547,18 +501,14 @@ export default function GlowAnalysisScreen() {
               <TouchableOpacity
                 style={[
                   styles.secondaryButton, 
-                  (isLoading || !canScanGlowAnalysis) && styles.disabledButton,
-                  !canScanGlowAnalysis && styles.premiumSecondaryButton
+                  (isLoading || !canScan) && styles.disabledButton,
+                  !canScan && styles.premiumSecondaryButton
                 ]}
                 onPress={handleUploadPhoto}
                 disabled={isLoading}
               >
-                <Text style={[styles.secondaryButtonText, !canScanGlowAnalysis && styles.premiumSecondaryText]}>
-                  {!canScanGlowAnalysis ? (
-                    isTrialExpired ? "Upgrade Required" : 
-                    state.freeGlowScansUsed >= state.maxFreeGlowScans && state.freeStyleScansUsed >= state.maxFreeStyleScans ? "Add Payment" :
-                    "Upload Single Photo"
-                  ) : "Upload Single Photo"}
+                <Text style={[styles.secondaryButtonText, !canScan && styles.premiumSecondaryText]}>
+                  {!canScan ? (isTrialExpired ? "Upgrade Required" : "Add Payment") : "Upload Single Photo"}
                 </Text>
               </TouchableOpacity>
             )}
