@@ -13,8 +13,10 @@ export interface SubscriptionState {
   subscriptionType?: 'monthly' | 'yearly';
   subscriptionPrice?: number;
   nextBillingDate?: string;
-  scanCount: number;
-  maxScansInTrial: number;
+  glowAnalysisScans: number;
+  styleCheckScans: number;
+  maxGlowScansInTrial: number;
+  maxStyleScansInTrial: number;
   hasStartedTrial: boolean;
   hasAddedPayment: boolean;
   trialRequiresPayment: boolean;
@@ -27,15 +29,18 @@ export interface SubscriptionContextType {
   inTrial: boolean;
   daysLeft: number;
   hoursLeft: number;
-  canScan: boolean;
-  scansLeft: number;
+  canScanGlowAnalysis: boolean;
+  canScanStyleCheck: boolean;
+  glowScansLeft: number;
+  styleScansLeft: number;
   isTrialExpired: boolean;
   canViewResults: boolean;
   needsPremium: boolean;
   startLocalTrial: (days?: number) => Promise<void>;
   setPremium: (value: boolean, type?: 'monthly' | 'yearly') => Promise<void>;
   setSubscriptionData: (data: Partial<SubscriptionState>) => Promise<void>;
-  incrementScanCount: () => Promise<void>;
+  incrementGlowScanCount: () => Promise<void>;
+  incrementStyleScanCount: () => Promise<void>;
   reset: () => Promise<void>;
   processInAppPurchase: (type: 'monthly' | 'yearly') => Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }>;
 }
@@ -44,8 +49,10 @@ const STORAGE_KEY = 'glowcheck_subscription_state';
 
 const DEFAULT_STATE: SubscriptionState = {
   isPremium: false,
-  scanCount: 0,
-  maxScansInTrial: 1,
+  glowAnalysisScans: 0,
+  styleCheckScans: 0,
+  maxGlowScansInTrial: 1,
+  maxStyleScansInTrial: 1,
   hasStartedTrial: false,
   hasAddedPayment: false,
   trialRequiresPayment: true,
@@ -91,7 +98,8 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       trialStartedAt: now.toISOString(),
       trialEndsAt: ends.toISOString(),
       hasStartedTrial: true,
-      scanCount: 0, // Reset scan count when starting trial
+      glowAnalysisScans: 0,
+      styleCheckScans: 0,
     };
     await persist(next);
   }, [persist, state]);
@@ -146,29 +154,59 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     return !inTrial; // Trial is expired if it was started but is no longer active
   }, [inTrial, state.hasStartedTrial]);
 
-  const canScan = useMemo(() => {
+  const canScanGlowAnalysis = useMemo(() => {
     if (state.isPremium) return true;
     if (!state.hasStartedTrial) return false;
-    return inTrial && state.scanCount < state.maxScansInTrial;
-  }, [state.isPremium, state.hasStartedTrial, inTrial, state.scanCount, state.maxScansInTrial]);
+    return inTrial && state.glowAnalysisScans < state.maxGlowScansInTrial;
+  }, [state.isPremium, state.hasStartedTrial, inTrial, state.glowAnalysisScans, state.maxGlowScansInTrial]);
 
-  const scansLeft = useMemo(() => {
+  const canScanStyleCheck = useMemo(() => {
+    if (state.isPremium) return true;
+    if (!state.hasStartedTrial) return false;
+    return inTrial && state.styleCheckScans < state.maxStyleScansInTrial;
+  }, [state.isPremium, state.hasStartedTrial, inTrial, state.styleCheckScans, state.maxStyleScansInTrial]);
+
+  const glowScansLeft = useMemo(() => {
     if (state.isPremium) return Infinity;
-    return Math.max(0, state.maxScansInTrial - state.scanCount);
-  }, [state.isPremium, state.maxScansInTrial, state.scanCount]);
+    return Math.max(0, state.maxGlowScansInTrial - state.glowAnalysisScans);
+  }, [state.isPremium, state.maxGlowScansInTrial, state.glowAnalysisScans]);
 
-  const incrementScanCount = useCallback(async () => {
+  const styleScansLeft = useMemo(() => {
+    if (state.isPremium) return Infinity;
+    return Math.max(0, state.maxStyleScansInTrial - state.styleCheckScans);
+  }, [state.isPremium, state.maxStyleScansInTrial, state.styleCheckScans]);
+
+  const incrementGlowScanCount = useCallback(async () => {
     const next: SubscriptionState = { 
       ...state, 
-      scanCount: state.scanCount + 1 
+      glowAnalysisScans: state.glowAnalysisScans + 1 
     };
     await persist(next);
     
-    if (next.scanCount >= next.maxScansInTrial && !next.isPremium) {
+    const totalScansUsed = next.glowAnalysisScans + next.styleCheckScans;
+    const totalScansAllowed = next.maxGlowScansInTrial + next.maxStyleScansInTrial;
+    
+    if (totalScansUsed >= totalScansAllowed && !next.isPremium && inTrial) {
       const { router } = await import('expo-router');
       router.push('/unlock-glow');
     }
-  }, [persist, state]);
+  }, [persist, state, inTrial]);
+
+  const incrementStyleScanCount = useCallback(async () => {
+    const next: SubscriptionState = { 
+      ...state, 
+      styleCheckScans: state.styleCheckScans + 1 
+    };
+    await persist(next);
+    
+    const totalScansUsed = next.glowAnalysisScans + next.styleCheckScans;
+    const totalScansAllowed = next.maxGlowScansInTrial + next.maxStyleScansInTrial;
+    
+    if (totalScansUsed >= totalScansAllowed && !next.isPremium && inTrial) {
+      const { router } = await import('expo-router');
+      router.push('/unlock-glow');
+    }
+  }, [persist, state, inTrial]);
 
   // Sync subscription status with backend
   const syncSubscriptionStatus = useCallback(async () => {
@@ -299,27 +337,29 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     return inTrial; // Can view results during trial
   }, [state.isPremium, inTrial]);
 
-  // Needs premium (show paywall)
   const needsPremium = useMemo(() => {
     if (state.isPremium) return false;
-    return isTrialExpired || !canScan;
-  }, [state.isPremium, isTrialExpired, canScan]);
+    return isTrialExpired || (!canScanGlowAnalysis && !canScanStyleCheck);
+  }, [state.isPremium, isTrialExpired, canScanGlowAnalysis, canScanStyleCheck]);
 
   return useMemo(() => ({
     state,
     inTrial,
     daysLeft,
     hoursLeft,
-    canScan,
-    scansLeft,
+    canScanGlowAnalysis,
+    canScanStyleCheck,
+    glowScansLeft,
+    styleScansLeft,
     isTrialExpired,
     canViewResults,
     needsPremium,
     startLocalTrial,
     setPremium,
     setSubscriptionData,
-    incrementScanCount,
+    incrementGlowScanCount,
+    incrementStyleScanCount,
     reset,
     processInAppPurchase,
-  }), [state, inTrial, daysLeft, hoursLeft, canScan, scansLeft, isTrialExpired, canViewResults, needsPremium, startLocalTrial, setPremium, setSubscriptionData, incrementScanCount, reset, processInAppPurchase]);
+  }), [state, inTrial, daysLeft, hoursLeft, canScanGlowAnalysis, canScanStyleCheck, glowScansLeft, styleScansLeft, isTrialExpired, canViewResults, needsPremium, startLocalTrial, setPremium, setSubscriptionData, incrementGlowScanCount, incrementStyleScanCount, reset, processInAppPurchase]);
 });
