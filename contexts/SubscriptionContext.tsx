@@ -69,53 +69,27 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     try {
       console.log('Syncing subscription status with backend...');
       
-      // Get subscription status from Supabase
-      const { data, error } = await supabase
-        .rpc('get_user_subscription_status', { user_uuid: user.id });
+      // Try to get data directly from subscriptions table
+      const { data: subData, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
-      if (error) {
-        console.error('Failed to get subscription status:', JSON.stringify(error, null, 2));
-        // If function doesn't exist, try to get data directly from tables
-        try {
-          const { data: subData } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-          
-          if (subData) {
-            const backendState: Partial<SubscriptionState> = {
-              isPremium: subData.status === 'active' && (!subData.expires_at || new Date(subData.expires_at) > new Date()),
-              subscriptionType: subData.product_id?.includes('annual') || subData.product_id?.includes('yearly') ? 'yearly' : 'monthly',
-              subscriptionPrice: subData.product_id?.includes('annual') || subData.product_id?.includes('yearly') ? 99 : 8.99,
-              nextBillingDate: subData.expires_at,
-            };
-            
-            setState(prev => ({ ...prev, ...backendState }));
-            try {
-              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, ...backendState }));
-            } catch (e) {
-              console.log('Failed to save subscription state', e);
-            }
-          }
-        } catch (fallbackError) {
-          console.error('Fallback query also failed:', fallbackError);
-        }
+      if (subError) {
+        console.log('Subscription query error (non-critical):', subError.message);
         return;
       }
       
-      if (data && data.length > 0) {
-        const subscription = data[0];
-        console.log('Backend subscription status:', subscription);
-        
-        // Update local state with backend data
+      if (subData) {
+        console.log('Backend subscription found:', subData);
         const backendState: Partial<SubscriptionState> = {
-          isPremium: subscription.is_premium,
-          subscriptionType: subscription.subscription_product_id?.includes('annual') || subscription.subscription_product_id?.includes('yearly') ? 'yearly' : 'monthly',
-          subscriptionPrice: subscription.subscription_product_id?.includes('annual') || subscription.subscription_product_id?.includes('yearly') ? 99 : 8.99,
-          nextBillingDate: subscription.expires_at,
+          isPremium: subData.status === 'active' && (!subData.expires_at || new Date(subData.expires_at) > new Date()),
+          subscriptionType: subData.product_id?.includes('annual') || subData.product_id?.includes('yearly') ? 'yearly' : 'monthly',
+          subscriptionPrice: subData.product_id?.includes('annual') || subData.product_id?.includes('yearly') ? 99 : 8.99,
+          nextBillingDate: subData.expires_at,
         };
         
         setState(prev => ({ ...prev, ...backendState }));
@@ -124,9 +98,11 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         } catch (e) {
           console.log('Failed to save subscription state', e);
         }
+      } else {
+        console.log('No subscription found for user');
       }
     } catch (error) {
-      console.error('Failed to sync subscription status:', error instanceof Error ? error.message : JSON.stringify(error));
+      console.log('Sync subscription status error (non-critical):', error instanceof Error ? error.message : 'Unknown error');
     }
   }, [user?.id, state]);
 
