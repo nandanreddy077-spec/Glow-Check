@@ -554,21 +554,21 @@ RETURNS TABLE (
   style_analyses_remaining INTEGER,
   trial_ends_at TIMESTAMP WITH TIME ZONE,
   has_added_payment BOOLEAN
-) AS $$
+) AS $
 BEGIN
   RETURN QUERY
   SELECT 
     public.has_active_subscription(user_uuid) as has_subscription,
     public.is_in_trial_period(user_uuid) as in_trial,
-    COALESCE(tt.is_trial_expired, FALSE) as trial_expired,
-    GREATEST(0, tt.max_glow_analyses - tt.glow_analyses_used) as glow_analyses_remaining,
-    GREATEST(0, tt.max_style_analyses - tt.style_analyses_used) as style_analyses_remaining,
-    tt.trial_ends_at,
-    COALESCE(tt.has_added_payment, FALSE) as has_added_payment
-  FROM public.trial_tracking tt
-  WHERE tt.id = user_uuid;
+    COALESCE(trial_tracking.is_trial_expired, FALSE) as trial_expired,
+    GREATEST(0, trial_tracking.max_glow_analyses - trial_tracking.glow_analyses_used) as glow_analyses_remaining,
+    GREATEST(0, trial_tracking.max_style_analyses - trial_tracking.style_analyses_used) as style_analyses_remaining,
+    trial_tracking.trial_ends_at,
+    COALESCE(trial_tracking.has_added_payment, FALSE) as has_added_payment
+  FROM public.trial_tracking
+  WHERE trial_tracking.id = user_uuid;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =====================================================
 -- 13. INDEXES FOR PERFORMANCE
