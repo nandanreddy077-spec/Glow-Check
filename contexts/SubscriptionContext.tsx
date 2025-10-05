@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { Platform } from 'react-native';
-import { paymentService, PRODUCT_IDS, trackPurchaseEvent, trackTrialStartEvent } from '@/lib/payments';
+import { paymentService, PRODUCT_IDS, trackPurchaseEvent } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -62,6 +62,46 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
   const [state, setState] = useState<SubscriptionState>(DEFAULT_STATE);
   const { user } = useAuth();
 
+  // Sync subscription status with backend
+  const syncSubscriptionStatus = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('Syncing subscription status with backend...');
+      
+      // Get subscription status from Supabase
+      const { data, error } = await supabase
+        .rpc('get_user_subscription_status', { user_uuid: user.id });
+      
+      if (error) {
+        console.error('Failed to get subscription status:', JSON.stringify(error, null, 2));
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const subscription = data[0];
+        console.log('Backend subscription status:', subscription);
+        
+        // Update local state with backend data
+        const backendState: Partial<SubscriptionState> = {
+          isPremium: subscription.is_premium,
+          subscriptionType: subscription.subscription_product_id?.includes('annual') || subscription.subscription_product_id?.includes('yearly') ? 'yearly' : 'monthly',
+          subscriptionPrice: subscription.subscription_product_id?.includes('annual') || subscription.subscription_product_id?.includes('yearly') ? 99 : 8.99,
+          nextBillingDate: subscription.expires_at,
+        };
+        
+        setState(prev => ({ ...prev, ...backendState }));
+        try {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, ...backendState }));
+        } catch (e) {
+          console.log('Failed to save subscription state', e);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to sync subscription status:', error instanceof Error ? error.message : JSON.stringify(error));
+    }
+  }, [user?.id, state]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -79,7 +119,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         console.log('Failed to load subscription state', e);
       }
     })();
-  }, [user?.id]);
+  }, [user?.id, syncSubscriptionStatus]);
 
   const persist = useCallback(async (next: SubscriptionState) => {
     setState(next);
@@ -208,40 +248,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     }
   }, [persist, state, inTrial]);
 
-  // Sync subscription status with backend
-  const syncSubscriptionStatus = useCallback(async () => {
-    if (!user?.id) return;
-    
-    try {
-      console.log('Syncing subscription status with backend...');
-      
-      // Get subscription status from Supabase
-      const { data, error } = await supabase
-        .rpc('get_user_subscription_status', { user_id: user.id });
-      
-      if (error) {
-        console.error('Failed to get subscription status:', JSON.stringify(error, null, 2));
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        const subscription = data[0];
-        console.log('Backend subscription status:', subscription);
-        
-        // Update local state with backend data
-        const backendState: Partial<SubscriptionState> = {
-          isPremium: subscription.is_premium,
-          subscriptionType: subscription.subscription_product_id?.includes('annual') ? 'yearly' : 'monthly',
-          subscriptionPrice: subscription.subscription_product_id?.includes('annual') ? 99 : 8.99,
-          nextBillingDate: subscription.expires_at,
-        };
-        
-        await setSubscriptionData(backendState);
-      }
-    } catch (error) {
-      console.error('Failed to sync subscription status:', error instanceof Error ? error.message : JSON.stringify(error));
-    }
-  }, [user?.id, setSubscriptionData]);
+
   
   const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }> => {
     try {
