@@ -75,6 +75,34 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       
       if (error) {
         console.error('Failed to get subscription status:', JSON.stringify(error, null, 2));
+        // If function doesn't exist, try to get data directly from tables
+        try {
+          const { data: subData } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (subData) {
+            const backendState: Partial<SubscriptionState> = {
+              isPremium: subData.status === 'active' && (!subData.expires_at || new Date(subData.expires_at) > new Date()),
+              subscriptionType: subData.product_id?.includes('annual') || subData.product_id?.includes('yearly') ? 'yearly' : 'monthly',
+              subscriptionPrice: subData.product_id?.includes('annual') || subData.product_id?.includes('yearly') ? 99 : 8.99,
+              nextBillingDate: subData.expires_at,
+            };
+            
+            setState(prev => ({ ...prev, ...backendState }));
+            try {
+              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, ...backendState }));
+            } catch (e) {
+              console.log('Failed to save subscription state', e);
+            }
+          }
+        } catch (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+        }
         return;
       }
       
