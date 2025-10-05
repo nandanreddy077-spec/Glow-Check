@@ -74,29 +74,13 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
     return !hasAccess && !isPublicRoute && showPaywall;
   }, [hasAccess, isPublicRoute, showPaywall]);
 
-  // Auto-redirect to subscription page after 1 scan or trial expiry
   useEffect(() => {
-    const shouldShowSubscription = (
-      (state.hasStartedTrial && state.scanCount >= 1) || 
-      isTrialExpired
-    ) && !state.isPremium;
-
-    if (shouldShowSubscription && !pathname.includes('/subscribe') && !pathname.includes('/analysis-results')) {
-      // Small delay to ensure smooth navigation
-      const timer = setTimeout(() => {
-        router.push('/subscribe');
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [state.hasStartedTrial, state.scanCount, isTrialExpired, state.isPremium, pathname]);
-
-  useEffect(() => {
-    // Only redirect if we don't want to show paywall inline
     if (!loading && !hasAccess && !isPublicRoute && !showPaywall) {
-      router.replace('/subscribe');
+      router.replace('/free-scan-limit');
     }
   }, [hasAccess, loading, pathname, isPublicRoute, showPaywall]);
+
+
 
   const handleStartTrial = useCallback(async () => {
     try {

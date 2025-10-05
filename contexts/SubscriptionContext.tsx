@@ -14,10 +14,15 @@ export interface SubscriptionState {
   subscriptionPrice?: number;
   nextBillingDate?: string;
   scanCount: number;
+  weeklyScansUsed: number;
+  maxWeeklyScans: number;
+  lastScanResetDate?: string;
   maxScansInTrial: number;
   hasStartedTrial: boolean;
   hasAddedPayment: boolean;
   trialRequiresPayment: boolean;
+  firstScanCompletedAt?: string;
+  resultsUnlockedUntil?: string;
   purchaseToken?: string;
   originalTransactionId?: string;
 }
@@ -45,7 +50,9 @@ const STORAGE_KEY = 'glowcheck_subscription_state';
 const DEFAULT_STATE: SubscriptionState = {
   isPremium: false,
   scanCount: 0,
-  maxScansInTrial: 1,
+  weeklyScansUsed: 0,
+  maxWeeklyScans: 1,
+  maxScansInTrial: 999,
   hasStartedTrial: false,
   hasAddedPayment: false,
   trialRequiresPayment: true,
@@ -83,7 +90,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     }
   }, []);
 
-  const startLocalTrial = useCallback(async (days: number = 3) => {
+  const startLocalTrial = useCallback(async (days: number = 7) => {
     const now = new Date();
     const ends = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
     const next: SubscriptionState = {
@@ -91,7 +98,9 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       trialStartedAt: now.toISOString(),
       trialEndsAt: ends.toISOString(),
       hasStartedTrial: true,
-      scanCount: 0, // Reset scan count when starting trial
+      hasAddedPayment: true,
+      scanCount: 0,
+      weeklyScansUsed: 0,
     };
     await persist(next);
   }, [persist, state]);
@@ -148,27 +157,65 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
 
   const canScan = useMemo(() => {
     if (state.isPremium) return true;
-    if (!state.hasStartedTrial) return false;
-    return inTrial && state.scanCount < state.maxScansInTrial;
-  }, [state.isPremium, state.hasStartedTrial, inTrial, state.scanCount, state.maxScansInTrial]);
+    if (state.hasStartedTrial && inTrial) return true;
+    
+    const now = new Date();
+    const lastReset = state.lastScanResetDate ? new Date(state.lastScanResetDate) : null;
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    
+    if (!lastReset || lastReset < weekStart) {
+      return true;
+    }
+    
+    return state.weeklyScansUsed < state.maxWeeklyScans;
+  }, [state.isPremium, state.hasStartedTrial, inTrial, state.weeklyScansUsed, state.maxWeeklyScans, state.lastScanResetDate]);
 
   const scansLeft = useMemo(() => {
     if (state.isPremium) return Infinity;
-    return Math.max(0, state.maxScansInTrial - state.scanCount);
-  }, [state.isPremium, state.maxScansInTrial, state.scanCount]);
+    if (state.hasStartedTrial && inTrial) return Infinity;
+    
+    const now = new Date();
+    const lastReset = state.lastScanResetDate ? new Date(state.lastScanResetDate) : null;
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    
+    if (!lastReset || lastReset < weekStart) {
+      return state.maxWeeklyScans;
+    }
+    
+    return Math.max(0, state.maxWeeklyScans - state.weeklyScansUsed);
+  }, [state.isPremium, state.hasStartedTrial, inTrial, state.maxWeeklyScans, state.weeklyScansUsed, state.lastScanResetDate]);
 
   const incrementScanCount = useCallback(async () => {
+    const now = new Date();
+    const lastReset = state.lastScanResetDate ? new Date(state.lastScanResetDate) : null;
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    
+    let weeklyScansUsed = state.weeklyScansUsed;
+    let lastScanResetDate = state.lastScanResetDate;
+    
+    if (!lastReset || lastReset < weekStart) {
+      weeklyScansUsed = 0;
+      lastScanResetDate = now.toISOString();
+    }
+    
+    const resultsUnlockedUntil = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    
     const next: SubscriptionState = { 
       ...state, 
-      scanCount: state.scanCount + 1 
+      scanCount: state.scanCount + 1,
+      weeklyScansUsed: weeklyScansUsed + 1,
+      lastScanResetDate,
+      firstScanCompletedAt: state.firstScanCompletedAt || now.toISOString(),
+      resultsUnlockedUntil: state.isPremium || (state.hasStartedTrial && inTrial) ? undefined : resultsUnlockedUntil,
     };
     await persist(next);
-    
-    if (next.scanCount >= next.maxScansInTrial && !next.isPremium) {
-      const { router } = await import('expo-router');
-      router.push('/unlock-glow');
-    }
-  }, [persist, state]);
+  }, [persist, state, inTrial]);
 
   // Sync subscription status with backend
   const syncSubscriptionStatus = useCallback(async () => {
@@ -296,14 +343,21 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
   // Can view results (not blurred)
   const canViewResults = useMemo(() => {
     if (state.isPremium) return true;
-    return inTrial; // Can view results during trial
-  }, [state.isPremium, inTrial]);
+    if (state.hasStartedTrial && inTrial) return true;
+    
+    if (state.resultsUnlockedUntil) {
+      return new Date(state.resultsUnlockedUntil).getTime() > Date.now();
+    }
+    
+    return false;
+  }, [state.isPremium, state.hasStartedTrial, inTrial, state.resultsUnlockedUntil]);
 
   // Needs premium (show paywall)
   const needsPremium = useMemo(() => {
     if (state.isPremium) return false;
-    return isTrialExpired || !canScan;
-  }, [state.isPremium, isTrialExpired, canScan]);
+    if (state.hasStartedTrial && inTrial) return false;
+    return isTrialExpired || !canScan || !canViewResults;
+  }, [state.isPremium, state.hasStartedTrial, inTrial, isTrialExpired, canScan, canViewResults]);
 
   return useMemo(() => ({
     state,

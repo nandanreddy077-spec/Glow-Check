@@ -1,37 +1,16 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, Animated } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Star, Shield, TrendingUp, Sparkles, Camera, Zap, Crown, Check, Clock } from 'lucide-react-native';
+import { ArrowLeft, Lock, Zap, TrendingUp, Star, Crown, Clock, CheckCircle } from 'lucide-react-native';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
-export default function StartTrialScreen() {
+export default function FreeScanLimitScreen() {
   const { state, processInAppPurchase, startLocalTrial, setSubscriptionData } = useSubscription();
   const insets = useSafeAreaInsets();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [urgencyAnim] = useState(new Animated.Value(0));
-  const [spotsLeft] = useState(Math.floor(Math.random() * 5) + 3);
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(urgencyAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(urgencyAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [urgencyAnim]);
 
   const handleStartTrial = useCallback(async () => {
     if (isProcessing) return;
@@ -39,18 +18,16 @@ export default function StartTrialScreen() {
     if (Platform.OS === 'web') {
       Alert.alert(
         'Mobile App Required',
-        'To start your free trial, please download our app from the App Store or Google Play.',
+        'To unlock premium features, please download our app from the App Store or Google Play.',
         [{ text: 'Got it', style: 'default' }]
       );
       return;
     }
     
     setIsProcessing(true);
-    console.log(`Starting trial with ${selectedPlan} subscription...`);
     
     try {
       const result = await processInAppPurchase(selectedPlan);
-      console.log('Purchase result:', result);
       
       if (result.success) {
         await startLocalTrial(7);
@@ -58,44 +35,23 @@ export default function StartTrialScreen() {
         
         Alert.alert(
           '🎉 Welcome to Premium!', 
-          'Your 7-day free trial is now active! Enjoy unlimited scans, full results access, and all premium features. You won\'t be charged until the trial ends.',
+          'Your 7-day free trial is now active! Enjoy unlimited scans and full access to all features.',
           [{ 
-            text: 'Start Your Glow Journey ✨', 
+            text: 'Continue ✨', 
             style: 'default', 
-            onPress: () => {
-              console.log('User confirmed trial activation');
-              router.replace('/(tabs)');
-            }
+            onPress: () => router.replace('/(tabs)')
           }]
         );
-      } else if (result.error === 'STORE_REDIRECT') {
-        Alert.alert(
-          'Complete Subscription',
-          'Please complete your subscription in the App Store or Google Play, then return to the app.',
-          [{ text: 'OK', style: 'default' }]
-        );
-      } else {
-        const errorMessage = result.error || 'We couldn\'t process your request. Please try again.';
-        console.log('Trial start failed:', errorMessage);
+      } else if (result.error !== 'STORE_REDIRECT') {
         Alert.alert(
           'Unable to Start Trial', 
-          errorMessage,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Try Again', style: 'default', onPress: () => handleStartTrial() }
-          ]
+          result.error || 'Please try again.',
+          [{ text: 'OK', style: 'default' }]
         );
       }
     } catch (err) {
       console.error('Trial start error:', err);
-      Alert.alert(
-        'Connection Error', 
-        'Unable to connect to the payment service. Please check your internet connection and try again.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Retry', style: 'default', onPress: () => handleStartTrial() }
-        ]
-      );
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -104,11 +60,6 @@ export default function StartTrialScreen() {
   const handleBack = useCallback(() => {
     router.back();
   }, []);
-
-  const urgencyScale = urgencyAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.05],
-  });
 
   return (
     <View style={styles.container}>
@@ -127,69 +78,77 @@ export default function StartTrialScreen() {
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <ArrowLeft color="#1A1A1A" size={24} strokeWidth={2} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Start Your Free Trial</Text>
+          <Text style={styles.headerTitle}>Upgrade to Premium</Text>
           <View style={styles.headerSpacer} />
         </View>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Animated.View style={[styles.urgencyBanner, { transform: [{ scale: urgencyScale }] }]}>
-            <LinearGradient colors={['#FF6B6B', '#FF8E53']} style={styles.urgencyGradient}>
-              <Clock color="#FFFFFF" size={16} strokeWidth={2.5} />
-              <Text style={styles.urgencyText}>Only {spotsLeft} trial spots left today!</Text>
-            </LinearGradient>
-          </Animated.View>
-
           <View style={styles.heroSection}>
             <LinearGradient 
               colors={['#FFB6C1', '#FFA07A']}
               style={styles.heroIcon}
             >
-              <Crown color="#FFFFFF" size={40} fill="#FFFFFF" strokeWidth={2} />
+              <Lock color="#FFFFFF" size={40} strokeWidth={2} />
             </LinearGradient>
             <Text style={styles.heroTitle}>
-              Unlock Your Full Glow Potential
+              You've Used Your Free Scan
             </Text>
             <Text style={styles.heroSubtitle}>
-              Start your 7-day free trial • Cancel anytime
+              Unlock unlimited scans and premium features with a 7-day free trial
             </Text>
           </View>
 
-          <View style={styles.socialProof}>
-            <View style={styles.socialProofAvatars}>
-              <View style={[styles.avatar, { backgroundColor: '#FFB6C1' }]} />
-              <View style={[styles.avatar, { backgroundColor: '#DDA0DD', marginLeft: -12 }]} />
-              <View style={[styles.avatar, { backgroundColor: '#D4A574', marginLeft: -12 }]} />
-            </View>
-            <Text style={styles.socialProofText}>
-              <Text style={styles.socialProofBold}>18,429 women</Text> upgraded to premium this week
-            </Text>
-          </View>
-
-          <View style={styles.benefitsSection}>
-            <Text style={styles.benefitsTitle}>What You Get:</Text>
-            
-            {[
-              { icon: Camera, text: 'Unlimited AI Glow Analysis', color: '#FFB6C1' },
-              { icon: Sparkles, text: 'Personalized Beauty Coach', color: '#DDA0DD' },
-              { icon: TrendingUp, text: 'Weekly Progress Tracking', color: '#D4A574' },
-              { icon: Zap, text: 'Before/After Comparisons', color: '#FF8E53' },
-              { icon: Crown, text: 'Premium Style Recommendations', color: '#C8956D' },
-            ].map((benefit, index) => (
-              <View key={index} style={styles.benefitItem}>
-                <LinearGradient colors={[benefit.color, benefit.color + 'CC']} style={styles.benefitIcon}>
-                  <benefit.icon color="#FFFFFF" size={18} strokeWidth={2.5} />
-                </LinearGradient>
-                <Text style={styles.benefitText}>{benefit.text}</Text>
-                <Check color="#4CAF50" size={20} strokeWidth={2.5} />
+          <View style={styles.limitInfo}>
+            <View style={styles.limitCard}>
+              <View style={styles.limitHeader}>
+                <Text style={styles.limitTitle}>Free Plan</Text>
+                <View style={styles.limitBadge}>
+                  <Text style={styles.limitBadgeText}>CURRENT</Text>
+                </View>
               </View>
-            ))}
+              <View style={styles.limitFeatures}>
+                <View style={styles.limitFeature}>
+                  <CheckCircle color="#4CAF50" size={16} strokeWidth={2.5} />
+                  <Text style={styles.limitFeatureText}>1 scan per week</Text>
+                </View>
+                <View style={styles.limitFeature}>
+                  <Clock color="#FF9800" size={16} strokeWidth={2.5} />
+                  <Text style={styles.limitFeatureText}>Results visible for 24 hours</Text>
+                </View>
+                <View style={styles.limitFeature}>
+                  <Lock color="#999999" size={16} strokeWidth={2.5} />
+                  <Text style={styles.limitFeatureText}>Limited features</Text>
+                </View>
+              </View>
+              <Text style={styles.resetText}>
+                Your free scan resets every Sunday
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.premiumSection}>
+            <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
+            
+            <View style={styles.benefitsList}>
+              {[
+                { icon: Zap, text: 'Unlimited scans anytime', color: '#FFB6C1' },
+                { icon: TrendingUp, text: 'Full results access forever', color: '#DDA0DD' },
+                { icon: Star, text: 'Weekly progress tracking', color: '#D4A574' },
+                { icon: Crown, text: 'AI beauty coach & tips', color: '#C8956D' },
+              ].map((benefit, index) => (
+                <View key={index} style={styles.benefitItem}>
+                  <LinearGradient colors={[benefit.color, benefit.color + 'CC']} style={styles.benefitIcon}>
+                    <benefit.icon color="#FFFFFF" size={18} strokeWidth={2.5} />
+                  </LinearGradient>
+                  <Text style={styles.benefitText}>{benefit.text}</Text>
+                </View>
+              ))}
+            </View>
           </View>
 
           <View style={styles.planSection}>
-            <Text style={styles.planSectionTitle}>Choose Your Plan</Text>
-            
             <TouchableOpacity 
               style={[styles.planCard, selectedPlan === 'yearly' && styles.planCardSelected]}
               onPress={() => setSelectedPlan('yearly')}
@@ -264,60 +223,23 @@ export default function StartTrialScreen() {
           <TouchableOpacity 
             style={styles.continueButton}
             onPress={handleStartTrial}
-            disabled={isProcessing || state.isPremium}
+            disabled={isProcessing}
             activeOpacity={0.8}
           >
             <LinearGradient 
-              colors={state.isPremium ? ['#CCCCCC', '#CCCCCC'] : ['#D4A574', '#C8956D']}
+              colors={['#D4A574', '#C8956D']}
               style={styles.continueGradient}
             >
-              <Text style={[styles.continueText, { color: state.isPremium ? '#666666' : '#FFFFFF' }]}>
-                {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Start 7-Day Free Trial'}
+              <Text style={styles.continueText}>
+                {isProcessing ? 'Processing...' : 'Start 7-Day Free Trial'}
               </Text>
-              {!state.isPremium && !isProcessing && (
+              {!isProcessing && (
                 <Text style={styles.continuePrice}>
                   Free for 7 days, then {selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}
                 </Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
-
-          <View style={styles.guarantees}>
-            <View style={styles.guaranteeItem}>
-              <Shield color="#4CAF50" size={16} strokeWidth={2.5} />
-              <Text style={styles.guaranteeText}>Secure payment</Text>
-            </View>
-            <View style={styles.guaranteeItem}>
-              <TrendingUp color="#9C27B0" size={16} strokeWidth={2.5} />
-              <Text style={styles.guaranteeText}>Cancel anytime</Text>
-            </View>
-            <View style={styles.guaranteeItem}>
-              <Clock color="#FF8E53" size={16} strokeWidth={2.5} />
-              <Text style={styles.guaranteeText}>No charge for 7 days</Text>
-            </View>
-          </View>
-
-          <View style={styles.trialDetails}>
-            <Text style={styles.trialDetailsTitle}>How Your Trial Works:</Text>
-            <View style={styles.trialStep}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>1</Text>
-              </View>
-              <Text style={styles.stepText}>Add payment method to unlock 7-day free trial</Text>
-            </View>
-            <View style={styles.trialStep}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>2</Text>
-              </View>
-              <Text style={styles.stepText}>Enjoy unlimited scans & full access for 7 days - free</Text>
-            </View>
-            <View style={styles.trialStep}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>3</Text>
-              </View>
-              <Text style={styles.stepText}>Cancel anytime before day 7 - no charge if you cancel</Text>
-            </View>
-          </View>
 
           <Text style={styles.legalText}>
             By starting your trial, you agree to our Terms of Service and Privacy Policy. Your subscription will automatically renew unless cancelled at least 24 hours before the end of the trial period.
@@ -361,27 +283,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
-  urgencyBanner: {
-    marginTop: 12,
-    marginBottom: 20,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  urgencyGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  urgencyText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
   heroSection: {
     alignItems: 'center',
+    marginTop: 20,
     marginBottom: 32,
   },
   heroIcon: {
@@ -404,44 +308,72 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     lineHeight: 22,
+    paddingHorizontal: 20,
   },
-  socialProof: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 16,
-    padding: 16,
+  limitInfo: {
     marginBottom: 32,
   },
-  socialProofAvatars: {
-    flexDirection: 'row',
-    marginRight: 12,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
+  limitCard: {
+    backgroundColor: '#F8F9FA',
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  socialProofText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#666666',
-    lineHeight: 20,
+  limitHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  socialProofBold: {
+  limitTitle: {
+    fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
   },
-  benefitsSection: {
+  limitBadge: {
+    backgroundColor: '#E0E0E0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  limitBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#666666',
+    letterSpacing: 0.5,
+  },
+  limitFeatures: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  limitFeature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  limitFeatureText: {
+    fontSize: 15,
+    color: '#1A1A1A',
+    fontWeight: '500',
+  },
+  resetText: {
+    fontSize: 13,
+    color: '#666666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  premiumSection: {
     marginBottom: 32,
   },
-  benefitsTitle: {
+  premiumTitle: {
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 16,
     color: '#1A1A1A',
+  },
+  benefitsList: {
+    gap: 12,
   },
   benefitItem: {
     flexDirection: 'row',
@@ -449,7 +381,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#F0F0F0',
   },
@@ -469,12 +400,6 @@ const styles = StyleSheet.create({
   },
   planSection: {
     marginBottom: 24,
-  },
-  planSectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    color: '#1A1A1A',
   },
   planCard: {
     marginBottom: 12,
@@ -581,66 +506,13 @@ const styles = StyleSheet.create({
   continueText: {
     fontSize: 17,
     fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   continuePrice: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
-  },
-  guarantees: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 20,
-    marginBottom: 32,
-  },
-  guaranteeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  guaranteeText: {
-    fontSize: 13,
-    color: '#666666',
-    fontWeight: '500',
-  },
-  trialDetails: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  trialDetailsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 16,
-    color: '#1A1A1A',
-  },
-  trialStep: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  stepNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#D4A574',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  stepNumberText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  stepText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#666666',
-    lineHeight: 20,
   },
   legalText: {
     fontSize: 11,
