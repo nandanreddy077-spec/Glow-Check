@@ -15,6 +15,10 @@ export interface SubscriptionState {
   nextBillingDate?: string;
   glowAnalysisScans: number;
   styleCheckScans: number;
+  freeGlowScansUsed: number;
+  freeStyleScansUsed: number;
+  maxFreeGlowScans: number;
+  maxFreeStyleScans: number;
   maxGlowScansInTrial: number;
   maxStyleScansInTrial: number;
   hasStartedTrial: boolean;
@@ -51,8 +55,12 @@ const DEFAULT_STATE: SubscriptionState = {
   isPremium: false,
   glowAnalysisScans: 0,
   styleCheckScans: 0,
-  maxGlowScansInTrial: 1,
-  maxStyleScansInTrial: 1,
+  freeGlowScansUsed: 0,
+  freeStyleScansUsed: 0,
+  maxFreeGlowScans: 2,
+  maxFreeStyleScans: 2,
+  maxGlowScansInTrial: 999,
+  maxStyleScansInTrial: 999,
   hasStartedTrial: false,
   hasAddedPayment: false,
   trialRequiresPayment: true,
@@ -200,57 +208,73 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
 
   const canScanGlowAnalysis = useMemo(() => {
     if (state.isPremium) return true;
-    if (!state.hasStartedTrial) return false;
+    if (state.freeGlowScansUsed < state.maxFreeGlowScans) return true;
+    if (!state.hasStartedTrial || !state.hasAddedPayment) return false;
     return inTrial && state.glowAnalysisScans < state.maxGlowScansInTrial;
-  }, [state.isPremium, state.hasStartedTrial, inTrial, state.glowAnalysisScans, state.maxGlowScansInTrial]);
+  }, [state.isPremium, state.freeGlowScansUsed, state.maxFreeGlowScans, state.hasStartedTrial, state.hasAddedPayment, inTrial, state.glowAnalysisScans, state.maxGlowScansInTrial]);
 
   const canScanStyleCheck = useMemo(() => {
     if (state.isPremium) return true;
-    if (!state.hasStartedTrial) return false;
+    if (state.freeStyleScansUsed < state.maxFreeStyleScans) return true;
+    if (!state.hasStartedTrial || !state.hasAddedPayment) return false;
     return inTrial && state.styleCheckScans < state.maxStyleScansInTrial;
-  }, [state.isPremium, state.hasStartedTrial, inTrial, state.styleCheckScans, state.maxStyleScansInTrial]);
+  }, [state.isPremium, state.freeStyleScansUsed, state.maxFreeStyleScans, state.hasStartedTrial, state.hasAddedPayment, inTrial, state.styleCheckScans, state.maxStyleScansInTrial]);
 
   const glowScansLeft = useMemo(() => {
     if (state.isPremium) return Infinity;
+    if (state.freeGlowScansUsed < state.maxFreeGlowScans) {
+      return state.maxFreeGlowScans - state.freeGlowScansUsed;
+    }
+    if (!state.hasStartedTrial || !state.hasAddedPayment) return 0;
     return Math.max(0, state.maxGlowScansInTrial - state.glowAnalysisScans);
-  }, [state.isPremium, state.maxGlowScansInTrial, state.glowAnalysisScans]);
+  }, [state.isPremium, state.freeGlowScansUsed, state.maxFreeGlowScans, state.hasStartedTrial, state.hasAddedPayment, state.maxGlowScansInTrial, state.glowAnalysisScans]);
 
   const styleScansLeft = useMemo(() => {
     if (state.isPremium) return Infinity;
+    if (state.freeStyleScansUsed < state.maxFreeStyleScans) {
+      return state.maxFreeStyleScans - state.freeStyleScansUsed;
+    }
+    if (!state.hasStartedTrial || !state.hasAddedPayment) return 0;
     return Math.max(0, state.maxStyleScansInTrial - state.styleCheckScans);
-  }, [state.isPremium, state.maxStyleScansInTrial, state.styleCheckScans]);
+  }, [state.isPremium, state.freeStyleScansUsed, state.maxFreeStyleScans, state.hasStartedTrial, state.hasAddedPayment, state.maxStyleScansInTrial, state.styleCheckScans]);
 
   const incrementGlowScanCount = useCallback(async () => {
+    const isUsingFreeScan = state.freeGlowScansUsed < state.maxFreeGlowScans;
+    
     const next: SubscriptionState = { 
       ...state, 
-      glowAnalysisScans: state.glowAnalysisScans + 1 
+      freeGlowScansUsed: isUsingFreeScan ? state.freeGlowScansUsed + 1 : state.freeGlowScansUsed,
+      glowAnalysisScans: !isUsingFreeScan ? state.glowAnalysisScans + 1 : state.glowAnalysisScans
     };
     await persist(next);
     
-    const totalScansUsed = next.glowAnalysisScans + next.styleCheckScans;
-    const totalScansAllowed = next.maxGlowScansInTrial + next.maxStyleScansInTrial;
+    const allFreeScansUsed = next.freeGlowScansUsed >= next.maxFreeGlowScans && 
+                              next.freeStyleScansUsed >= next.maxFreeStyleScans;
     
-    if (totalScansUsed >= totalScansAllowed && !next.isPremium && inTrial) {
+    if (allFreeScansUsed && !next.hasAddedPayment && !next.isPremium) {
       const { router } = await import('expo-router');
-      router.push('/unlock-glow');
+      router.push('/start-trial');
     }
-  }, [persist, state, inTrial]);
+  }, [persist, state]);
 
   const incrementStyleScanCount = useCallback(async () => {
+    const isUsingFreeScan = state.freeStyleScansUsed < state.maxFreeStyleScans;
+    
     const next: SubscriptionState = { 
       ...state, 
-      styleCheckScans: state.styleCheckScans + 1 
+      freeStyleScansUsed: isUsingFreeScan ? state.freeStyleScansUsed + 1 : state.freeStyleScansUsed,
+      styleCheckScans: !isUsingFreeScan ? state.styleCheckScans + 1 : state.styleCheckScans
     };
     await persist(next);
     
-    const totalScansUsed = next.glowAnalysisScans + next.styleCheckScans;
-    const totalScansAllowed = next.maxGlowScansInTrial + next.maxStyleScansInTrial;
+    const allFreeScansUsed = next.freeGlowScansUsed >= next.maxFreeGlowScans && 
+                              next.freeStyleScansUsed >= next.maxFreeStyleScans;
     
-    if (totalScansUsed >= totalScansAllowed && !next.isPremium && inTrial) {
+    if (allFreeScansUsed && !next.hasAddedPayment && !next.isPremium) {
       const { router } = await import('expo-router');
-      router.push('/unlock-glow');
+      router.push('/start-trial');
     }
-  }, [persist, state, inTrial]);
+  }, [persist, state]);
 
 
   
