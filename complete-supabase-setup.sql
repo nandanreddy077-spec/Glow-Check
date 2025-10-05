@@ -554,7 +554,7 @@ RETURNS TABLE (
   style_analyses_remaining INTEGER,
   trial_ends_at TIMESTAMP WITH TIME ZONE,
   has_added_payment BOOLEAN
-) AS $
+) AS $$
 BEGIN
   RETURN QUERY
   SELECT 
@@ -568,7 +568,7 @@ BEGIN
   FROM public.trial_tracking
   WHERE trial_tracking.id = user_uuid;
 END;
-$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =====================================================
 -- 13. INDEXES FOR PERFORMANCE
