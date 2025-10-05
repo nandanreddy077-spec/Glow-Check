@@ -327,26 +327,25 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   slide: { 
     alignItems: 'center', 
-    paddingTop: 80, 
+    paddingTop: 60, 
     paddingHorizontal: spacing.xl,
-    justifyContent: 'space-between',
     flex: 1
   },
   imageContainer: {
     position: 'relative',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center'
   },
   imageGradientBorder: {
     padding: 6,
-    borderRadius: 130,
+    borderRadius: 116,
     ...shadow.elevated
   },
   imageWrapper: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
     overflow: 'hidden',
     position: 'relative'
   },
@@ -360,14 +359,14 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     left: 0,
     right: 0,
     height: 60,
-    borderBottomLeftRadius: 120,
-    borderBottomRightRadius: 120
+    borderBottomLeftRadius: 110,
+    borderBottomRightRadius: 110
   },
   imageGlow: {
     position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
     backgroundColor: palette.overlayGold,
     zIndex: -1,
     opacity: 0.3
@@ -375,26 +374,25 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   contentContainer: {
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    flex: 1,
-    justifyContent: 'center'
+    marginTop: spacing.md
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '900',
     color: palette.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     letterSpacing: -0.5,
-    lineHeight: 38
+    lineHeight: 34
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 15,
     color: palette.textSecondary,
     textAlign: 'center',
-    lineHeight: 26,
-    maxWidth: 340,
+    lineHeight: 22,
+    maxWidth: 320,
     fontWeight: '500',
-    marginBottom: spacing.xl
+    marginBottom: spacing.md
   },
   featureHighlight: {
     flexDirection: 'row',
@@ -412,8 +410,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     letterSpacing: 0.5
   },
   benefitsContainer: {
-    marginTop: spacing.lg,
-    gap: spacing.sm
+    marginTop: spacing.md,
+    gap: spacing.xs
   },
   benefitItem: {
     flexDirection: 'row',
@@ -455,8 +453,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     flexDirection: 'row', 
     gap: spacing.sm, 
     alignSelf: 'center', 
-    marginTop: spacing.xl,
-    marginBottom: spacing.lg
+    marginTop: spacing.md,
+    marginBottom: spacing.md
   },
   dot: {
     height: 8,
@@ -469,8 +467,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: spacing.xl, 
-    marginTop: spacing.lg,
-    marginBottom: spacing.md
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm
   },
   skipBtn: { 
     paddingVertical: spacing.lg, 
@@ -503,13 +501,15 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   signinLink: { 
     alignSelf: 'center', 
-    marginBottom: spacing.lg,
-    paddingVertical: spacing.md
+    marginBottom: spacing.xl,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md
   },
   signinText: { 
     color: palette.textSecondary,
-    fontSize: 15,
-    textAlign: 'center'
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20
   },
   signinTextBold: { 
     color: palette.primary, 
