@@ -16,6 +16,8 @@ export interface SubscriptionState {
   scanCount: number;
   maxScansInTrial: number;
   hasStartedTrial: boolean;
+  hasAddedPayment: boolean;
+  trialRequiresPayment: boolean;
   purchaseToken?: string;
   originalTransactionId?: string;
 }
@@ -43,8 +45,10 @@ const STORAGE_KEY = 'glowcheck_subscription_state';
 const DEFAULT_STATE: SubscriptionState = {
   isPremium: false,
   scanCount: 0,
-  maxScansInTrial: 3,
+  maxScansInTrial: 1,
   hasStartedTrial: false,
+  hasAddedPayment: false,
+  trialRequiresPayment: true,
 };
 
 export const [SubscriptionProvider, useSubscription] = createContextHook<SubscriptionContextType>(() => {
@@ -144,7 +148,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
 
   const canScan = useMemo(() => {
     if (state.isPremium) return true;
-    if (!state.hasStartedTrial) return true; // First time user can scan to start trial
+    if (!state.hasStartedTrial) return false;
     return inTrial && state.scanCount < state.maxScansInTrial;
   }, [state.isPremium, state.hasStartedTrial, inTrial, state.scanCount, state.maxScansInTrial]);
 
@@ -154,25 +158,17 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
   }, [state.isPremium, state.maxScansInTrial, state.scanCount]);
 
   const incrementScanCount = useCallback(async () => {
-    // Auto-start trial on first scan if not already started
-    if (!state.hasStartedTrial && !state.isPremium) {
-      await startLocalTrial(3);
-      return;
-    }
-    
     const next: SubscriptionState = { 
       ...state, 
       scanCount: state.scanCount + 1 
     };
     await persist(next);
     
-    // Check if user has reached scan limit and should see subscription screen
-    if (next.scanCount >= next.maxScansInTrial && !next.isPremium && !isTrialExpired) {
-      // Import router dynamically to avoid circular dependency
+    if (next.scanCount >= next.maxScansInTrial && !next.isPremium) {
       const { router } = await import('expo-router');
       router.push('/unlock-glow');
     }
-  }, [persist, state, startLocalTrial, isTrialExpired]);
+  }, [persist, state]);
 
   // Sync subscription status with backend
   const syncSubscriptionStatus = useCallback(async () => {
