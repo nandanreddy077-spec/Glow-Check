@@ -112,7 +112,7 @@ export default function PremiumPaywall({ onStartTrial, onSubscribe, testID }: Pr
                 <Text style={styles.planTitle}>Monthly Plan</Text>
               </View>
               <View style={styles.planPricing}>
-                <Text style={styles.planPrice}>$8.90</Text>
+                <Text style={styles.planPrice}>$8.99</Text>
                 <Text style={styles.planPeriod}>/month</Text>
               </View>
             </View>
@@ -128,7 +128,7 @@ export default function PremiumPaywall({ onStartTrial, onSubscribe, testID }: Pr
         >
           <LinearGradient colors={[palette.gold, palette.blush]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaGradient}>
             <Text style={styles.ctaText}>
-              {isTrialExpired ? 'Upgrade Now' : inTrial ? 'Continue with Premium' : `Subscribe ${selectedPlan === 'yearly' ? '$99/year' : '$8.90/month'}`}
+              {isTrialExpired ? 'Upgrade Now' : inTrial ? 'Continue with Premium' : `Subscribe ${selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}`}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -140,7 +140,7 @@ export default function PremiumPaywall({ onStartTrial, onSubscribe, testID }: Pr
 
         <Text style={styles.legal}>
           {!inTrial && !isTrialExpired ? '3-day free trial, then ' : ''}
-          {selectedPlan === 'yearly' ? '$99/year' : '$8.90/month'}. Cancel anytime.
+          {selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}. Cancel anytime.
           {!inTrial && !isTrialExpired ? ' No charge within the first 3 days.' : ''}
         </Text>
       </LinearGradient>
