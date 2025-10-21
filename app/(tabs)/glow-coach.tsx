@@ -346,6 +346,7 @@ export default function GlowCoachScreen() {
           style={[styles.stepItem, isCompleted && styles.completedStep]}
           onPress={() => handleStepComplete(step.id)}
           activeOpacity={0.8}
+          disabled={shouldBlurContent}
         >
           <View style={styles.stepCheckbox}>
             {isCompleted ? (
@@ -363,38 +364,28 @@ export default function GlowCoachScreen() {
             <Text style={[styles.stepName, isCompleted && styles.completedStepText]}>
               {step.name}
             </Text>
-            {shouldBlurContent ? (
-              <View style={styles.blurredStepContent}>
-                <View style={styles.blurredText}>
-                  <Text style={[styles.stepDescription, styles.blurredTextOpacity]}>{step.description}</Text>
-                  {step.products.length > 0 && (
-                    <View style={[styles.productsContainer, styles.blurredTextOpacity]}>
-                      <Droplets color={palette.primary} size={12} />
-                      <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
-                    </View>
-                  )}
-                </View>
+            <Text style={styles.stepDescription}>{step.description}</Text>
+            {step.products.length > 0 && (
+              <View style={styles.productsContainer}>
+                <Droplets color={palette.primary} size={12} />
+                <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
               </View>
-            ) : (
-              <>
-                <Text style={styles.stepDescription}>{step.description}</Text>
-                {step.products.length > 0 && (
-                  <View style={styles.productsContainer}>
-                    <Droplets color={palette.primary} size={12} />
-                    <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
-                  </View>
-                )}
-              </>
             )}
           </View>
         </TouchableOpacity>
         
         {shouldBlurContent && (
           <View style={styles.stepBlurOverlay}>
-            <View style={styles.lockBadge}>
-              <Crown color={palette.primary} size={14} />
-              <Text style={styles.lockBadgeText}>Premium</Text>
-            </View>
+            <LinearGradient 
+              colors={['rgba(255, 255, 255, 0.85)', 'rgba(249, 244, 239, 0.90)']} 
+              style={styles.frostedGlass}
+            >
+              <View style={styles.lockBadge}>
+                <Crown color={palette.primary} size={16} />
+                <Text style={styles.lockBadgeText}>Premium</Text>
+              </View>
+              <Text style={styles.lockSubtext}>Unlock full details</Text>
+            </LinearGradient>
           </View>
         )}
       </View>
@@ -1495,44 +1486,47 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 0,
   },
-  blurredStepContent: {
-    position: 'relative',
-  },
-  blurredText: {
-    opacity: 0.05,
-  },
-  blurredTextOpacity: {
-    opacity: 1,
-  },
   stepBlurOverlay: {
     position: 'absolute',
     top: 38,
     left: 0,
     right: 0,
     bottom: spacing.md,
-    backgroundColor: 'rgba(15, 13, 16, 0.90)',
     borderRadius: 16,
+    overflow: 'hidden',
+  },
+  frostedGlass: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backdropFilter: 'blur(20px)',
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backdropFilter: 'blur(20px)',
   },
   lockBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(212, 165, 116, 0.15)',
+    backgroundColor: 'rgba(212, 165, 116, 0.20)',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 20,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 165, 116, 0.4)',
+    paddingHorizontal: spacing.lg,
+    borderRadius: 24,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: palette.primary,
+    ...shadow.glow,
+    marginBottom: spacing.xs,
   },
   lockBadgeText: {
     color: palette.primary,
-    fontSize: typography.caption,
-    fontWeight: typography.bold,
+    fontSize: typography.bodySmall,
+    fontWeight: typography.extrabold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+  },
+  lockSubtext: {
+    color: palette.textSecondary,
+    fontSize: typography.caption,
+    fontWeight: typography.medium,
+    marginTop: 2,
   },
 });
