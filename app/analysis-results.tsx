@@ -14,6 +14,7 @@ import { Stack, router } from 'expo-router';
 import { Sparkles, Award, Crown, Share2, TrendingUp, Heart, Star, Gem } from 'lucide-react-native';
 import { useAnalysis } from '@/contexts/AnalysisContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useFreemium } from '@/contexts/FreemiumContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -23,6 +24,7 @@ import BlurredContent from '@/components/BlurredContent';
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
   const { canViewResults, incrementScanCount, state } = useSubscription();
+  const { isFreemiumUser, incrementGlowScan } = useFreemium();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
   const [badge, setBadge] = useState<string>('');
@@ -37,9 +39,8 @@ export default function AnalysisResultsScreen() {
   const styles = createStyles(palette);
 
   const handleStartPlan = () => {
-    // If user has used their scan, redirect to subscription instead
-    if (state.scanCount >= 1 && !state.isPremium) {
-      router.push('/subscribe');
+    if (isFreemiumUser) {
+      router.push('/plan-selection');
     } else {
       router.push('/skincare-plan-selection');
     }
@@ -55,6 +56,9 @@ export default function AnalysisResultsScreen() {
     if (hasCountedRef.current !== String(currentResult.timestamp)) {
       hasCountedRef.current = String(currentResult.timestamp);
       incrementScanCount();
+      if (isFreemiumUser) {
+        incrementGlowScan();
+      }
     }
 
     const s = currentResult.overallScore;
@@ -75,22 +79,22 @@ export default function AnalysisResultsScreen() {
       scoreAnim.removeListener(sub);
       scoreAnim.stopAnimation();
     };
-  }, [currentResult?.timestamp, scoreAnim]);
+  }, [currentResult?.timestamp, scoreAnim, incrementScanCount, incrementGlowScan, isFreemiumUser]);
 
-  // Redirect to subscription page after viewing results (if not premium and has used 1 scan)
+  // Redirect to plan selection after viewing results (if freemium)
   useEffect(() => {
-    if (!currentResult || hasRedirected || state.isPremium) return;
+    if (!currentResult || hasRedirected) return;
     
-    // After user has viewed results for 5 seconds, redirect to subscription
+    if (!isFreemiumUser) return;
+    
+    // After user has viewed results for 8 seconds, redirect to plan selection
     const redirectTimer = setTimeout(() => {
-      if (state.scanCount >= 1 && !state.isPremium) {
-        setHasRedirected(true);
-        router.push('/subscribe');
-      }
-    }, 5000); // 5 seconds to view results
+      setHasRedirected(true);
+      router.push('/plan-selection');
+    }, 8000);
     
     return () => clearTimeout(redirectTimer);
-  }, [currentResult, hasRedirected, state.isPremium, state.scanCount]);
+  }, [currentResult, hasRedirected, isFreemiumUser]);
 
   const previousScore = useMemo(() => {
     if (!analysisHistory || analysisHistory.length === 0 || !currentResult) return null as number | null;
@@ -184,7 +188,7 @@ export default function AnalysisResultsScreen() {
 
   if (!currentResult) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <LinearGradient colors={gradient.hero} style={StyleSheet.absoluteFillObject} />
         <Stack.Screen options={{ title: 'Analysis Results', headerBackTitle: 'Back' }} />
         <View style={styles.errorContainer}>
@@ -193,7 +197,7 @@ export default function AnalysisResultsScreen() {
             <Text style={styles.ctaButtonPrimaryText}>Go Back</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -344,7 +348,7 @@ export default function AnalysisResultsScreen() {
             <Sparkles color={palette.primary} size={16} fill={palette.primary} strokeWidth={2.5} />
           </View>
           <View style={styles.tipsContainer}>
-            {currentResult.personalizedTips.map((tip, index) => (
+            {currentResult.personalizedTips.slice(0, isFreemiumUser ? 4 : currentResult.personalizedTips.length).map((tip, index) => (
               <View key={index} style={styles.tipItem}>
                 <View style={styles.tipNumber}>
                   <Text style={styles.tipNumberText}>{index + 1}</Text>
@@ -352,6 +356,21 @@ export default function AnalysisResultsScreen() {
                 <Text style={styles.tipText}>{tip}</Text>
               </View>
             ))}
+            {isFreemiumUser && currentResult.personalizedTips.length > 4 && (
+              <BlurredContent 
+                message="Upgrade to view all personalized tips"
+                testID="blurred-tips"
+              >
+                {currentResult.personalizedTips.slice(4).map((tip, index) => (
+                  <View key={index + 4} style={styles.tipItem}>
+                    <View style={styles.tipNumber}>
+                      <Text style={styles.tipNumberText}>{index + 5}</Text>
+                    </View>
+                    <Text style={styles.tipText}>{tip}</Text>
+                  </View>
+                ))}
+              </BlurredContent>
+            )}
           </View>
         </View>
 
@@ -380,17 +399,11 @@ export default function AnalysisResultsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient colors={gradient.hero} style={StyleSheet.absoluteFillObject} />
       <Stack.Screen options={{ title: 'Analysis Results', headerBackTitle: 'Back' }} />
-      
-      <BlurredContent 
-        message="Upgrade to Premium to view your detailed analysis results"
-        testID="blurred-results"
-      >
-        {resultsContent}
-      </BlurredContent>
-    </SafeAreaView>
+      {resultsContent}
+    </View>
   );
 }
 
