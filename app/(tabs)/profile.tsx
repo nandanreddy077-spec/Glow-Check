@@ -39,6 +39,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { getPalette, getGradient, shadow } from "@/constants/theme";
 import { router } from "expo-router";
+import { paymentService } from "@/lib/payments";
 
 
 const formatAnalysisTime = (timestamp: number) => {
@@ -63,10 +64,11 @@ export default function ProfileScreen() {
   const { user: authUser, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { analysisHistory } = useAnalysis();
-  const { state: subscriptionState, inTrial, daysLeft, scansLeft } = useSubscription();
+  const { state: subscriptionState, inTrial, daysLeft, scansLeft, setPremium, setSubscriptionData } = useSubscription();
   const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
   const [glowAnim] = useState(new Animated.Value(0));
+  const [isRestoring, setIsRestoring] = useState<boolean>(false);
   
   const palette = getPalette(theme);
   const gradient = getGradient(theme);
@@ -156,6 +158,57 @@ export default function ProfileScreen() {
       Alert.alert("Error", "Could not open email composer.");
     }
   }, []);
+
+  const handleRestorePurchases = useCallback(async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'Purchase restoration is only available on mobile devices.');
+      return;
+    }
+
+    setIsRestoring(true);
+    console.log('Restoring purchases...');
+
+    try {
+      const subscriptions = await paymentService.restorePurchases();
+      
+      if (subscriptions && subscriptions.length > 0) {
+        console.log('Restored subscriptions:', subscriptions);
+        
+        const activeSubscription = subscriptions[0];
+        const isYearly = activeSubscription.productId?.includes('yearly') || activeSubscription.productId?.includes('annual');
+        const type: 'monthly' | 'yearly' = isYearly ? 'yearly' : 'monthly';
+        
+        await setPremium(true, type);
+        await setSubscriptionData({
+          purchaseToken: activeSubscription.purchaseToken,
+          originalTransactionId: activeSubscription.originalTransactionId,
+          nextBillingDate: activeSubscription.expiryDate,
+        });
+        
+        Alert.alert(
+          'Success!',
+          'Your subscription has been restored successfully.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        console.log('No purchases to restore');
+        Alert.alert(
+          'No Purchases Found',
+          'We couldn\'t find any previous purchases to restore. If you believe this is an error, please contact support.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Failed to restore purchases:', error);
+      Alert.alert(
+        'Restore Failed',
+        'We couldn\'t restore your purchases at this time. Please try again later or contact support if the problem persists.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsRestoring(false);
+    }
+  }, [setPremium, setSubscriptionData]);
 
   const displayName = useMemo(() => {
     const nameFromAuth = authUser?.user_metadata && typeof authUser.user_metadata === 'object' ? (authUser.user_metadata as { full_name?: string; name?: string }).full_name ?? (authUser.user_metadata as { full_name?: string; name?: string }).name : undefined;
@@ -391,6 +444,24 @@ export default function ProfileScreen() {
               </View>
               <ChevronRight color={palette.gold} size={22} strokeWidth={2.5} />
             </TouchableOpacity>
+
+            {Platform.OS !== 'web' && (
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={handleRestorePurchases}
+                activeOpacity={0.7}
+                disabled={isRestoring}
+                testID="restorePurchasesBtn"
+              >
+                <View style={styles.settingIconContainer}>
+                  <Crown color={palette.lavender} size={22} strokeWidth={2} />
+                </View>
+                <Text style={[styles.settingText, isRestoring && { opacity: 0.5 }]}>
+                  {isRestoring ? 'Restoring...' : 'Restore Purchases'}
+                </Text>
+                <ChevronRight color={palette.gold} size={22} strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.settingItem}
