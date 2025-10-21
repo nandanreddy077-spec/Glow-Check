@@ -301,7 +301,7 @@ export default function OnboardingScreen() {
           <TouchableOpacity onPress={handleNext} style={styles.nextBtn} accessibilityRole="button" testID="onboarding-next">
             <LinearGradient colors={getGradient(theme).primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.nextGradient, shadow.glow]}>
               <Heart color={palette.textLight} size={18} fill={palette.textLight} />
-              <Text style={styles.nextText}>{index === slides.length - 1 ? 'Start My Glow Journey ✨' : 'Continue'}</Text>
+              <Text style={styles.nextText} numberOfLines={1} adjustsFontSizeToFit>{index === slides.length - 1 ? 'Start My Glow Journey ✨' : 'Continue'}</Text>
               <ChevronRight color={palette.textLight} size={20} strokeWidth={2.5} />
             </LinearGradient>
           </TouchableOpacity>
@@ -309,7 +309,10 @@ export default function OnboardingScreen() {
 
         <View style={styles.bottomSection}>
           <TouchableOpacity style={styles.signinLink} onPress={() => router.replace('/login')}>
-            <Text style={styles.signinText}>Already part of our beautiful community? <Text style={styles.signinTextBold}>Welcome Back</Text></Text>
+            <Text style={styles.signinText}>
+              Already part of our beautiful community?{' '}
+              <Text style={styles.signinTextBold}>Welcome Back</Text>
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -469,25 +472,23 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     marginHorizontal: 2
   },
   ctaRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
     paddingHorizontal: spacing.xl, 
     marginTop: spacing.lg,
-    marginBottom: spacing.md
+    marginBottom: spacing.sm,
+    gap: spacing.md
   },
   skipBtn: { 
-    paddingVertical: spacing.lg, 
-    paddingHorizontal: spacing.md 
+    paddingVertical: spacing.md, 
+    paddingHorizontal: spacing.md,
+    alignSelf: 'flex-start'
   },
   skipText: { 
     color: palette.textMuted, 
-    fontSize: 17, 
+    fontSize: 16, 
     fontWeight: '600' 
   },
   nextBtn: { 
-    flex: 1, 
-    alignItems: 'flex-end' 
+    width: '100%'
   },
   nextGradient: { 
     paddingVertical: 18, 
@@ -496,8 +497,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     flexDirection: 'row', 
     alignItems: 'center', 
     gap: spacing.sm, 
-    minWidth: 200, 
-    justifyContent: 'center' 
+    justifyContent: 'center',
+    width: '100%'
   },
   nextText: { 
     color: palette.textLight, 
@@ -509,14 +510,16 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     alignSelf: 'center', 
     marginBottom: spacing.xl,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.md
   },
   signinText: { 
     color: palette.textSecondary,
-    fontSize: 15,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 22,
-    fontWeight: '500'
+    lineHeight: 20,
+    fontWeight: '500',
+    flexWrap: 'wrap'
   },
   signinTextBold: { 
     color: palette.primary, 
