@@ -327,25 +327,25 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   slide: { 
     alignItems: 'center', 
-    paddingTop: 60, 
+    paddingTop: 80, 
     paddingHorizontal: spacing.xl,
     flex: 1
   },
   imageContainer: {
     position: 'relative',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center'
   },
   imageGradientBorder: {
-    padding: 6,
-    borderRadius: 116,
+    padding: 8,
+    borderRadius: 140,
     ...shadow.elevated
   },
   imageWrapper: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
     overflow: 'hidden',
     position: 'relative'
   },
@@ -364,54 +364,59 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   imageGlow: {
     position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
     backgroundColor: palette.overlayGold,
     zIndex: -1,
-    opacity: 0.3
+    opacity: 0.2
   },
   contentContainer: {
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.md
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+    flex: 1
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '900',
     color: palette.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.sm,
-    letterSpacing: -0.5,
-    lineHeight: 34
+    marginBottom: spacing.md,
+    letterSpacing: -0.8,
+    lineHeight: 38,
+    paddingHorizontal: spacing.sm
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 16,
     color: palette.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 320,
+    lineHeight: 24,
+    maxWidth: 340,
     fontWeight: '500',
-    marginBottom: spacing.md
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xs
   },
   featureHighlight: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: palette.overlayLight,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
     borderRadius: radii.pill,
-    gap: spacing.sm
+    gap: spacing.sm,
+    marginBottom: spacing.sm
   },
   featureText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: palette.primary,
     letterSpacing: 0.5
   },
   benefitsContainer: {
     marginTop: spacing.md,
-    gap: spacing.xs
+    gap: spacing.sm,
+    alignItems: 'flex-start'
   },
   benefitItem: {
     flexDirection: 'row',
@@ -420,9 +425,10 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     paddingVertical: spacing.xs
   },
   benefitText: {
-    fontSize: 13,
+    fontSize: 14,
     color: palette.textSecondary,
-    fontWeight: '500'
+    fontWeight: '600',
+    lineHeight: 20
   },
   bottomSection: {
     alignItems: 'center',
@@ -467,8 +473,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: spacing.xl, 
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm
+    marginTop: spacing.lg,
+    marginBottom: spacing.md
   },
   skipBtn: { 
     paddingVertical: spacing.lg, 
@@ -476,40 +482,41 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   skipText: { 
     color: palette.textMuted, 
-    fontSize: 16, 
-    fontWeight: '500' 
+    fontSize: 17, 
+    fontWeight: '600' 
   },
   nextBtn: { 
     flex: 1, 
     alignItems: 'flex-end' 
   },
   nextGradient: { 
-    paddingVertical: spacing.lg, 
+    paddingVertical: 18, 
     paddingHorizontal: spacing.xl, 
-    borderRadius: radii.lg, 
+    borderRadius: radii.xl, 
     flexDirection: 'row', 
     alignItems: 'center', 
     gap: spacing.sm, 
-    minWidth: 180, 
+    minWidth: 200, 
     justifyContent: 'center' 
   },
   nextText: { 
     color: palette.textLight, 
     fontWeight: '800', 
-    fontSize: 16,
+    fontSize: 17,
     letterSpacing: 0.3
   },
   signinLink: { 
     alignSelf: 'center', 
     marginBottom: spacing.xl,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg
   },
   signinText: { 
     color: palette.textSecondary,
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 20
+    lineHeight: 22,
+    fontWeight: '500'
   },
   signinTextBold: { 
     color: palette.primary, 
@@ -519,20 +526,20 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   // Floating elements
   floatingSparkle1: {
     position: 'absolute',
-    top: 120,
-    right: 40,
+    top: 150,
+    right: 50,
     zIndex: 1
   },
   floatingSparkle2: {
     position: 'absolute',
-    top: 180,
-    left: 30,
+    top: 220,
+    left: 40,
     zIndex: 1
   },
   floatingSparkle3: {
     position: 'absolute',
-    top: 240,
-    right: 80,
+    top: 300,
+    right: 100,
     zIndex: 1
   }
 });

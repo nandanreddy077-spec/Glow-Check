@@ -545,17 +545,20 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
+    paddingRight: spacing.xs,
   },
   termsText: {
-    fontSize: 14,
+    fontSize: 13,
     color: palette.textSecondary,
     fontWeight: '500',
+    lineHeight: 20,
   },
   termsLink: {
-    fontSize: 14,
+    fontSize: 13,
     color: palette.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
+    lineHeight: 20,
   },
   
   // Floating elements
