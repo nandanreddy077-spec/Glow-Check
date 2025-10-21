@@ -336,44 +336,70 @@ export default function GlowCoachScreen() {
     }
   };
 
-  const renderStepItem = (step: SkincareStep, isCompleted: boolean) => (
-    <TouchableOpacity
-      key={step.id}
-      style={[styles.stepItem, isCompleted && styles.completedStep]}
-      onPress={() => handleStepComplete(step.id)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.stepCheckbox}>
-        {isCompleted ? (
-          <LinearGradient colors={gradient.success} style={styles.checkboxCompleted}>
-            <CheckCircle color={palette.textLight} size={18} />
-          </LinearGradient>
-        ) : (
-          <View style={styles.checkboxEmpty}>
-            <Circle color={palette.textMuted} size={18} />
+  const renderStepItem = (step: SkincareStep, isCompleted: boolean) => {
+    const shouldBlurContent = isFreeUser || isTrialUser;
+    
+    return (
+      <View style={styles.stepItemWrapper}>
+        <TouchableOpacity
+          key={step.id}
+          style={[styles.stepItem, isCompleted && styles.completedStep]}
+          onPress={() => handleStepComplete(step.id)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.stepCheckbox}>
+            {isCompleted ? (
+              <LinearGradient colors={gradient.success} style={styles.checkboxCompleted}>
+                <CheckCircle color={palette.textLight} size={18} />
+              </LinearGradient>
+            ) : (
+              <View style={styles.checkboxEmpty}>
+                <Circle color={palette.textMuted} size={18} />
+              </View>
+            )}
+          </View>
+          
+          <View style={styles.stepContent}>
+            <Text style={[styles.stepName, isCompleted && styles.completedStepText]}>
+              {step.name}
+            </Text>
+            {shouldBlurContent ? (
+              <View style={styles.blurredStepContent}>
+                <View style={styles.blurredText}>
+                  <Text style={[styles.stepDescription, styles.blurredTextOpacity]}>{step.description}</Text>
+                  {step.products.length > 0 && (
+                    <View style={[styles.productsContainer, styles.blurredTextOpacity]}>
+                      <Droplets color={palette.primary} size={12} />
+                      <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.stepDescription}>{step.description}</Text>
+                {step.products.length > 0 && (
+                  <View style={styles.productsContainer}>
+                    <Droplets color={palette.primary} size={12} />
+                    <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+        
+        {shouldBlurContent && (
+          <View style={styles.stepBlurOverlay}>
+            <View style={styles.lockBadge}>
+              <Crown color={palette.primary} size={14} />
+              <Text style={styles.lockBadgeText}>Premium</Text>
+            </View>
           </View>
         )}
       </View>
-      
-      <View style={styles.stepContent}>
-        <Text style={[styles.stepName, isCompleted && styles.completedStepText]}>
-          {step.name}
-        </Text>
-        <BlurredContent
-          shouldBlur={isFreeUser || isTrialUser}
-          message={isTrialUser ? "Upgrade to paid plan to unlock full routine details" : "Start 3-day trial to unlock routine details"}
-        >
-          <Text style={styles.stepDescription}>{step.description}</Text>
-          {step.products.length > 0 && (
-            <View style={styles.productsContainer}>
-              <Droplets color={palette.primary} size={12} />
-              <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
-            </View>
-          )}
-        </BlurredContent>
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1460,5 +1486,49 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: typography.bold,
     letterSpacing: 0.2,
+  },
+  stepItemWrapper: {
+    position: 'relative',
+    marginBottom: 0,
+  },
+  blurredStepContent: {
+    position: 'relative',
+  },
+  blurredText: {
+    opacity: 0.05,
+  },
+  blurredTextOpacity: {
+    opacity: 1,
+  },
+  stepBlurOverlay: {
+    position: 'absolute',
+    top: 38,
+    left: 0,
+    right: 0,
+    bottom: spacing.md,
+    backgroundColor: 'rgba(15, 13, 16, 0.90)',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backdropFilter: 'blur(20px)',
+    paddingHorizontal: spacing.lg,
+  },
+  lockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(212, 165, 116, 0.15)',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 165, 116, 0.4)',
+  },
+  lockBadgeText: {
+    color: palette.primary,
+    fontSize: typography.caption,
+    fontWeight: typography.bold,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });
