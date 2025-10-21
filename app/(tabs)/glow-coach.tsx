@@ -47,6 +47,8 @@ import { SkincareStep, WeeklyPlan, SkincarePlan } from '@/types/skincare';
 import { router } from 'expo-router';
 import DailyRewardsModal from '@/components/DailyRewardsModal';
 import AnimatedProgressBar from '@/components/AnimatedProgressBar';
+import { useFreemium } from '@/contexts/FreemiumContext';
+import BlurredContent from '@/components/BlurredContent';
 
 interface DailyReward {
   id: string;
@@ -68,6 +70,7 @@ export default function GlowCoachScreen() {
     canAddMorePlans 
   } = useSkincare();
   const { completeDailyRoutine, hasCompletedToday, hasCompletedForPlanDay } = useGamification();
+  const { isFreeUser, isTrialUser, isPaidUser } = useFreemium();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [selectedMood, setSelectedMood] = useState<'great' | 'good' | 'okay' | 'bad' | null>(null);
@@ -352,6 +355,10 @@ export default function GlowCoachScreen() {
         )}
       </View>
       
+      <BlurredContent
+        shouldBlur={isFreeUser || isTrialUser}
+        message={isTrialUser ? "Upgrade to paid plan to unlock full routine details" : "Start 3-day trial to unlock routine details"}
+      >
       <View style={styles.stepContent}>
         <Text style={[styles.stepName, isCompleted && styles.completedStepText]}>
           {step.name}
@@ -364,6 +371,7 @@ export default function GlowCoachScreen() {
           </View>
         )}
       </View>
+      </BlurredContent>
     </TouchableOpacity>
   );
 
@@ -478,6 +486,31 @@ export default function GlowCoachScreen() {
               </View>
               <Text style={styles.weekFocusText}>{currentWeekPlan.focus}</Text>
               <Text style={styles.weekFocusDescription}>{currentWeekPlan.description}</Text>
+            </LinearGradient>
+          </View>
+        )}
+
+        {/* Trial Upgrade CTA */}
+        {isTrialUser && (
+          <View style={styles.trialUpgradeSection}>
+            <LinearGradient colors={gradient.warning} style={styles.trialUpgradeCard}>
+              <View style={styles.trialUpgradeHeader}>
+                <Crown color={palette.primary} size={24} />
+                <Text style={styles.trialUpgradeTitle}>Upgrade to Premium</Text>
+              </View>
+              <Text style={styles.trialUpgradeText}>
+                Cancel your trial and upgrade now to unlock all Glow Coach routines and never lose access!
+              </Text>
+              <TouchableOpacity 
+                style={styles.trialUpgradeButton}
+                onPress={() => router.push('/plan-selection')}
+                activeOpacity={0.9}
+              >
+                <LinearGradient colors={gradient.primary} style={styles.trialUpgradeButtonGradient}>
+                  <Sparkles color={palette.textLight} size={18} />
+                  <Text style={styles.trialUpgradeButtonText}>Cancel Trial & Upgrade Now</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </LinearGradient>
           </View>
         )}
@@ -1378,5 +1411,54 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  trialUpgradeSection: {
+    paddingHorizontal: spacing.xxl,
+    marginBottom: spacing.xxl,
+  },
+  trialUpgradeCard: {
+    borderRadius: 20,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: palette.borderLight,
+    ...shadow.elevated,
+  },
+  trialUpgradeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  trialUpgradeTitle: {
+    fontSize: typography.h5,
+    fontWeight: typography.extrabold,
+    color: palette.textPrimary,
+    letterSpacing: -0.2,
+  },
+  trialUpgradeText: {
+    fontSize: typography.bodySmall,
+    color: palette.textSecondary,
+    lineHeight: 22,
+    marginBottom: spacing.lg,
+    fontWeight: typography.regular,
+  },
+  trialUpgradeButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...shadow.card,
+  },
+  trialUpgradeButtonGradient: {
+    flexDirection: 'row',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  trialUpgradeButtonText: {
+    color: palette.textLight,
+    fontSize: typography.body,
+    fontWeight: typography.bold,
+    letterSpacing: 0.2,
   },
 });

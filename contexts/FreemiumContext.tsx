@@ -94,63 +94,89 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
 
   const glowScansToday = useMemo(() => {
     if (!trialTracking) return 0;
+    if (!subState.hasStartedTrial) return 0;
     const today = new Date().toISOString().split('T')[0];
     const lastScanDate = trialTracking.last_free_scan_at?.split('T')[0];
-    return lastScanDate === today ? 1 : 0;
-  }, [trialTracking]);
+    return lastScanDate === today ? (trialTracking.free_scans_used || 0) : 0;
+  }, [trialTracking, subState.hasStartedTrial]);
 
   const styleScansToday = useMemo(() => {
     if (!trialTracking) return 0;
+    if (!subState.hasStartedTrial) return 0;
     const today = new Date().toISOString().split('T')[0];
     const lastScanDate = trialTracking.last_free_scan_at?.split('T')[0];
-    return lastScanDate === today ? 1 : 0;
-  }, [trialTracking]);
+    return lastScanDate === today ? (trialTracking.free_scans_used || 0) : 0;
+  }, [trialTracking, subState.hasStartedTrial]);
 
   const canScanGlow = useMemo(() => {
     if (subState.isPremium) return true;
     
     if (subState.hasStartedTrial) {
-      return glowScansToday < TRIAL_DAILY_SCANS;
+      const today = new Date().toISOString().split('T')[0];
+      const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
+      const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      return scansToday < TRIAL_DAILY_SCANS;
     }
     
     return (trialTracking?.free_scans_used || 0) < FREE_SCANS;
-  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, glowScansToday]);
+  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
 
   const canScanStyle = useMemo(() => {
     if (subState.isPremium) return true;
     
     if (subState.hasStartedTrial) {
-      return styleScansToday < TRIAL_DAILY_SCANS;
+      const today = new Date().toISOString().split('T')[0];
+      const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
+      const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      return scansToday < TRIAL_DAILY_SCANS;
     }
     
     return (trialTracking?.free_scans_used || 0) < FREE_SCANS;
-  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, styleScansToday]);
+  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
 
   const glowScansLeft = useMemo(() => {
     if (subState.isPremium) return Infinity;
     
     if (subState.hasStartedTrial) {
-      return Math.max(0, TRIAL_DAILY_SCANS - glowScansToday);
+      const today = new Date().toISOString().split('T')[0];
+      const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
+      const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      return Math.max(0, TRIAL_DAILY_SCANS - scansToday);
     }
     
     return Math.max(0, FREE_SCANS - (trialTracking?.free_scans_used || 0));
-  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, glowScansToday]);
+  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
 
   const styleScansLeft = useMemo(() => {
     if (subState.isPremium) return Infinity;
     
     if (subState.hasStartedTrial) {
-      return Math.max(0, TRIAL_DAILY_SCANS - styleScansToday);
+      const today = new Date().toISOString().split('T')[0];
+      const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
+      const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      return Math.max(0, TRIAL_DAILY_SCANS - scansToday);
     }
     
     return Math.max(0, FREE_SCANS - (trialTracking?.free_scans_used || 0));
-  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, styleScansToday]);
+  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
 
   const incrementGlowScan = useCallback(async () => {
     if (!user?.id) return;
 
     const now = new Date().toISOString();
-    const newCount = (trialTracking?.free_scans_used || 0) + 1;
+    const today = new Date().toISOString().split('T')[0];
+    const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
+    
+    let newCount;
+    if (subState.hasStartedTrial) {
+      if (lastScanDate === today) {
+        newCount = (trialTracking?.free_scans_used || 0) + 1;
+      } else {
+        newCount = 1;
+      }
+    } else {
+      newCount = (trialTracking?.free_scans_used || 0) + 1;
+    }
 
     try {
       const { error } = await supabase
@@ -185,7 +211,19 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     if (!user?.id) return;
 
     const now = new Date().toISOString();
-    const newCount = (trialTracking?.free_scans_used || 0) + 1;
+    const today = new Date().toISOString().split('T')[0];
+    const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
+    
+    let newCount;
+    if (subState.hasStartedTrial) {
+      if (lastScanDate === today) {
+        newCount = (trialTracking?.free_scans_used || 0) + 1;
+      } else {
+        newCount = 1;
+      }
+    } else {
+      newCount = (trialTracking?.free_scans_used || 0) + 1;
+    }
 
     try {
       const { error } = await supabase
