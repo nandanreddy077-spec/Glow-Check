@@ -24,7 +24,7 @@ import BlurredContent from '@/components/BlurredContent';
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
   const { canViewResults, incrementScanCount, state } = useSubscription();
-  const { isFreemiumUser, incrementGlowScan } = useFreemium();
+  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeScan, incrementGlowScan } = useFreemium();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
   const [badge, setBadge] = useState<string>('');
@@ -39,10 +39,16 @@ export default function AnalysisResultsScreen() {
   const styles = createStyles(palette);
 
   const handleStartPlan = () => {
-    if (isFreemiumUser) {
-      router.push('/plan-selection');
-    } else {
+    if (isFreeUser && !hasUsedFreeScan) {
       router.push('/skincare-plan-selection');
+    } else if (isFreeUser && hasUsedFreeScan) {
+      router.push('/plan-selection');
+    } else if (isTrialUser) {
+      router.push('/skincare-plan-selection');
+    } else if (isPaidUser) {
+      router.push('/skincare-plan-selection');
+    } else {
+      router.push('/plan-selection');
     }
   };
 
@@ -56,9 +62,7 @@ export default function AnalysisResultsScreen() {
     if (hasCountedRef.current !== String(currentResult.timestamp)) {
       hasCountedRef.current = String(currentResult.timestamp);
       incrementScanCount();
-      if (isFreemiumUser) {
-        incrementGlowScan();
-      }
+      incrementGlowScan();
     }
 
     const s = currentResult.overallScore;
@@ -79,13 +83,13 @@ export default function AnalysisResultsScreen() {
       scoreAnim.removeListener(sub);
       scoreAnim.stopAnimation();
     };
-  }, [currentResult?.timestamp, scoreAnim, incrementScanCount, incrementGlowScan, isFreemiumUser]);
+  }, [currentResult?.timestamp, scoreAnim, incrementScanCount, incrementGlowScan]);
 
-  // Redirect to plan selection after viewing results (if freemium)
+  // Redirect to plan selection after viewing results (if free user)
   useEffect(() => {
     if (!currentResult || hasRedirected) return;
     
-    if (!isFreemiumUser) return;
+    if (!isFreeUser) return;
     
     // After user has viewed results for 8 seconds, redirect to plan selection
     const redirectTimer = setTimeout(() => {
@@ -94,7 +98,7 @@ export default function AnalysisResultsScreen() {
     }, 8000);
     
     return () => clearTimeout(redirectTimer);
-  }, [currentResult, hasRedirected, isFreemiumUser]);
+  }, [currentResult, hasRedirected, isFreeUser]);
 
   const previousScore = useMemo(() => {
     if (!analysisHistory || analysisHistory.length === 0 || !currentResult) return null as number | null;
@@ -348,20 +352,29 @@ export default function AnalysisResultsScreen() {
             <Sparkles color={palette.primary} size={16} fill={palette.primary} strokeWidth={2.5} />
           </View>
           <View style={styles.tipsContainer}>
-            {currentResult.personalizedTips.slice(0, isFreemiumUser ? 4 : currentResult.personalizedTips.length).map((tip, index) => (
-              <View key={index} style={styles.tipItem}>
-                <View style={styles.tipNumber}>
-                  <Text style={styles.tipNumberText}>{index + 1}</Text>
-                </View>
-                <Text style={styles.tipText}>{tip}</Text>
-              </View>
-            ))}
-            {isFreemiumUser && currentResult.personalizedTips.length > 4 && (
+            {currentResult.personalizedTips.slice(0, Math.min(8, currentResult.personalizedTips.length)).map((tip, index) => {
+              const shouldBlur = isFreeUser && index >= 4;
+              
+              if (!shouldBlur) {
+                return (
+                  <View key={index} style={styles.tipItem}>
+                    <View style={styles.tipNumber}>
+                      <Text style={styles.tipNumberText}>{index + 1}</Text>
+                    </View>
+                    <Text style={styles.tipText}>{tip}</Text>
+                  </View>
+                );
+              }
+              
+              return null;
+            })}
+            
+            {isFreeUser && currentResult.personalizedTips.length > 4 && (
               <BlurredContent 
-                message="Upgrade to view all personalized tips"
+                message="Start your 3-day free trial to unlock all 8 personalized beauty tips"
                 testID="blurred-tips"
               >
-                {currentResult.personalizedTips.slice(4).map((tip, index) => (
+                {currentResult.personalizedTips.slice(4, 8).map((tip, index) => (
                   <View key={index + 4} style={styles.tipItem}>
                     <View style={styles.tipNumber}>
                       <Text style={styles.tipNumberText}>{index + 5}</Text>
