@@ -648,7 +648,13 @@ export default function GlowCoachScreen() {
               style={[styles.completeDayButton, {
                 opacity: currentPlan.progress.currentDay > currentPlan.duration ? 0.6 : 1
               }]}
-              onPress={handleCompleteDailyRoutine}
+              onPress={() => {
+                if (isFreeUser || isTrialUser) {
+                  router.push('/plan-selection');
+                } else {
+                  handleCompleteDailyRoutine();
+                }
+              }}
               disabled={currentPlan.progress.currentDay > currentPlan.duration}
               activeOpacity={0.8}
             >

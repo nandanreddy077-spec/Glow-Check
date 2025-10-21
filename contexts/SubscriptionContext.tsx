@@ -206,9 +206,18 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     try {
       console.log('Syncing subscription status with backend...');
       
-      // Get subscription status from Supabase
-      const { data, error } = await supabase
+      // Get subscription status from Supabase with timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+      
+      const subscriptionPromise = supabase
         .rpc('get_user_subscription_status', { user_id: user.id });
+      
+      const { data, error } = await Promise.race([
+        subscriptionPromise,
+        timeoutPromise
+      ]) as any;
       
       if (error) {
         console.error('Failed to get subscription status:', error.message || error);
@@ -230,7 +239,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         await setSubscriptionData(backendState);
       }
     } catch (error: any) {
-      console.error('Failed to get subscription status:', error?.message || String(error));
+      const errorMsg = error?.message || String(error);
+      if (errorMsg.includes('Network request failed') || errorMsg.includes('502') || errorMsg.includes('timeout')) {
+        console.log('Network error syncing subscription. Using local state.');
+      } else {
+        console.error('Failed to get subscription status:', errorMsg);
+      }
     }
   }, [user?.id, setSubscriptionData]);
 
@@ -243,15 +257,17 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
           setState(JSON.parse(raw) as SubscriptionState);
         }
         
-        // Sync with backend if user is authenticated
+        // Sync with backend if user is authenticated (non-blocking)
         if (user?.id) {
-          await syncSubscriptionStatus();
+          syncSubscriptionStatus().catch(err => {
+            console.log('Background sync failed, using local state:', err.message);
+          });
         }
       } catch (e) {
         console.log('Failed to load subscription state', e);
       }
     })();
-  }, [user?.id, syncSubscriptionStatus]);
+  }, [user?.id]);
   
   const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }> => {
     try {
