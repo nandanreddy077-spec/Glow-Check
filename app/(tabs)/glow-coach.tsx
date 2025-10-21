@@ -559,9 +559,11 @@ export default function GlowCoachScreen() {
                   <Text style={styles.routineTimeTitle}>Morning Glow</Text>
                 </View>
                 
-                {todaySteps.morning.map((step: SkincareStep) => 
-                  renderStepItem(step, currentPlan.progress.completedSteps.includes(step.id))
-                )}
+                {todaySteps.morning.map((step: SkincareStep) => (
+                  <View key={step.id}>
+                    {renderStepItem(step, currentPlan.progress.completedSteps.includes(step.id))}
+                  </View>
+                ))}
               </LinearGradient>
             </View>
           )}
@@ -577,9 +579,11 @@ export default function GlowCoachScreen() {
                   <Text style={styles.routineTimeTitle}>Evening Renewal</Text>
                 </View>
                 
-                {todaySteps.evening.map((step: SkincareStep) => 
-                  renderStepItem(step, currentPlan.progress.completedSteps.includes(step.id))
-                )}
+                {todaySteps.evening.map((step: SkincareStep) => (
+                  <View key={step.id}>
+                    {renderStepItem(step, currentPlan.progress.completedSteps.includes(step.id))}
+                  </View>
+                ))}
               </LinearGradient>
             </View>
           )}
