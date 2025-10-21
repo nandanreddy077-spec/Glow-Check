@@ -377,9 +377,10 @@ export default function GlowCoachScreen() {
         {shouldBlurContent && (
           <View style={styles.stepBlurOverlay}>
             <LinearGradient 
-              colors={['rgba(255, 255, 255, 0.85)', 'rgba(249, 244, 239, 0.90)']} 
+              colors={['rgba(255, 255, 255, 0.98)', 'rgba(249, 244, 239, 0.98)']} 
               style={styles.frostedGlass}
             >
+              <View style={styles.opaqueLayer} />
               <View style={styles.lockBadge}>
                 <Crown color={palette.primary} size={16} />
                 <Text style={styles.lockBadgeText}>Premium</Text>
@@ -1488,7 +1489,7 @@ const styles = StyleSheet.create({
   },
   stepBlurOverlay: {
     position: 'absolute',
-    top: 38,
+    top: 0,
     left: 0,
     right: 0,
     bottom: spacing.md,
@@ -1502,6 +1503,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     backdropFilter: 'blur(20px)',
+  },
+  opaqueLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
   },
   lockBadge: {
     flexDirection: 'row',
