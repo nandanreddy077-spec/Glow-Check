@@ -37,7 +37,6 @@ interface FreemiumContextType {
 
 const FREE_SCANS = 1;
 const TRIAL_DAILY_SCANS = 2;
-const TRIAL_DURATION_DAYS = 3;
 
 export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContextType>(() => {
   const { user } = useAuth();
@@ -84,7 +83,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         setTrialTracking(data);
       }
     } catch (error: any) {
-      console.error('Failed to load scan usage:', error?.message || String(error));
+      console.error('Error loading scan usage:', error?.message || String(error));
     }
   }, [user?.id]);
 

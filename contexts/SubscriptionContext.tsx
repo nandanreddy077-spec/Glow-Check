@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { Platform } from 'react-native';
-import { paymentService, PRODUCT_IDS, trackPurchaseEvent, trackTrialStartEvent } from '@/lib/payments';
+import { paymentService, PRODUCT_IDS, trackPurchaseEvent } from '@/lib/payments';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -43,6 +43,7 @@ export interface SubscriptionContextType {
   incrementScanCount: () => Promise<void>;
   reset: () => Promise<void>;
   processInAppPurchase: (type: 'monthly' | 'yearly') => Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }>;
+  restorePurchases: () => Promise<{ success: boolean; error?: string }>;
 }
 
 const STORAGE_KEY = 'glowcheck_subscription_state';
@@ -61,25 +62,6 @@ const DEFAULT_STATE: SubscriptionState = {
 export const [SubscriptionProvider, useSubscription] = createContextHook<SubscriptionContextType>(() => {
   const [state, setState] = useState<SubscriptionState>(DEFAULT_STATE);
   const { user } = useAuth();
-
-  useEffect(() => {
-    (async () => {
-      try {
-        // Load local state first
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          setState(JSON.parse(raw) as SubscriptionState);
-        }
-        
-        // Sync with backend if user is authenticated
-        if (user?.id) {
-          await syncSubscriptionStatus();
-        }
-      } catch (e) {
-        console.log('Failed to load subscription state', e);
-      }
-    })();
-  }, [user?.id]);
 
   const persist = useCallback(async (next: SubscriptionState) => {
     setState(next);
@@ -121,11 +103,6 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       subscriptionPrice: price,
       nextBillingDate: nextBillingDate.toISOString(),
     };
-    await persist(next);
-  }, [persist, state]);
-
-  const setSubscriptionData = useCallback(async (data: Partial<SubscriptionState>) => {
-    const next: SubscriptionState = { ...state, ...data };
     await persist(next);
   }, [persist, state]);
 
@@ -217,6 +194,11 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     await persist(next);
   }, [persist, state, inTrial]);
 
+  const setSubscriptionData = useCallback(async (data: Partial<SubscriptionState>) => {
+    const next: SubscriptionState = { ...state, ...data };
+    await persist(next);
+  }, [persist, state]);
+
   // Sync subscription status with backend
   const syncSubscriptionStatus = useCallback(async () => {
     if (!user?.id) return;
@@ -229,7 +211,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         .rpc('get_user_subscription_status', { user_id: user.id });
       
       if (error) {
-        console.error('Failed to get subscription status:', error);
+        console.error('Failed to get subscription status:', error.message || error);
         return;
       }
       
@@ -247,10 +229,29 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         
         await setSubscriptionData(backendState);
       }
-    } catch (error) {
-      console.error('Failed to sync subscription status:', error);
+    } catch (error: any) {
+      console.error('Failed to get subscription status:', error?.message || String(error));
     }
   }, [user?.id, setSubscriptionData]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        // Load local state first
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          setState(JSON.parse(raw) as SubscriptionState);
+        }
+        
+        // Sync with backend if user is authenticated
+        if (user?.id) {
+          await syncSubscriptionStatus();
+        }
+      } catch (e) {
+        console.log('Failed to load subscription state', e);
+      }
+    })();
+  }, [user?.id, syncSubscriptionStatus]);
   
   const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }> => {
     try {
@@ -359,6 +360,63 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     return isTrialExpired || !canScan || !canViewResults;
   }, [state.isPremium, state.hasStartedTrial, inTrial, isTrialExpired, canScan, canViewResults]);
 
+  const restorePurchases = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      console.log('Restoring purchases...');
+      
+      if (Platform.OS === 'web') {
+        console.log('Restore purchases not available on web');
+        return { success: false, error: 'Restore purchases not supported on web.' };
+      }
+      
+      // Initialize payment service
+      const initialized = await paymentService.initialize();
+      if (!initialized) {
+        return { success: false, error: 'Payment service unavailable. Please try again later.' };
+      }
+      
+      // Restore purchases - returns SubscriptionInfo[]
+      const subscriptions = await paymentService.restorePurchases();
+      
+      if (subscriptions && subscriptions.length > 0) {
+        console.log('Purchases restored successfully:', subscriptions);
+        
+        // Update local state with restored subscription
+        const activeSubscription = subscriptions[0];
+        const subscriptionType = activeSubscription.productId.includes('annual') || activeSubscription.productId.includes('yearly') 
+          ? 'yearly' 
+          : 'monthly';
+        
+        await setPremium(true, subscriptionType);
+        await setSubscriptionData({
+          purchaseToken: activeSubscription.purchaseToken,
+          originalTransactionId: activeSubscription.originalTransactionId,
+          nextBillingDate: activeSubscription.expiryDate,
+        });
+        
+        // Sync with backend to get the latest subscription status
+        if (user?.id) {
+          await syncSubscriptionStatus();
+        }
+        
+        return { success: true };
+      } else {
+        console.log('No purchases to restore');
+        return { 
+          success: false, 
+          error: 'No purchases found to restore.' 
+        };
+      }
+      
+    } catch (error) {
+      console.error('Restore purchases error:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.' 
+      };
+    }
+  }, [user?.id, syncSubscriptionStatus, setPremium, setSubscriptionData]);
+
   return useMemo(() => ({
     state,
     inTrial,
@@ -375,5 +433,6 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     incrementScanCount,
     reset,
     processInAppPurchase,
-  }), [state, inTrial, daysLeft, hoursLeft, canScan, scansLeft, isTrialExpired, canViewResults, needsPremium, startLocalTrial, setPremium, setSubscriptionData, incrementScanCount, reset, processInAppPurchase]);
+    restorePurchases,
+  }), [state, inTrial, daysLeft, hoursLeft, canScan, scansLeft, isTrialExpired, canViewResults, needsPremium, startLocalTrial, setPremium, setSubscriptionData, incrementScanCount, reset, processInAppPurchase, restorePurchases]);
 });
