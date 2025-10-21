@@ -17,18 +17,20 @@ import {
   Camera,
   Palette,
   Users,
-  TrendingUp
+  TrendingUp,
+  RotateCcw
 } from 'lucide-react-native';
 import { getPalette, getGradient } from '@/constants/theme';
 
 const { width } = Dimensions.get('window');
 
 export default function SubscribeScreen() {
-  const { processInAppPurchase, inTrial, state } = useSubscription();
+  const { processInAppPurchase, inTrial, state, setSubscriptionData, setPremium } = useSubscription();
 
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isRestoring, setIsRestoring] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [scaleAnim] = useState(new Animated.Value(0));
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -133,6 +135,72 @@ export default function SubscribeScreen() {
       [{ text: 'OK', style: 'default' }]
     );
   }, []);
+
+  const handleRestore = useCallback(async () => {
+    if (isRestoring) return;
+    
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        'Mobile App Required',
+        'Restore purchases is only available in the mobile app.',
+        [{ text: 'Got it', style: 'default' }]
+      );
+      return;
+    }
+    
+    setIsRestoring(true);
+    console.log('Restoring purchases...');
+    
+    try {
+      const { paymentService } = await import('@/lib/payments');
+      const subscriptions = await paymentService.restorePurchases();
+      
+      console.log('Restored subscriptions:', subscriptions);
+      
+      if (subscriptions && subscriptions.length > 0) {
+        const activeSubscription = subscriptions[0];
+        
+        const subscriptionType = activeSubscription.productId.includes('annual') || activeSubscription.productId.includes('yearly') 
+          ? 'yearly' 
+          : 'monthly';
+        
+        await setPremium(true, subscriptionType);
+        await setSubscriptionData({
+          purchaseToken: activeSubscription.purchaseToken,
+          originalTransactionId: activeSubscription.originalTransactionId,
+          nextBillingDate: activeSubscription.expiryDate,
+        });
+        
+        Alert.alert(
+          '✅ Purchases Restored!',
+          `Your ${subscriptionType} subscription has been restored. Enjoy your premium features!`,
+          [{ 
+            text: 'Great! ✨', 
+            style: 'default',
+            onPress: () => {
+              console.log('Purchases restored successfully');
+              router.back();
+            }
+          }]
+        );
+      } else {
+        Alert.alert(
+          'No Purchases Found',
+          'We couldn\'t find any active subscriptions associated with your account. If you believe this is an error, please contact support.',
+          [{ text: 'OK', style: 'default' }]
+        );
+      }
+    } catch (err) {
+      console.error('Restore purchases error:', err);
+      Alert.alert(
+        'Restore Failed',
+        'Unable to restore purchases. Please check your internet connection and try again.',
+        [{ text: 'OK', style: 'default' }]
+      );
+    } finally {
+      setIsRestoring(false);
+    }
+  }, [isRestoring, setPremium, setSubscriptionData]);
 
   const handleBack = useCallback(() => {
     router.back();
@@ -349,6 +417,20 @@ export default function SubscribeScreen() {
             <Text style={[styles.benefitText, { color: palette.textSecondary }]}>Cancel anytime</Text>
           </View>
         </View>
+
+        {/* Restore Purchases */}
+        <TouchableOpacity 
+          style={styles.restoreButton} 
+          onPress={handleRestore} 
+          disabled={isRestoring}
+          activeOpacity={0.7}
+          testID="restore-button"
+        >
+          <RotateCcw color={palette.textSecondary} size={16} strokeWidth={2.5} />
+          <Text style={[styles.restoreText, { color: palette.textSecondary }]}>
+            {isRestoring ? 'Restoring...' : 'Restore Purchases'}
+          </Text>
+        </TouchableOpacity>
 
         {/* Manage Subscription */}
         {state.isPremium && (
@@ -651,6 +733,18 @@ const styles = StyleSheet.create({
   benefitText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  restoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  restoreText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
   manageButton: {
     flexDirection: 'row',
