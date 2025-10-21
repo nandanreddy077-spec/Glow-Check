@@ -17,15 +17,14 @@ import {
   Camera,
   Palette,
   Users,
-  TrendingUp,
-  Gift
+  TrendingUp
 } from 'lucide-react-native';
 import { getPalette, getGradient } from '@/constants/theme';
 
 const { width } = Dimensions.get('window');
 
 export default function SubscribeScreen() {
-  const { startLocalTrial, processInAppPurchase, inTrial, state } = useSubscription();
+  const { processInAppPurchase, inTrial, state } = useSubscription();
 
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -52,19 +51,6 @@ export default function SubscribeScreen() {
       })
     ]).start();
   }, [scaleAnim, fadeAnim]);
-
-  const handleStartTrial = useCallback(async () => {
-    try {
-      await startLocalTrial(3);
-      Alert.alert(
-        '🌟 Trial Started!', 
-        'Your 3-day free trial has started! You can now scan and view results for 3 days.',
-        [{ text: 'Start Glowing ✨', style: 'default', onPress: () => router.back() }]
-      );
-    } catch {
-      Alert.alert('Error', 'Could not start trial. Please try again.');
-    }
-  }, [startLocalTrial]);
 
   const handleSubscribe = useCallback(async (type: 'monthly' | 'yearly') => {
     if (isProcessing) return;
@@ -136,7 +122,7 @@ export default function SubscribeScreen() {
     } finally {
       setIsProcessing(false);
     }
-  }, [isProcessing, processInAppPurchase, router]);
+  }, [isProcessing, processInAppPurchase]);
 
   const handleManage = useCallback(async () => {
     Alert.alert(
@@ -189,10 +175,10 @@ export default function SubscribeScreen() {
             <Heart color={palette.pearl} size={32} fill={palette.pearl} strokeWidth={2} />
           </LinearGradient>
           <Text style={[styles.heroTitle, { color: palette.textPrimary }]}>
-            Start Your Beauty Journey
+            Start Your Glow Journey
           </Text>
           <Text style={[styles.heroText, { color: palette.textSecondary }]}>
-            3-day free trial, then choose your perfect plan
+            Try free for 3 days • Choose your plan below
           </Text>
         </View>
 
@@ -231,25 +217,7 @@ export default function SubscribeScreen() {
           </View>
         </View>
 
-        {/* Trial Button */}
-        {!state.hasStartedTrial && !state.isPremium && (
-          <TouchableOpacity 
-            style={styles.trialButton} 
-            onPress={handleStartTrial}
-            disabled={isProcessing}
-            activeOpacity={0.8}
-            testID="start-trial-button"
-          >
-            <LinearGradient 
-              colors={gradient.primary} 
-              style={styles.buttonGradient}
-            >
-              <Gift color={palette.textPrimary} size={20} strokeWidth={2.5} />
-              <Text style={[styles.buttonText, { color: palette.textPrimary }]}>Start Free Trial</Text>
-              <Text style={[styles.buttonSubtext, { color: palette.textPrimary }]}>3 days free • No payment required</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
+        {/* Note: Trial is included with subscription - removed standalone trial button */}
         
         {/* Trial Status */}
         {(inTrial || state.isPremium) && (
@@ -360,11 +328,11 @@ export default function SubscribeScreen() {
             style={styles.subscribeGradient}
           >
             <Text style={[styles.subscribeText, { color: state.isPremium ? palette.textMuted : palette.textPrimary }]}>
-              {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Continue'}
+              {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Start 3-Day Free Trial'}
             </Text>
             {!state.isPremium && !isProcessing && (
               <Text style={[styles.subscribePrice, { color: palette.textSecondary }]}>
-                {selectedPlan === 'yearly' ? '$99/year after trial' : '$8.99/month after trial'}
+                Then {selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}
               </Text>
             )}
           </LinearGradient>
@@ -393,8 +361,8 @@ export default function SubscribeScreen() {
         {/* Legal Text */}
         <Text style={[styles.legalText, { color: palette.textMuted }]}>
           By continuing, you agree to our Terms of Service and Privacy Policy.
-          {!state.hasStartedTrial && !state.isPremium ? ' Your 3-day free trial starts immediately. No payment required during trial.' : ''}
-          {Platform.OS !== 'web' ? ' Subscription will be charged to your App Store/Play Store account.' : ''}
+          {!state.isPremium ? ' Start your 3-day free trial by selecting a plan. No charge until trial ends. Cancel anytime before trial expires to avoid charges.' : ''}
+          {Platform.OS !== 'web' ? ' Subscription managed via App Store/Play Store.' : ''}
         </Text>
         </Animated.View>
       </ScrollView>

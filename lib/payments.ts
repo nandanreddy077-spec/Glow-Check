@@ -9,9 +9,15 @@ export const REVENUECAT_CONFIG = {
 } as const;
 
 // Product IDs for App Store and Google Play
+// IMPORTANT: These must match App Store Connect exactly
 export const PRODUCT_IDS = {
-  MONTHLY: process.env.EXPO_PUBLIC_IAP_MONTHLY_PRODUCT_ID || 'com.glowcheck01.app.premium.monthly',
-  YEARLY: process.env.EXPO_PUBLIC_IAP_YEARLY_PRODUCT_ID || 'com.glowcheck01.app.premium.annual',
+  // iOS App Store IDs (from App Store Connect - Subscription Group: Premium Access)
+  MONTHLY: Platform.OS === 'ios' 
+    ? 'com.glowcheck.monthly.premium'
+    : (process.env.EXPO_PUBLIC_IAP_MONTHLY_PRODUCT_ID || 'com.glowcheck01.app.premium.monthly'),
+  YEARLY: Platform.OS === 'ios'
+    ? 'com.glowcheck.yearly1.premium'
+    : (process.env.EXPO_PUBLIC_IAP_YEARLY_PRODUCT_ID || 'com.glowcheck01.app.premium.annual'),
 } as const;
 
 // App Store Connect Configuration
@@ -19,6 +25,7 @@ export const APP_STORE_CONFIG = {
   TEAM_ID: process.env.EXPO_PUBLIC_APP_STORE_TEAM_ID || '2V4DJQD8G3',
   BUNDLE_ID: process.env.EXPO_PUBLIC_APP_STORE_BUNDLE_ID || 'com.glowcheck01.app',
   SHARED_SECRET: process.env.EXPO_PUBLIC_APP_STORE_SHARED_SECRET || '5063e6dd7c174550b12001c140f6b803',
+  SUBSCRIPTION_GROUP_ID: '21788174', // From App Store Connect
 } as const;
 
 // Google Play Configuration
@@ -28,18 +35,22 @@ export const GOOGLE_PLAY_CONFIG = {
 } as const;
 
 // Pricing Configuration
+// NOTE: 3-day free trial is configured in App Store Connect as an Introductory Offer
+// Users MUST select a plan to access the trial (no free tier trial without payment)
 export const PRICING = {
   MONTHLY: {
     price: 8.99,
     currency: 'USD',
     period: 'P1M', // ISO 8601 duration format
-    trialPeriod: 'P3D', // 3 days free trial
+    trialPeriod: 'P3D', // 3 days free trial (via App Store introductory offer)
+    displayPrice: '$8.99',
   },
   YEARLY: {
     price: 99.00,
     currency: 'USD',
     period: 'P1Y', // ISO 8601 duration format
-    trialPeriod: 'P3D', // 3 days free trial
+    trialPeriod: 'P3D', // 3 days free trial (via App Store introductory offer)
+    displayPrice: '$99',
   },
 } as const;
 
