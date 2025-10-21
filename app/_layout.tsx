@@ -13,6 +13,7 @@ import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CommunityProvider } from "@/contexts/CommunityContext";
+import { FreemiumProvider } from "@/contexts/FreemiumContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import { initializeNotifications } from "@/lib/notifications";
@@ -89,12 +90,14 @@ export default function RootLayout() {
                     <SkincareProvider>
                       <StyleProvider>
                         <SubscriptionProvider>
-                          <GestureHandlerRootView style={styles.container}>
-                            <CommunityProvider>
-                              <TrialStarter />
-                              <RootLayoutNav />
-                            </CommunityProvider>
-                          </GestureHandlerRootView>
+                          <FreemiumProvider>
+                            <GestureHandlerRootView style={styles.container}>
+                              <CommunityProvider>
+                                <TrialStarter />
+                                <RootLayoutNav />
+                              </CommunityProvider>
+                            </GestureHandlerRootView>
+                          </FreemiumProvider>
                         </SubscriptionProvider>
                       </StyleProvider>
                     </SkincareProvider>
