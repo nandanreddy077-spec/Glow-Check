@@ -80,7 +80,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error loading scan usage:', error);
+        console.error('Error loading scan usage:', error.message || error);
         return;
       }
 
@@ -99,8 +99,8 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
           lastScanDate: data.last_scan_date || undefined,
         });
       }
-    } catch (error) {
-      console.error('Failed to load scan usage:', error);
+    } catch (error: any) {
+      console.error('Failed to load scan usage:', error?.message || String(error));
     }
   }, [user?.id]);
 
@@ -181,7 +181,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         });
 
       if (error) {
-        console.error('Error incrementing glow scan:', error);
+        console.error('Error incrementing glow scan:', error.message || error);
         return;
       }
 
@@ -196,8 +196,8 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
       if (!subState.isPremium && !subState.hasStartedTrial && newCount > FREE_GLOW_SCANS) {
         setShowTrialUpgradeModal(true);
       }
-    } catch (error) {
-      console.error('Failed to increment glow scan:', error);
+    } catch (error: any) {
+      console.error('Failed to increment glow scan:', error?.message || String(error));
     }
   }, [user?.id, scanUsage.glowAnalysisScans, scanUsage.todayGlowScans, scanUsage.lastScanDate, subState.isPremium, subState.hasStartedTrial]);
 
@@ -226,7 +226,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         });
 
       if (error) {
-        console.error('Error incrementing style scan:', error);
+        console.error('Error incrementing style scan:', error.message || error);
         return;
       }
 
@@ -241,8 +241,8 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
       if (!subState.isPremium && !subState.hasStartedTrial && newCount > FREE_STYLE_SCANS) {
         setShowTrialUpgradeModal(true);
       }
-    } catch (error) {
-      console.error('Failed to increment style scan:', error);
+    } catch (error: any) {
+      console.error('Failed to increment style scan:', error?.message || String(error));
     }
   }, [user?.id, scanUsage.styleGuideScans, scanUsage.todayStyleScans, scanUsage.lastScanDate, subState.isPremium, subState.hasStartedTrial]);
 
