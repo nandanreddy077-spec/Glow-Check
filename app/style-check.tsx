@@ -15,6 +15,7 @@ import { useStyle } from "@/contexts/StyleContext";
 import { LinearGradient } from 'expo-linear-gradient';
 import SubscriptionGuard from '@/components/SubscriptionGuard';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useFreemium } from '@/contexts/FreemiumContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
 
@@ -27,6 +28,7 @@ export default function StyleCheckScreen() {
   const gradient = getGradient(theme);
   const styles = createStyles(palette);
   const { needsPremium, isTrialExpired, inTrial } = useSubscription();
+  const { styleScansLeft, styleScansToday, isFreeUser, isTrialUser } = useFreemium();
 
   React.useEffect(() => {
     resetAnalysis();
@@ -155,8 +157,22 @@ export default function StyleCheckScreen() {
             <Text style={styles.secondaryButtonText}>Upload from Gallery</Text>
           </TouchableOpacity>
         </View>
-        {/* Trial/Access notice */}
-        {(inTrial || needsPremium) && (
+        {/* Scan Status UI */}
+        {isFreeUser && (
+          <View style={{ paddingHorizontal: 24, marginTop: 8, backgroundColor: palette.surface, borderRadius: 16, paddingVertical: 12, borderWidth: 1, borderColor: palette.primary, marginHorizontal: 24 }}>
+            <Text style={{ textAlign: 'center', color: palette.primary, fontWeight: '600', fontSize: 14 }}>
+              🆓 Free: {styleScansLeft} scan{styleScansLeft !== 1 ? 's' : ''} remaining
+            </Text>
+          </View>
+        )}
+        {isTrialUser && (
+          <View style={{ paddingHorizontal: 24, marginTop: 8, backgroundColor: palette.surface, borderRadius: 16, paddingVertical: 12, borderWidth: 1, borderColor: palette.primary, marginHorizontal: 24 }}>
+            <Text style={{ textAlign: 'center', color: palette.primary, fontWeight: '600', fontSize: 14 }}>
+              🎯 Trial: {styleScansLeft} scan{styleScansLeft !== 1 ? 's' : ''} remaining today ({styleScansToday}/2 used)
+            </Text>
+          </View>
+        )}
+        {(inTrial || needsPremium) && !isFreeUser && !isTrialUser && (
           <View style={{ paddingHorizontal: 24, marginTop: 8 }}>
             <Text style={{ textAlign: 'center', color: palette.gold, fontWeight: '700' }}>
               {isTrialExpired ? 'Trial ended. Upgrade to view full Style Check.' : inTrial ? 'Trial active — enjoy full access.' : 'Start your free trial for full access.'}

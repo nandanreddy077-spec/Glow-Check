@@ -11,6 +11,7 @@ interface BlurredContentProps {
   children: React.ReactNode;
   message?: string;
   showUpgrade?: boolean;
+  shouldBlur?: boolean;
   testID?: string;
 }
 
@@ -18,14 +19,18 @@ export default function BlurredContent({
   children, 
   message = "Upgrade to Premium to view your results",
   showUpgrade = true,
+  shouldBlur,
   testID
 }: BlurredContentProps) {
   const { theme } = useTheme();
   const { canViewResults, isTrialExpired, inTrial, daysLeft } = useSubscription();
   const palette = getPalette(theme);
 
+  // If shouldBlur prop is provided, use it; otherwise use canViewResults
+  const shouldShowBlurred = shouldBlur !== undefined ? shouldBlur : !canViewResults;
+
   // If user can view results, show content normally
-  if (canViewResults) {
+  if (!shouldShowBlurred) {
     return <>{children}</>;
   }
 

@@ -14,6 +14,8 @@ import { Stack, router } from "expo-router";
 import { Shirt, Star, Palette, Eye, Award, ArrowRight, Crown, Sparkles, Gem, Heart } from "lucide-react-native";
 import { useStyle } from "@/contexts/StyleContext";
 import { palette, gradient, shadow, typography, spacing } from '@/constants/theme';
+import { useFreemium } from '@/contexts/FreemiumContext';
+import BlurredContent from '@/components/BlurredContent';
 
 const { width } = Dimensions.get('window');
 
@@ -139,6 +141,7 @@ const getColorHex = (colorName: string): string => {
 
 export default function StyleResultsScreen() {
   const { analysisResult, resetAnalysis } = useStyle();
+  const { isFreeUser, hasUsedFreeScan } = useFreemium();
 
   React.useEffect(() => {
     if (!analysisResult) {
@@ -241,6 +244,10 @@ export default function StyleResultsScreen() {
 
         {/* Color Harmony Section */}
         <View style={styles.section}>
+          <BlurredContent
+            shouldBlur={isFreeUser && hasUsedFreeScan}
+            message="Unlock full analysis with your 3-day free trial"
+          >
           <LinearGradient colors={gradient.lavender} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={gradient.glow} style={styles.sectionIcon}>
@@ -305,10 +312,15 @@ export default function StyleResultsScreen() {
               </Text>
             </View>
           </LinearGradient>
+          </BlurredContent>
         </View>
 
         {/* Outfit Breakdown */}
         <View style={styles.section}>
+          <BlurredContent
+            shouldBlur={isFreeUser && hasUsedFreeScan}
+            message="Start trial to see detailed outfit analysis"
+          >
           <LinearGradient colors={gradient.mint} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={gradient.glow} style={styles.sectionIcon}>
@@ -384,10 +396,15 @@ export default function StyleResultsScreen() {
               </View>
             )}
           </LinearGradient>
+          </BlurredContent>
         </View>
 
         {/* Occasion Match */}
         <View style={styles.section}>
+          <BlurredContent
+            shouldBlur={isFreeUser && hasUsedFreeScan}
+            message="Unlock occasion-perfect tips"
+          >
           <LinearGradient colors={gradient.rose} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={gradient.glow} style={styles.sectionIcon}>
@@ -429,10 +446,15 @@ export default function StyleResultsScreen() {
               </View>
             )}
           </LinearGradient>
+          </BlurredContent>
         </View>
 
         {/* What Worked */}
         <View style={styles.section}>
+          <BlurredContent
+            shouldBlur={isFreeUser && hasUsedFreeScan}
+            message="Start trial to see your strengths"
+          >
           <LinearGradient colors={gradient.success} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={gradient.glow} style={styles.sectionIcon}>
@@ -448,10 +470,15 @@ export default function StyleResultsScreen() {
               </View>
             ))}
           </LinearGradient>
+          </BlurredContent>
         </View>
 
         {/* Improvements */}
         <View style={styles.section}>
+          <BlurredContent
+            shouldBlur={isFreeUser && hasUsedFreeScan}
+            message="Unlock enhancement tips"
+          >
           <LinearGradient colors={gradient.warning} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={gradient.glow} style={styles.sectionIcon}>
@@ -467,10 +494,15 @@ export default function StyleResultsScreen() {
               </View>
             ))}
           </LinearGradient>
+          </BlurredContent>
         </View>
 
         {/* Specific Suggestions */}
         <View style={styles.section}>
+          <BlurredContent
+            shouldBlur={isFreeUser && hasUsedFreeScan}
+            message="Get full recommendations with trial"
+          >
           <LinearGradient colors={gradient.card} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={gradient.glow} style={styles.sectionIcon}>
@@ -488,10 +520,15 @@ export default function StyleResultsScreen() {
               </View>
             ))}
           </LinearGradient>
+          </BlurredContent>
         </View>
 
         {/* Body Type Recommendations */}
         <View style={styles.section}>
+          <BlurredContent
+            shouldBlur={isFreeUser && hasUsedFreeScan}
+            message="Unlock body type guide with trial"
+          >
           <LinearGradient colors={gradient.aurora} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={gradient.glow} style={styles.sectionIcon}>
@@ -514,6 +551,7 @@ export default function StyleResultsScreen() {
               ))}
             </View>
           </LinearGradient>
+          </BlurredContent>
         </View>
 
         {/* Elegant Action Button */}

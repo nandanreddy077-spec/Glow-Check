@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import SubscriptionGuard from '@/components/SubscriptionGuard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useFreemium } from '@/contexts/FreemiumContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -32,6 +33,7 @@ export default function GlowAnalysisScreen() {
   const { error } = useLocalSearchParams<{ error?: string }>();
   const { theme } = useTheme();
   const { canScan, needsPremium, scansLeft, inTrial, isTrialExpired } = useSubscription();
+  const { glowScansLeft, glowScansToday, isFreeUser, isTrialUser } = useFreemium();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showError, setShowError] = useState<boolean>(false);
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
@@ -322,8 +324,22 @@ export default function GlowAnalysisScreen() {
             Take a clear front-facing photo for basic analysis. For professional-grade results, consider the multi-angle scan.
           </Text>
           
-          {/* Trial Status for Quick Scan */}
-          {(inTrial || needsPremium) && (
+          {/* Scan Status UI */}
+          {isFreeUser && (
+            <View style={styles.scanStatusCard}>
+              <Text style={styles.scanStatusText}>
+                🆓 Free: {glowScansLeft} scan{glowScansLeft !== 1 ? 's' : ''} remaining
+              </Text>
+            </View>
+          )}
+          {isTrialUser && (
+            <View style={styles.scanStatusCard}>
+              <Text style={styles.scanStatusText}>
+                🎯 Trial: {glowScansLeft} scan{glowScansLeft !== 1 ? 's' : ''} remaining today ({glowScansToday}/2 used)
+              </Text>
+            </View>
+          )}
+          {(inTrial || needsPremium) && !isFreeUser && !isTrialUser && (
             <View style={styles.trialStatusCard}>
               <Text style={styles.trialStatusText}>
                 {isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
@@ -411,8 +427,22 @@ export default function GlowAnalysisScreen() {
               {completedCount}/{totalAngles} angles captured
             </Text>
             
-            {/* Trial Status */}
-            {(inTrial || needsPremium) && (
+            {/* Scan Status */}
+            {isFreeUser && (
+              <View style={styles.scanStatus}>
+                <Text style={styles.scanStatusTextMulti}>
+                  🆓 Free: {glowScansLeft} scan{glowScansLeft !== 1 ? 's' : ''} remaining
+                </Text>
+              </View>
+            )}
+            {isTrialUser && (
+              <View style={styles.scanStatus}>
+                <Text style={styles.scanStatusTextMulti}>
+                  🎯 Trial: {glowScansLeft} scan{glowScansLeft !== 1 ? 's' : ''} remaining today ({glowScansToday}/2 used)
+                </Text>
+              </View>
+            )}
+            {(inTrial || needsPremium) && !isFreeUser && !isTrialUser && (
               <View style={styles.trialStatus}>
                 <Text style={styles.trialStatusText}>
                   {isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
@@ -822,6 +852,37 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     fontSize: 14,
     fontWeight: '600',
     color: palette.gold,
+    textAlign: 'center',
+  },
+  scanStatusCard: {
+    backgroundColor: palette.surface,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: palette.primary,
+    ...shadow.card,
+  },
+  scanStatusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: palette.primary,
+    textAlign: 'center',
+  },
+  scanStatus: {
+    backgroundColor: 'rgba(212, 165, 116, 0.2)',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: palette.primary,
+  },
+  scanStatusTextMulti: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: palette.primary,
     textAlign: 'center',
   },
   errorIconContainer: {

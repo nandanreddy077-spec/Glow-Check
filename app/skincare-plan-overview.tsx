@@ -20,10 +20,15 @@ import {
 } from 'lucide-react-native';
 import { useSkincare } from '@/contexts/SkincareContext';
 import { palette, shadow } from '@/constants/theme';
+import { useFreemium } from '@/contexts/FreemiumContext';
+import BlurredContent from '@/components/BlurredContent';
+import { Crown } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SkincarePlanOverviewScreen() {
   const { currentPlan } = useSkincare();
   const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'shopping'>('overview');
+  const { isFreeUser, isTrialUser } = useFreemium();
 
   if (!currentPlan) {
     return (
@@ -161,6 +166,10 @@ export default function SkincarePlanOverviewScreen() {
                 <View style={styles.stepNumber}>
                   <Text style={styles.stepNumberText}>{index + 1}</Text>
                 </View>
+                <BlurredContent
+                  shouldBlur={isFreeUser || isTrialUser}
+                  message="Start your free trial to unlock full routine details"
+                >
                 <View style={styles.stepContent}>
                   <Text style={styles.stepName}>{step.name}</Text>
                   <Text style={styles.stepDescription}>{step.description}</Text>
@@ -168,6 +177,7 @@ export default function SkincarePlanOverviewScreen() {
                     <Text style={styles.stepProducts}>Products: {step.products.join(', ')}</Text>
                   )}
                 </View>
+                </BlurredContent>
               </View>
             ))
           }
@@ -188,6 +198,10 @@ export default function SkincarePlanOverviewScreen() {
                 <View style={styles.stepNumber}>
                   <Text style={styles.stepNumberText}>{index + 1}</Text>
                 </View>
+                <BlurredContent
+                  shouldBlur={isFreeUser || isTrialUser}
+                  message="Start your free trial to unlock full routine details"
+                >
                 <View style={styles.stepContent}>
                   <Text style={styles.stepName}>{step.name}</Text>
                   <Text style={styles.stepDescription}>{step.description}</Text>
@@ -195,6 +209,7 @@ export default function SkincarePlanOverviewScreen() {
                     <Text style={styles.stepProducts}>Products: {step.products.join(', ')}</Text>
                   )}
                 </View>
+                </BlurredContent>
               </View>
             ))
           }
@@ -289,6 +304,36 @@ export default function SkincarePlanOverviewScreen() {
 
       {/* Start Button */}
       <View style={styles.startSection}>
+        {isTrialUser && (
+          <TouchableOpacity 
+            style={styles.upgradeTrialButton} 
+            onPress={() => {
+              Alert.alert(
+                'Upgrade to Premium',
+                'Cancel your trial and upgrade to Premium now to unlock all features including Glow Coach routines.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { 
+                    text: 'Upgrade Now', 
+                    onPress: () => {
+                      router.push('/plan-selection');
+                    }
+                  }
+                ]
+              );
+            }}
+          >
+            <LinearGradient
+              colors={['#D4A574', '#F0A8D0']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.upgradeTrialGradient}
+            >
+              <Crown color="#FFF" size={20} />
+              <Text style={styles.upgradeTrialText}>Cancel Trial & Upgrade Now</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.startButton} onPress={handleStartPlan}>
           <Play color="white" size={20} />
           <Text style={styles.startButtonText}>Start My 30-Day Journey</Text>
@@ -607,6 +652,27 @@ const styles = StyleSheet.create({
   startButtonText: {
     color: palette.textLight,
     fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  upgradeTrialButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 12,
+    ...shadow.elevated,
+  },
+  upgradeTrialGradient: {
+    flexDirection: 'row',
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    minHeight: 56,
+  },
+  upgradeTrialText: {
+    color: '#FFF',
+    fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
