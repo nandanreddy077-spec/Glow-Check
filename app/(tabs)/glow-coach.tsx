@@ -355,23 +355,23 @@ export default function GlowCoachScreen() {
         )}
       </View>
       
-      <BlurredContent
-        shouldBlur={isFreeUser || isTrialUser}
-        message={isTrialUser ? "Upgrade to paid plan to unlock full routine details" : "Start 3-day trial to unlock routine details"}
-      >
       <View style={styles.stepContent}>
         <Text style={[styles.stepName, isCompleted && styles.completedStepText]}>
           {step.name}
         </Text>
-        <Text style={styles.stepDescription}>{step.description}</Text>
-        {step.products.length > 0 && (
-          <View style={styles.productsContainer}>
-            <Droplets color={palette.primary} size={12} />
-            <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
-          </View>
-        )}
+        <BlurredContent
+          shouldBlur={isFreeUser || isTrialUser}
+          message={isTrialUser ? "Upgrade to paid plan to unlock full routine details" : "Start 3-day trial to unlock routine details"}
+        >
+          <Text style={styles.stepDescription}>{step.description}</Text>
+          {step.products.length > 0 && (
+            <View style={styles.productsContainer}>
+              <Droplets color={palette.primary} size={12} />
+              <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
+            </View>
+          )}
+        </BlurredContent>
       </View>
-      </BlurredContent>
     </TouchableOpacity>
   );
 
