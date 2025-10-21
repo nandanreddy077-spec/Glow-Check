@@ -80,7 +80,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error loading scan usage:', error.message || JSON.stringify(error));
+        console.error('Error loading scan usage:', error);
         return;
       }
 
@@ -100,7 +100,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         });
       }
     } catch (error) {
-      console.error('Failed to load scan usage:', error instanceof Error ? error.message : JSON.stringify(error));
+      console.error('Failed to load scan usage:', error);
     }
   }, [user?.id]);
 
