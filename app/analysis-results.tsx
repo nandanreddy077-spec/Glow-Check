@@ -20,11 +20,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
 import BlurredContent from '@/components/BlurredContent';
+import TrialUpgradeModal from '@/components/TrialUpgradeModal';
 
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
   const { canViewResults, incrementScanCount, state } = useSubscription();
-  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeScan, incrementGlowScan } = useFreemium();
+  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeScan, incrementGlowScan, showTrialUpgradeModal, setShowTrialUpgradeModal } = useFreemium();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
   const [badge, setBadge] = useState<string>('');
@@ -416,6 +417,10 @@ export default function AnalysisResultsScreen() {
       <LinearGradient colors={gradient.hero} style={StyleSheet.absoluteFillObject} />
       <Stack.Screen options={{ title: 'Analysis Results', headerBackTitle: 'Back' }} />
       {resultsContent}
+      <TrialUpgradeModal 
+        visible={showTrialUpgradeModal} 
+        onClose={() => setShowTrialUpgradeModal(false)} 
+      />
     </View>
   );
 }
