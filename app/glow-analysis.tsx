@@ -107,7 +107,14 @@ export default function GlowAnalysisScreen() {
           ]
         );
       } else {
-        router.push('/plan-selection');
+        Alert.alert(
+          "Start Your Free Trial",
+          "Add your payment info to start your 3-day free trial. You won't be charged until the trial ends!",
+          [
+            { text: "Maybe Later", style: "cancel" },
+            { text: "Start Free Trial", onPress: () => router.push('/start-trial') }
+          ]
+        );
       }
       return;
     }
@@ -213,7 +220,14 @@ export default function GlowAnalysisScreen() {
           ]
         );
       } else {
-        router.push('/plan-selection');
+        Alert.alert(
+          "Start Your Free Trial",
+          "Add your payment info to start your 3-day free trial. You won't be charged until the trial ends!",
+          [
+            { text: "Maybe Later", style: "cancel" },
+            { text: "Start Free Trial", onPress: () => router.push('/start-trial') }
+          ]
+        );
       }
       return;
     }
