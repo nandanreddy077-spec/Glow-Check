@@ -78,6 +78,7 @@ export default function ProfilePicturePopup({ visible, onClose }: ProfilePicture
   }, [visible, fadeAnim, scaleAnim, sparkleAnim]);
 
   const handleAddPhoto = () => {
+    console.log('handleAddPhoto triggered');
     setShowPhotoPicker(true);
   };
 
@@ -213,7 +214,7 @@ export default function ProfilePicturePopup({ visible, onClose }: ProfilePicture
               </View>
 
               <TouchableOpacity
-                style={[styles.addPhotoButton, shadow.glow]}
+                style={styles.addPhotoButton}
                 onPress={handleAddPhoto}
                 activeOpacity={0.8}
               >
@@ -377,6 +378,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     borderRadius: radii.lg,
     overflow: 'hidden',
     marginBottom: spacing.md,
+    ...shadow.glow,
   },
   addPhotoGradient: {
     flexDirection: 'row',
