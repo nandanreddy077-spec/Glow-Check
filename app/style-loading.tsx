@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { Shirt, Sparkles } from 'lucide-react-native';
 import { useStyle } from '@/contexts/StyleContext';
+import { useFreemium } from '@/contexts/FreemiumContext';
 import { palette, shadow } from '@/constants/theme';
 
 const LOADING_MESSAGES = [
@@ -22,6 +23,7 @@ const LOADING_MESSAGES = [
 
 export default function StyleLoadingScreen() {
   const { currentImage, selectedOccasion, occasions, analyzeOutfit } = useStyle();
+  const { incrementStyleScan } = useFreemium();
   const [currentMessageIndex, setCurrentMessageIndex] = React.useState(0);
 
   const selectedOccasionData = occasions.find(o => o.id === selectedOccasion);
@@ -42,6 +44,11 @@ export default function StyleLoadingScreen() {
       }
 
       try {
+        // Increment scan count immediately when analysis starts
+        console.log('🔢 Incrementing style scan count...');
+        await incrementStyleScan();
+        console.log('✅ Style scan count incremented successfully');
+        
         await analyzeOutfit(currentImage, selectedOccasionData?.name || selectedOccasion);
         router.replace('/style-results');
       } catch (error) {

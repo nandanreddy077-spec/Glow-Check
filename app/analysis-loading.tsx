@@ -11,6 +11,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useUser } from '@/contexts/UserContext';
 import { useAnalysis, AnalysisResult } from '@/contexts/AnalysisContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useFreemium } from '@/contexts/FreemiumContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
 
 
@@ -51,6 +52,7 @@ export default function AnalysisLoadingScreen() {
   const { user, refreshUserData } = useUser();
   const { theme } = useTheme();
   const { setCurrentResult, saveAnalysis } = useAnalysis();
+  const { incrementGlowScan } = useFreemium();
   const [progress, setProgress] = useState(0);
   const [, setCurrentStep] = useState(0);
   const [steps, setSteps] = useState(ANALYSIS_STEPS);
@@ -67,6 +69,11 @@ export default function AnalysisLoadingScreen() {
   const styles = createStyles(palette);
 
   const startAnalysis = async () => {
+    // Increment scan count immediately when analysis starts
+    console.log('🔢 Incrementing glow scan count...');
+    await incrementGlowScan();
+    console.log('✅ Scan count incremented successfully');
+    
     // Start flowing animation
     setFlowAnimationRunning(true);
     const flowAnimation = Animated.loop(
