@@ -94,7 +94,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
 
   const glowScansToday = useMemo(() => {
     if (!trialTracking) return 0;
-    if (!subState.hasStartedTrial) return 0;
+    if (!subState.hasStartedTrial) return trialTracking.free_scans_used || 0;
     const today = new Date().toISOString().split('T')[0];
     const lastScanDate = trialTracking.last_free_scan_at?.split('T')[0];
     return lastScanDate === today ? (trialTracking.free_scans_used || 0) : 0;
@@ -102,7 +102,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
 
   const styleScansToday = useMemo(() => {
     if (!trialTracking) return 0;
-    if (!subState.hasStartedTrial) return 0;
+    if (!subState.hasStartedTrial) return trialTracking.free_scans_used || 0;
     const today = new Date().toISOString().split('T')[0];
     const lastScanDate = trialTracking.last_free_scan_at?.split('T')[0];
     return lastScanDate === today ? (trialTracking.free_scans_used || 0) : 0;
@@ -115,10 +115,13 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
       const today = new Date().toISOString().split('T')[0];
       const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
       const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      console.log('Trial scan check:', { scansToday, limit: TRIAL_DAILY_SCANS, canScan: scansToday < TRIAL_DAILY_SCANS });
       return scansToday < TRIAL_DAILY_SCANS;
     }
     
-    return (trialTracking?.free_scans_used || 0) < FREE_SCANS;
+    const canScan = (trialTracking?.free_scans_used || 0) < FREE_SCANS;
+    console.log('Free scan check:', { used: trialTracking?.free_scans_used, limit: FREE_SCANS, canScan });
+    return canScan;
   }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
 
   const canScanStyle = useMemo(() => {
@@ -128,10 +131,13 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
       const today = new Date().toISOString().split('T')[0];
       const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
       const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      console.log('Trial style scan check:', { scansToday, limit: TRIAL_DAILY_SCANS, canScan: scansToday < TRIAL_DAILY_SCANS });
       return scansToday < TRIAL_DAILY_SCANS;
     }
     
-    return (trialTracking?.free_scans_used || 0) < FREE_SCANS;
+    const canScan = (trialTracking?.free_scans_used || 0) < FREE_SCANS;
+    console.log('Free style scan check:', { used: trialTracking?.free_scans_used, limit: FREE_SCANS, canScan });
+    return canScan;
   }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
 
   const glowScansLeft = useMemo(() => {
@@ -167,6 +173,9 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     const today = new Date().toISOString().split('T')[0];
     const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
     
+    console.log('Incrementing glow scan...');
+    console.log('Current state:', { hasStartedTrial: subState.hasStartedTrial, today, lastScanDate, currentUsed: trialTracking?.free_scans_used });
+    
     let newCount;
     if (subState.hasStartedTrial) {
       if (lastScanDate === today) {
@@ -177,6 +186,8 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     } else {
       newCount = (trialTracking?.free_scans_used || 0) + 1;
     }
+    
+    console.log('New scan count will be:', newCount);
 
     try {
       const { error } = await supabase
@@ -196,10 +207,14 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         console.error('Error incrementing glow scan:', error.message || error);
         return;
       }
-
+      
+      console.log('Scan incremented successfully. Reloading usage...');
       await loadUsage();
+      
+      console.log('After increment - Trial user can scan more:', subState.hasStartedTrial);
 
-      if (!subState.isPremium && !subState.hasStartedTrial && newCount > FREE_SCANS) {
+      if (!subState.isPremium && !subState.hasStartedTrial && newCount >= FREE_SCANS) {
+        console.log('Showing trial upgrade modal');
         setShowTrialUpgradeModal(true);
       }
     } catch (error: any) {
@@ -214,6 +229,9 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     const today = new Date().toISOString().split('T')[0];
     const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
     
+    console.log('Incrementing style scan...');
+    console.log('Current state:', { hasStartedTrial: subState.hasStartedTrial, today, lastScanDate, currentUsed: trialTracking?.free_scans_used });
+    
     let newCount;
     if (subState.hasStartedTrial) {
       if (lastScanDate === today) {
@@ -224,6 +242,8 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     } else {
       newCount = (trialTracking?.free_scans_used || 0) + 1;
     }
+    
+    console.log('New scan count will be:', newCount);
 
     try {
       const { error } = await supabase
@@ -243,10 +263,14 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         console.error('Error incrementing style scan:', error.message || error);
         return;
       }
-
+      
+      console.log('Style scan incremented successfully. Reloading usage...');
       await loadUsage();
+      
+      console.log('After increment - Trial user can scan more:', subState.hasStartedTrial);
 
-      if (!subState.isPremium && !subState.hasStartedTrial && newCount > FREE_SCANS) {
+      if (!subState.isPremium && !subState.hasStartedTrial && newCount >= FREE_SCANS) {
+        console.log('Showing trial upgrade modal');
         setShowTrialUpgradeModal(true);
       }
     } catch (error: any) {

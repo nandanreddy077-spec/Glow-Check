@@ -50,7 +50,7 @@ export default function BlurredContent({
 
   return (
     <View style={styles.container} testID={testID}>
-      <View style={[styles.blurredContent, { opacity: 0.3 }]}>
+      <View style={styles.blurredContent}>
         {children}
       </View>
       
@@ -126,6 +126,7 @@ const styles = StyleSheet.create({
   },
   blurredContent: {
     flex: 1,
+    opacity: 0.1,
   },
   overlay: {
     position: 'absolute',
@@ -141,6 +142,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
   },
   upgradeCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

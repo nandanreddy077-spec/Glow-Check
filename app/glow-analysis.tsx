@@ -96,6 +96,21 @@ export default function GlowAnalysisScreen() {
   };
 
   const handleTakePhoto = async () => {
+    console.log('🎯 Take photo pressed. Can scan:', glowScansLeft > 0, 'Scans left:', glowScansLeft);
+    
+    if (glowScansLeft <= 0 && !isFreeUser) {
+      console.log('❌ No scans left');
+      Alert.alert(
+        "Daily Scan Limit Reached",
+        "You've used all your scans for today. Come back tomorrow or upgrade to Premium for unlimited scans!",
+        [
+          { text: "OK", style: "cancel" },
+          { text: "Upgrade to Premium", onPress: () => router.push('/plan-selection') }
+        ]
+      );
+      return;
+    }
+    
     if (!canScan) {
       if (isTrialExpired) {
         Alert.alert(
@@ -209,6 +224,21 @@ export default function GlowAnalysisScreen() {
   };
 
   const handleUploadPhoto = async () => {
+    console.log('🎯 Upload photo pressed. Can scan:', glowScansLeft > 0, 'Scans left:', glowScansLeft);
+    
+    if (glowScansLeft <= 0 && !isFreeUser) {
+      console.log('❌ No scans left');
+      Alert.alert(
+        "Daily Scan Limit Reached",
+        "You've used all your scans for today. Come back tomorrow or upgrade to Premium for unlimited scans!",
+        [
+          { text: "OK", style: "cancel" },
+          { text: "Upgrade to Premium", onPress: () => router.push('/plan-selection') }
+        ]
+      );
+      return;
+    }
+    
     if (!canScan) {
       if (isTrialExpired) {
         Alert.alert(
