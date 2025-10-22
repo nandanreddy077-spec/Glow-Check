@@ -19,6 +19,7 @@ import { router } from 'expo-router';
 import { Eye, EyeOff, Mail, Lock, Heart, Sparkles, Star, Wifi } from 'lucide-react-native';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 import { testSupabaseConnection } from '@/lib/supabase';
+import GlowCheckLogo from '@/components/GlowCheckLogo';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -202,8 +203,10 @@ export default function LoginScreen() {
                 }
               ]}
             >
+              <View style={styles.logoContainer}>
+                <GlowCheckLogo size="large" showText={true} />
+              </View>
               <View style={styles.titleContainer}>
-                <Heart color={palette.primary} size={32} fill={palette.blush} />
                 <Text style={styles.title}>Welcome Back, Beautiful</Text>
               </View>
               <Text style={styles.subtitle}>Continue your radiant journey with us</Text>
@@ -347,10 +350,11 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     alignItems: 'center',
     marginBottom: spacing.xxxxl,
   },
+  logoContainer: {
+    marginBottom: spacing.xl,
+  },
   titleContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
     marginBottom: spacing.md,
   },
   title: {

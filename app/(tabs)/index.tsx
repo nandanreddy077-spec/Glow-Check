@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Gem, Wand2, Sun, Moon, Zap, Compass, ArrowRight } from "lucide-react-native";
 import { router } from "expo-router";
+import GlowCheckLogo from "@/components/GlowCheckLogo";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -223,6 +224,10 @@ export default function HomeScreen() {
         >
           <Heart color={palette.champagne} size={14} fill={palette.champagne} />
         </Animated.View>
+        
+        <View style={styles.headerTop}>
+          <GlowCheckLogo size="small" showText={true} />
+        </View>
         
         <View style={styles.header}>
           <View style={styles.headerContent}>
@@ -435,6 +440,11 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   scrollContent: {
     paddingBottom: 40,
+  },
+  headerTop: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   header: {
     flexDirection: "row",

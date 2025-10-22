@@ -18,6 +18,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
 import { Eye, EyeOff, Mail, Lock, User, Heart, Sparkles, Star, ArrowLeft } from 'lucide-react-native';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
+import GlowCheckLogo from '@/components/GlowCheckLogo';
 
 export default function SignupScreen() {
   const [fullName, setFullName] = useState('');
@@ -201,8 +202,10 @@ export default function SignupScreen() {
                 }
               ]}
             >
+              <View style={styles.logoContainer}>
+                <GlowCheckLogo size="large" showText={true} />
+              </View>
               <View style={styles.titleContainer}>
-                <Heart color={palette.primary} size={32} fill={palette.blush} />
                 <Text style={styles.title}>Begin Your Glow Journey</Text>
               </View>
               <Text style={styles.subtitle}>Join our beautiful community and discover your radiant self</Text>
@@ -399,10 +402,11 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     marginBottom: spacing.xxxxl,
     marginTop: 60,
   },
+  logoContainer: {
+    marginBottom: spacing.xl,
+  },
   titleContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
     marginBottom: spacing.md,
   },
   title: {
