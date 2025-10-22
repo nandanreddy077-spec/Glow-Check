@@ -14,10 +14,10 @@ export const PRODUCT_IDS = {
   // iOS App Store IDs (from App Store Connect - Subscription Group: Premium Access)
   MONTHLY: Platform.OS === 'ios' 
     ? 'com.glowcheck.monthly.premium'
-    : (process.env.EXPO_PUBLIC_IAP_MONTHLY_PRODUCT_ID || 'com.glowcheck01.app.premium.monthly'),
+    : 'com.glowcheck.app.premium.monthly.p1m',
   YEARLY: Platform.OS === 'ios'
     ? 'com.glowcheck.yearly1.premium'
-    : (process.env.EXPO_PUBLIC_IAP_YEARLY_PRODUCT_ID || 'com.glowcheck01.app.premium.annual'),
+    : 'com.glowcheck.app.premium.yearly.p1y',
 } as const;
 
 // App Store Connect Configuration
@@ -80,10 +80,9 @@ class PaymentService {
 
   private async loadPurchasesModule(): Promise<any> {
     try {
-      // Try to load RevenueCat - this will work in production builds with EAS Build
-      // For now, we'll use fallback mode since react-native-purchases is not installed
-      console.log('RevenueCat module not available - using fallback mode');
-      return null;
+      const Purchases = require('react-native-purchases').default;
+      console.log('RevenueCat module loaded successfully');
+      return Purchases;
     } catch (error) {
       console.log('RevenueCat module not available - using fallback mode:', error);
       return null;
@@ -99,50 +98,45 @@ class PaymentService {
         return false;
       }
 
-      // Check if running in Expo Go
-      const Constants = await import('expo-constants');
-      const isExpoGo = Constants.default.appOwnership === 'expo';
+      // Load RevenueCat module
+      const Purchases = await this.loadPurchasesModule();
 
-      if (isExpoGo) {
-        console.log('Running in Expo Go - payment service will redirect to stores');
+      if (!Purchases) {
+        console.log('RevenueCat not available, using fallback mode');
         this.isInitialized = true;
         return true;
       }
 
-      // Production build with react-native-purchases:
+      this.purchasesModule = Purchases;
+      
+      // Configure RevenueCat
+      const apiKey = Platform.OS === 'ios' 
+        ? REVENUECAT_CONFIG.API_KEY_IOS 
+        : REVENUECAT_CONFIG.API_KEY_ANDROID;
+      
+      if (!apiKey || apiKey.includes('YOUR_')) {
+        console.warn('RevenueCat API key not configured properly');
+        this.isInitialized = true;
+        return true;
+      }
+      
+      console.log('Configuring RevenueCat with API key:', apiKey.substring(0, 15) + '...');
+      
       try {
-        const Purchases = await this.loadPurchasesModule();
-        
-        if (!Purchases) {
-          console.log('RevenueCat not available, using fallback mode');
-          this.isInitialized = true;
-          return true;
-        }
-        
-        // Configure RevenueCat if available
-        const apiKey = Platform.OS === 'ios' 
-          ? REVENUECAT_CONFIG.API_KEY_IOS 
-          : REVENUECAT_CONFIG.API_KEY_ANDROID;
-        
-        if (!apiKey || apiKey.includes('YOUR_')) {
-          console.warn('RevenueCat API key not configured properly');
-          this.isInitialized = true;
-          return true;
-        }
-        
         await Purchases.configure({
           apiKey,
           appUserID: null,
         });
         
         console.log('RevenueCat initialized successfully');
+        this.isInitialized = true;
+        return true;
       } catch (error) {
-        console.log('RevenueCat not available, using fallback mode:', error);
+        console.error('Failed to configure RevenueCat:', error);
+        this.isInitialized = true;
+        return true;
       }
-      
-      this.isInitialized = true;
-      console.log('Payment service initialized successfully');
-      return true;
+
     } catch (error) {
       console.error('Failed to initialize payment service:', error);
       return false;
@@ -180,22 +174,13 @@ class PaymentService {
         await this.initialize();
       }
 
-      // Check if running in Expo Go
-      const Constants = await import('expo-constants');
-      const isExpoGo = Constants.default.appOwnership === 'expo';
-
-      if (isExpoGo) {
+      if (!this.purchasesModule) {
+        console.log('RevenueCat not available, using fallback products');
         return this.getFallbackProducts();
       }
 
-      // Production build with react-native-purchases:
       try {
-        const Purchases = await this.loadPurchasesModule();
-        
-        if (!Purchases) {
-          console.log('RevenueCat not available, using fallback products');
-          return this.getFallbackProducts();
-        }
+        const Purchases = this.purchasesModule;
         
         const offerings = await Purchases.getOfferings();
         const currentOffering = offerings.current;
@@ -243,14 +228,8 @@ class PaymentService {
         };
       }
 
-      // Check if running in Expo Go (development)
-      const Constants = await import('expo-constants');
-      const isExpoGo = Constants.default.appOwnership === 'expo';
-
-      if (isExpoGo) {
-        // For Expo Go, redirect to store
-        console.log('Running in Expo Go - redirecting to store for subscription...');
-        
+      if (!this.purchasesModule) {
+        console.log('RevenueCat not available, redirecting to store');
         const storeUrl = this.getStoreSubscriptionUrl();
         const canOpen = await Linking.canOpenURL(storeUrl);
         
@@ -269,29 +248,8 @@ class PaymentService {
         }
       }
 
-      // Production build with react-native-purchases:
       try {
-        const Purchases = await this.loadPurchasesModule();
-        
-        if (!Purchases) {
-          console.log('RevenueCat not available, redirecting to store');
-          const storeUrl = this.getStoreSubscriptionUrl();
-          const canOpen = await Linking.canOpenURL(storeUrl);
-          
-          if (canOpen) {
-            await Linking.openURL(storeUrl);
-            return {
-              success: false,
-              error: 'STORE_REDIRECT',
-              productId,
-            };
-          } else {
-            return {
-              success: false,
-              error: 'Unable to open app store. Please visit the App Store or Google Play Store manually to subscribe.',
-            };
-          }
-        }
+        const Purchases = this.purchasesModule;
         
         const offerings = await Purchases.getOfferings();
         const currentOffering = offerings.current;
@@ -389,14 +347,13 @@ class PaymentService {
         return [];
       }
 
-      // Production build with react-native-purchases:
+      if (!this.purchasesModule) {
+        console.log('RevenueCat not available for restore purchases');
+        return [];
+      }
+
       try {
-        const Purchases = await this.loadPurchasesModule();
-        
-        if (!Purchases) {
-          console.log('RevenueCat not available for restore purchases');
-          return [];
-        }
+        const Purchases = this.purchasesModule;
         
         console.log('Restoring purchases...');
         const customerInfo = await Purchases.restorePurchases();
@@ -438,14 +395,13 @@ class PaymentService {
         return null;
       }
 
-      // Production build with react-native-purchases:
+      if (!this.purchasesModule) {
+        console.log('RevenueCat not available for subscription status');
+        return null;
+      }
+
       try {
-        const Purchases = await this.loadPurchasesModule();
-        
-        if (!Purchases) {
-          console.log('RevenueCat not available for subscription status');
-          return null;
-        }
+        const Purchases = this.purchasesModule;
         
         const customerInfo = await Purchases.getCustomerInfo();
         console.log('Customer info:', customerInfo);
