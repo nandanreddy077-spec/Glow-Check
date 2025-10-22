@@ -81,22 +81,36 @@ export const [UserProvider, useUser] = createContextHook(() => {
       ]);
       
       let baseUser = DEFAULT_USER;
-      try {
-        baseUser = userData ? JSON.parse(userData) : DEFAULT_USER;
-      } catch (parseError) {
-        console.error('Error parsing user data:', parseError);
-        // Clear corrupted data
-        await storage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USER));
-        baseUser = DEFAULT_USER;
+      if (userData && userData.trim() !== '') {
+        try {
+          // Check if data is valid JSON
+          if (userData.startsWith('{') || userData.startsWith('[')) {
+            baseUser = JSON.parse(userData);
+          } else {
+            console.error('Invalid JSON format in user data:', userData);
+            await storage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USER));
+          }
+        } catch (parseError) {
+          console.error('Error parsing user data:', parseError, 'Data:', userData);
+          // Clear corrupted data
+          await storage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USER));
+          baseUser = DEFAULT_USER;
+        }
       }
       
       // Update stats based on analysis history
-      if (analysisData) {
+      if (analysisData && analysisData.trim() !== '') {
         let analysisHistory = [];
         try {
-          analysisHistory = JSON.parse(analysisData);
+          // Check if data is valid JSON
+          if (analysisData.startsWith('{') || analysisData.startsWith('[')) {
+            analysisHistory = JSON.parse(analysisData);
+          } else {
+            console.error('Invalid JSON format in analysis data:', analysisData);
+            await storage.setItem('glowcheck_analysis_history', JSON.stringify([]));
+          }
         } catch (parseError) {
-          console.error('Error parsing analysis data:', parseError);
+          console.error('Error parsing analysis data:', parseError, 'Data:', analysisData);
           // Clear corrupted analysis data
           await storage.setItem('glowcheck_analysis_history', JSON.stringify([]));
           analysisHistory = [];

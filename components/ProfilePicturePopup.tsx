@@ -218,7 +218,8 @@ export default function ProfilePicturePopup({ visible, onClose }: ProfilePicture
                 style={styles.addPhotoButton}
                 onPress={handleAddPhoto}
                 activeOpacity={0.8}
-                disabled={showPhotoPicker}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                testID="addProfilePictureBtn"
               >
                 <LinearGradient
                   colors={gradient.primary}
