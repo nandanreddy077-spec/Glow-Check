@@ -445,6 +445,19 @@ export default function ProfileScreen() {
               <ChevronRight color={palette.gold} size={22} strokeWidth={2.5} />
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => router.push('/redeem-promo')}
+              activeOpacity={0.7}
+              testID="redeemPromoBtn"
+            >
+              <View style={styles.settingIconContainer}>
+                <Sparkles color={palette.rose} size={22} strokeWidth={2} />
+              </View>
+              <Text style={styles.settingText}>Redeem Promo Code</Text>
+              <ChevronRight color={palette.gold} size={22} strokeWidth={2.5} />
+            </TouchableOpacity>
+
             {Platform.OS !== 'web' && (
               <TouchableOpacity
                 style={styles.settingItem}
