@@ -1,26 +1,239 @@
 import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { SchedulableTriggerInputTypes } from 'expo-notifications';
 
-// Simplified notification system without expo-notifications
-// This works in Expo Go SDK 53 and production builds
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
-const MORNING_HOUR = 10;
-const EVENING_HOUR = 22;
+type NotificationType = 
+  | 'morning_motivation'
+  | 'pre_routine_reminder'
+  | 'routine_reminder'
+  | 'midday_boost'
+  | 'evening_wind_down'
+  | 'consistency_streak'
+  | 'weekly_progress'
+  | 'glow_tip'
+  | 'community_engagement'
+  | 'missed_routine';
 
-const STORAGE_KEYS = {
-  morningDonePrefix: 'glow_morning_done_',
-  eveningDonePrefix: 'glow_evening_done_',
-  morningNotifId: 'glow_morning_notif_id',
-  eveningNotifId: 'glow_evening_notif_id',
-} as const;
-
-function getLocalDateKey(date = new Date()): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+interface NotificationTemplate {
+  title: string;
+  body: string;
+  data?: Record<string, any>;
 }
 
-async function getItem(key: string): Promise<string | null> {
+const PREMIUM_NOTIFICATIONS: Record<NotificationType, NotificationTemplate[]> = {
+  morning_motivation: [
+    {
+      title: "Good morning, gorgeous! ☀️",
+      body: "Your skin is waiting for its daily dose of love. Ready to glow?",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Rise & Shine, beauty! ✨",
+      body: "3 minutes. That's all it takes to transform your skin today.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Morning glow time! 🌅",
+      body: "Your future skin will thank you for what you do in the next 5 minutes.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Psst... Your skin is calling! 💆‍♀️",
+      body: "Start your day with self-care. Your morning routine is ready.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+  ],
+  pre_routine_reminder: [
+    {
+      title: "10 minutes until glow time! ⏰",
+      body: "Get ready to pamper yourself. Your skincare routine awaits!",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Almost time for your glow-up! ✨",
+      body: "Prepare your products. Your personalized routine starts soon.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+  ],
+  routine_reminder: [
+    {
+      title: "Your skin routine is waiting! 🧴",
+      body: "Tap to see your personalized steps. Let's make today beautiful.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Time to treat yourself! 💅",
+      body: "Your customized skincare routine is ready. 5 minutes to radiance.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Don't keep your skin waiting! ⏳",
+      body: "Your glow-up routine is here. Consistency = Results.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+  ],
+  midday_boost: [
+    {
+      title: "Midday beauty check! 💄",
+      body: "Quick tip: Hydration is your skin's best friend. Drink up, glow up!",
+      data: { screen: "(tabs)/index" }
+    },
+    {
+      title: "Did you know? 🤔",
+      body: "UV protection isn't just for summer. Your skin needs it year-round!",
+      data: { screen: "(tabs)/index" }
+    },
+    {
+      title: "Afternoon glow boost! ☀️",
+      body: "Your skin loves you. Show some love back with proper hydration today.",
+      data: { screen: "(tabs)/index" }
+    },
+  ],
+  evening_wind_down: [
+    {
+      title: "Wind down with self-care 🌙",
+      body: "Your evening routine is the secret to waking up beautiful. Ready?",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Time for your beauty sleep prep! 😴",
+      body: "5 minutes now = glowing skin tomorrow. Your routine awaits.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Before bed beauty ritual! ✨",
+      body: "Never skip your evening routine. Your skin repairs itself while you sleep.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "End your day beautifully! 🌟",
+      body: "Your nighttime routine is ready. Let's prep that glow for tomorrow.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+  ],
+  consistency_streak: [
+    {
+      title: "🔥 3-day streak! You're on fire!",
+      body: "Your skin is noticing the difference. Keep up the amazing work!",
+      data: { screen: "(tabs)/profile" }
+    },
+    {
+      title: "🎉 7 days strong! Incredible!",
+      body: "Results are just around the corner. Your dedication is inspiring!",
+      data: { screen: "(tabs)/profile" }
+    },
+    {
+      title: "⭐ 14-day glow streak! Legend!",
+      body: "This is when magic happens. Your skin is transforming!",
+      data: { screen: "(tabs)/profile" }
+    },
+    {
+      title: "💎 30-day milestone! Unstoppable!",
+      body: "You're a skincare queen! Check out your amazing progress.",
+      data: { screen: "(tabs)/profile" }
+    },
+  ],
+  weekly_progress: [
+    {
+      title: "Your weekly glow report is here! 📊",
+      body: "See how far you've come this week. Progress you can see!",
+      data: { screen: "(tabs)/profile" }
+    },
+    {
+      title: "Week completed! Check your stats! 🎯",
+      body: "You completed 85% of routines this week. Let's aim for 100% next week!",
+      data: { screen: "(tabs)/profile" }
+    },
+  ],
+  glow_tip: [
+    {
+      title: "💡 Pro tip from dermatologists:",
+      body: "Apply products from thinnest to thickest consistency for best absorption!",
+      data: { screen: "(tabs)/index" }
+    },
+    {
+      title: "✨ Beauty secret unlocked:",
+      body: "Pat, don't rub! Gentle patting helps products absorb better.",
+      data: { screen: "(tabs)/index" }
+    },
+    {
+      title: "🎯 Expert advice:",
+      body: "Wait 60 seconds between each product for maximum effectiveness!",
+      data: { screen: "(tabs)/index" }
+    },
+    {
+      title: "💆‍♀️ Skincare hack:",
+      body: "Massage in upward motions to boost circulation and reduce puffiness!",
+      data: { screen: "(tabs)/index" }
+    },
+  ],
+  community_engagement: [
+    {
+      title: "Someone just shared their glow-up! 👀",
+      body: "Join the community and celebrate their amazing transformation!",
+      data: { screen: "(tabs)/community" }
+    },
+    {
+      title: "New beauty tips from the community! 💬",
+      body: "See what others are loving this week. You might discover your new favorite!",
+      data: { screen: "(tabs)/community" }
+    },
+    {
+      title: "Your glow tribe is active! 🌟",
+      body: "Don't miss out on today's trending beauty discussions!",
+      data: { screen: "(tabs)/community" }
+    },
+  ],
+  missed_routine: [
+    {
+      title: "We missed you today! 💔",
+      body: "Your skin routine is still here waiting. It's never too late to glow!",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Don't break your streak! 🔥",
+      body: "Quick! You still have time to complete today's routine.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+  ],
+};
+
+interface ScheduleConfig {
+  type: NotificationType;
+  hour: number;
+  minute: number;
+  days?: number[];
+}
+
+const NOTIFICATION_SCHEDULE: ScheduleConfig[] = [
+  { type: 'morning_motivation', hour: 8, minute: 0 },
+  { type: 'pre_routine_reminder', hour: 9, minute: 50 },
+  { type: 'routine_reminder', hour: 10, minute: 0 },
+  { type: 'midday_boost', hour: 14, minute: 30 },
+  { type: 'glow_tip', hour: 16, minute: 0 },
+  { type: 'community_engagement', hour: 18, minute: 0 },
+  { type: 'evening_wind_down', hour: 21, minute: 30 },
+  { type: 'routine_reminder', hour: 22, minute: 0 },
+  { type: 'weekly_progress', hour: 10, minute: 0, days: [0] },
+];
+
+function getRandomTemplate(type: NotificationType): NotificationTemplate {
+  const templates = PREMIUM_NOTIFICATIONS[type];
+  const randomIndex = Math.floor(Math.random() * templates.length);
+  return templates[randomIndex];
+}
+
+async function getStorageItem(key: string): Promise<string | null> {
   try {
     if (Platform.OS === 'web') {
       return localStorage.getItem(key);
@@ -33,7 +246,7 @@ async function getItem(key: string): Promise<string | null> {
   }
 }
 
-async function setItem(key: string, value: string): Promise<void> {
+async function setStorageItem(key: string, value: string): Promise<void> {
   try {
     if (Platform.OS === 'web') {
       localStorage.setItem(key, value);
@@ -46,240 +259,279 @@ async function setItem(key: string, value: string): Promise<void> {
   }
 }
 
-async function removeItem(key: string): Promise<void> {
+export async function requestNotificationPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    try {
+      if (!('Notification' in globalThis)) {
+        console.log('[Notifications] Web Notification API not available');
+        return false;
+      }
+      if (Notification.permission === 'granted') return true;
+      if (Notification.permission === 'denied') {
+        console.log('[Notifications] Web notifications denied by user');
+        return false;
+      }
+      const perm = await Notification.requestPermission();
+      console.log('[Notifications] Web permission result:', perm);
+      return perm === 'granted';
+    } catch (e) {
+      console.log('[Notifications] Web permission error', e);
+      return false;
+    }
+  }
+
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    
+    if (finalStatus !== 'granted') {
+      console.log('[Notifications] Permission not granted');
+      return false;
+    }
+    
+    console.log('[Notifications] Permission granted');
+    return true;
+  } catch (error) {
+    console.log('[Notifications] Error requesting permissions:', error);
+    return false;
+  }
+}
+
+export async function scheduleAllNotifications() {
+  console.log('[Notifications] Scheduling premium notifications...');
+  
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) {
+    console.log('[Notifications] Cannot schedule - no permission');
+    return false;
+  }
+
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    
+    const scheduledIds: string[] = [];
+
+    for (const config of NOTIFICATION_SCHEDULE) {
+      const template = getRandomTemplate(config.type);
+      
+      const trigger: any = {
+        hour: config.hour,
+        minute: config.minute,
+        repeats: true,
+      };
+
+      if (config.days) {
+        trigger.weekday = config.days[0] + 1;
+      }
+
+      if (Platform.OS === 'web') {
+        const now = new Date();
+        let scheduleTime = new Date();
+        scheduleTime.setHours(config.hour, config.minute, 0, 0);
+        
+        if (scheduleTime.getTime() <= now.getTime()) {
+          scheduleTime.setDate(scheduleTime.getDate() + 1);
+        }
+
+        const ms = scheduleTime.getTime() - now.getTime();
+        
+        setTimeout(() => {
+          if ('Notification' in globalThis && Notification.permission === 'granted') {
+            new Notification(template.title, { body: template.body });
+            
+            setInterval(() => {
+              const randomTemplate = getRandomTemplate(config.type);
+              new Notification(randomTemplate.title, { body: randomTemplate.body });
+            }, 24 * 60 * 60 * 1000);
+          }
+        }, ms);
+      } else {
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: template.title,
+            body: template.body,
+            data: template.data || {},
+            sound: true,
+          },
+          trigger,
+        });
+        
+        scheduledIds.push(id);
+      }
+    }
+
+    await setStorageItem('scheduled_notification_ids', JSON.stringify(scheduledIds));
+    console.log(`[Notifications] Scheduled ${scheduledIds.length} notifications successfully`);
+    return true;
+  } catch (error) {
+    console.error('[Notifications] Error scheduling notifications:', error);
+    return false;
+  }
+}
+
+export async function sendStreakNotification(streakDays: number) {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  let template: NotificationTemplate;
+  
+  if (streakDays >= 30) {
+    template = PREMIUM_NOTIFICATIONS.consistency_streak[3];
+  } else if (streakDays >= 14) {
+    template = PREMIUM_NOTIFICATIONS.consistency_streak[2];
+  } else if (streakDays >= 7) {
+    template = PREMIUM_NOTIFICATIONS.consistency_streak[1];
+  } else if (streakDays >= 3) {
+    template = PREMIUM_NOTIFICATIONS.consistency_streak[0];
+  } else {
+    return;
+  }
+
   try {
     if (Platform.OS === 'web') {
-      localStorage.removeItem(key);
-      return;
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
+      }
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          data: template.data || {},
+          sound: true,
+        },
+        trigger: null,
+      });
     }
-    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-    await AsyncStorage.removeItem(key);
-  } catch (e) {
-    console.log('[Notifications] removeItem error', e);
+  } catch (error) {
+    console.error('[Notifications] Error sending streak notification:', error);
   }
 }
 
-function nextTimeTodayOrTomorrow(targetHour: number): Date {
-  const now = new Date();
-  const target = new Date();
-  target.setHours(targetHour, 0, 0, 0);
-  if (target.getTime() <= now.getTime()) {
-    target.setDate(target.getDate() + 1);
+export async function sendMissedRoutineNotification() {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  const template = getRandomTemplate('missed_routine');
+
+  try {
+    if (Platform.OS === 'web') {
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
+      }
+    } else {
+      const trigger: Notifications.TimeIntervalTriggerInput = {
+        type: SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 60 * 60 * 2,
+        repeats: false,
+      };
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          data: template.data || {},
+          sound: true,
+        },
+        trigger,
+      });
+    }
+  } catch (error) {
+    console.error('[Notifications] Error sending missed routine notification:', error);
   }
-  return target;
 }
 
-async function requestWebNotificationPermission(): Promise<boolean> {
-  if (Platform.OS !== 'web') return false;
+export async function initializeNotifications() {
+  console.log('[Notifications] Initializing premium notification system...');
   
   try {
-    if (!('Notification' in globalThis)) {
-      console.log('[Notifications] Web Notification API not available');
+    const hasPermission = await requestNotificationPermissions();
+    if (!hasPermission) {
+      console.log('[Notifications] Permission not granted, skipping scheduling');
       return false;
     }
-    if (Notification.permission === 'granted') return true;
-    if (Notification.permission === 'denied') {
-      console.log('[Notifications] Web notifications denied by user');
-      return false;
+
+    await scheduleAllNotifications();
+    
+    const lastScheduled = await getStorageItem('last_notification_schedule');
+    const today = new Date().toDateString();
+    
+    if (lastScheduled !== today) {
+      await scheduleAllNotifications();
+      await setStorageItem('last_notification_schedule', today);
     }
-    const perm = await Notification.requestPermission();
-    console.log('[Notifications] Web permission result:', perm);
-    return perm === 'granted';
-  } catch (e) {
-    console.log('[Notifications] Web permission error', e);
+    
+    return true;
+  } catch (error) {
+    console.error('[Notifications] Initialization error:', error);
     return false;
+  }
+}
+
+export async function cancelAllNotifications() {
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    console.log('[Notifications] All notifications cancelled');
+  } catch (error) {
+    console.error('[Notifications] Error cancelling notifications:', error);
+  }
+}
+
+export async function getScheduledNotificationsCount(): Promise<number> {
+  try {
+    const notifications = await Notifications.getAllScheduledNotificationsAsync();
+    return notifications.length;
+  } catch (error) {
+    console.error('[Notifications] Error getting scheduled count:', error);
+    return 0;
   }
 }
 
 export type RoutineType = 'morning' | 'evening';
 
-export async function initializeNotifications() {
-  console.log('[Notifications] Initializing simplified notification system...');
-  
-  if (Platform.OS === 'web') {
-    const hasPermission = await requestWebNotificationPermission();
-    console.log('[Notifications] Web notifications initialized:', hasPermission);
-    return hasPermission;
-  }
-  
-  // For mobile platforms in Expo Go SDK 53, we can't use expo-notifications
-  // But we can still track routine completion
-  console.log('[Notifications] Mobile notifications not available in Expo Go SDK 53');
-  console.log('[Notifications] Routine tracking will still work without push notifications');
-  return true; // Return true to allow routine tracking
-}
-
-export async function scheduleDailyReminder(type: RoutineType) {
-  const hour = type === 'morning' ? MORNING_HOUR : EVENING_HOUR;
-  const title = type === 'morning' ? 'Morning routine reminder' : 'Evening routine reminder';
-  const body = type === 'morning' ? "Haven't finished your morning skincare yet? Let's glow!" : "Time for your evening routine. Your skin will thank you.";
-
-  const dateKey = getLocalDateKey();
-  const doneKey = (type === 'morning' ? STORAGE_KEYS.morningDonePrefix : STORAGE_KEYS.eveningDonePrefix) + dateKey;
-  const isDone = (await getItem(doneKey)) === '1';
-  
-  if (isDone) {
-    console.log(`[Notifications] ${type} already done for ${dateKey}, skipping schedule for today`);
-    return;
-  }
-
-  const now = new Date();
-  const currentHour = now.getHours();
-  
-  // Only schedule notification if we haven't passed the time yet today
-  if ((type === 'morning' && currentHour >= MORNING_HOUR) || 
-      (type === 'evening' && currentHour >= EVENING_HOUR)) {
-    console.log(`[Notifications] ${type} time has passed for today, scheduling for tomorrow`);
-  }
-
-  const when = nextTimeTodayOrTomorrow(hour);
-
-  if (Platform.OS === 'web') {
-    const ms = when.getTime() - Date.now();
-    console.log(`[Notifications] Web scheduling ${type} in ${Math.round(ms / 1000)}s at`, when.toString());
-    
-    // Clear any existing timeout for this type
-    const timeoutKey = `${type}_timeout`;
-    const existingTimeout = (globalThis as any)[timeoutKey];
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-    
-    (globalThis as any)[timeoutKey] = setTimeout(() => {
-      if (!('Notification' in globalThis)) return console.log('[Notifications] Notification API not available');
-      getItem(doneKey).then(val => {
-        if (val === '1') {
-          console.log(`[Notifications] ${type} done by trigger time, not showing web notification`);
-          return;
-        }
-        try {
-          new Notification(title, { body });
-        } catch (e) {
-          console.log('[Notifications] Web show error', e);
-        }
-      });
-    }, Math.max(0, ms));
-    return;
-  }
-
-  // For mobile platforms, just log that we would schedule a notification
-  console.log(`[Notifications] Would schedule ${type} notification for ${when.toString()}`);
-  console.log('[Notifications] Mobile push notifications require a development build (not available in Expo Go SDK 53)');
-}
-
-export async function markRoutineDone(type: RoutineType, date = new Date()) {
-  const key = (type === 'morning' ? STORAGE_KEYS.morningDonePrefix : STORAGE_KEYS.eveningDonePrefix) + getLocalDateKey(date);
-  await setItem(key, '1');
-  console.log('[Notifications] marked done', type, getLocalDateKey(date));
-
-  if (Platform.OS === 'web') {
-    // Clear web timeout
-    const timeoutKey = `${type}_timeout`;
-    const existingTimeout = (globalThis as any)[timeoutKey];
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-      delete (globalThis as any)[timeoutKey];
-    }
-  }
-
-  // Schedule for tomorrow
-  await scheduleDailyReminder(type);
-}
-
-export async function resetTodayFlags() {
-  const today = getLocalDateKey();
-  await removeItem(STORAGE_KEYS.morningDonePrefix + today);
-  await removeItem(STORAGE_KEYS.eveningDonePrefix + today);
+export async function markRoutineDone(type: RoutineType) {
+  const key = `routine_${type}_${new Date().toDateString()}`;
+  await setStorageItem(key, '1');
+  console.log('[Notifications] Routine marked done:', type);
 }
 
 export async function startDailyNotifications() {
-  console.log('[Notifications] Starting simplified notification system');
-  
-  try {
-    // Initialize notifications first
-    const initialized = await initializeNotifications();
-    if (!initialized && Platform.OS === 'web') {
-      console.log('[Notifications] Failed to initialize web notifications');
-      return false;
-    }
-
-    await scheduleDailyReminder('morning');
-    await scheduleDailyReminder('evening');
-    
-    console.log('[Notifications] Notification system started successfully');
-    return true;
-  } catch (e) {
-    console.log('[Notifications] Error starting notifications:', e);
-    return false;
-  }
-}
-
-export async function getNotificationStatus() {
-  const status = {
-    permissionGranted: false,
-    scheduledNotifications: 0,
-    morningScheduled: false,
-    eveningScheduled: false,
-    platform: Platform.OS,
-  };
-
-  try {
-    if (Platform.OS === 'web') {
-      status.permissionGranted = 'Notification' in globalThis && Notification.permission === 'granted';
-      // Check if we have active timeouts
-      status.morningScheduled = !!(globalThis as any).morning_timeout;
-      status.eveningScheduled = !!(globalThis as any).evening_timeout;
-      status.scheduledNotifications = (status.morningScheduled ? 1 : 0) + (status.eveningScheduled ? 1 : 0);
-    } else {
-      // For mobile, we can't check actual notifications in Expo Go SDK 53
-      console.log('[Notifications] Mobile notification status not available in Expo Go SDK 53');
-      status.permissionGranted = true; // Assume granted for routine tracking
-    }
-  } catch (e) {
-    console.log('[Notifications] Error getting status:', e);
-  }
-
-  return status;
+  return await initializeNotifications();
 }
 
 export async function testNotification() {
-  console.log('[Notifications] Testing notification...');
-  
-  if (Platform.OS === 'web') {
-    if ('Notification' in globalThis && Notification.permission === 'granted') {
-      new Notification('Test Notification', {
-        body: 'This is a test notification from Glow Check!',
-      });
-      console.log('[Notifications] Web test notification sent');
-    } else {
-      console.log('[Notifications] Web notifications not available or not permitted');
-    }
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) {
+    console.log('[Notifications] Test notification - no permission');
     return;
   }
 
-  console.log('[Notifications] Mobile test notifications not available in Expo Go SDK 53');
-  console.log('[Notifications] Use a development build for full notification support');
-}
+  const template = PREMIUM_NOTIFICATIONS.morning_motivation[0];
 
-export async function clearAllNotifications() {
-  console.log('[Notifications] Clearing all notifications...');
-  
-  if (Platform.OS === 'web') {
-    // Clear web timeouts
-    const timeoutKeys = ['morning_timeout', 'evening_timeout'];
-    timeoutKeys.forEach(key => {
-      const timeout = (globalThis as any)[key];
-      if (timeout) {
-        clearTimeout(timeout);
-        delete (globalThis as any)[key];
+  try {
+    if (Platform.OS === 'web') {
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
       }
-    });
-    console.log('[Notifications] Web timeouts cleared');
-    return;
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          sound: true,
+        },
+        trigger: { type: SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 2, repeats: false },
+      });
+    }
+    console.log('[Notifications] Test notification scheduled');
+  } catch (error) {
+    console.error('[Notifications] Test notification error:', error);
   }
-
-  // Clear stored IDs for mobile (even though we can't cancel actual notifications in Expo Go)
-  await removeItem(STORAGE_KEYS.morningNotifId);
-  await removeItem(STORAGE_KEYS.eveningNotifId);
-  console.log('[Notifications] Notification data cleared');
 }
+
+export { NotificationType, NotificationTemplate };
