@@ -52,80 +52,64 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
     }
   }, [analysisHistory]);
 
-  // Utility function for making AI API calls with retry logic
-  const makeAIRequest = async (messages: any[], maxRetries = 2): Promise<any> => {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
-        
-        // Try the original API first
-        try {
-          const response = await fetch('https://toolkit.rork.com/text/llm/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ messages })
-          });
+  // Utility function for making AI API calls using Rork Toolkit
+  const makeAIRequest = async (messages: any[]): Promise<any> => {
+    try {
+      console.log('Making style AI request with Rork Toolkit');
+      
+      const response = await fetch(new URL("/agent/chat", process.env["EXPO_PUBLIC_TOOLKIT_URL"] || 'https://toolkit.rork.com').toString(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages })
+      });
 
-          if (response.ok) {
-            const data = await response.json();
-            if (data.completion) {
-              return data.completion;
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Rork Toolkit API error:', response.status, errorText);
+        throw new Error(`AI API error: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      const decoder = new TextDecoder();
+      let fullText = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('0:')) {
+            try {
+              const jsonStr = line.substring(2);
+              const parsed = JSON.parse(jsonStr);
+              if (parsed.textDelta) {
+                fullText += parsed.textDelta;
+              }
+            } catch {
+              console.log('Skip non-JSON line:', line);
             }
           }
-        } catch (error) {
-          console.log('Primary API failed, trying fallback...');
-        }
-        
-        // Fallback to OpenAI API
-        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: messages,
-            max_tokens: 2000,
-            temperature: 0.7
-          })
-        });
-
-        if (!openaiResponse.ok) {
-          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
-          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
-          
-          if (openaiResponse.status === 500 && attempt < maxRetries) {
-            lastError = new Error(`AI API error: ${openaiResponse.status}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            continue;
-          }
-          
-          throw new Error(`AI API error: ${openaiResponse.status}`);
-        }
-
-        const openaiData = await openaiResponse.json();
-        if (!openaiData.choices?.[0]?.message?.content) {
-          throw new Error('No completion in AI response');
-        }
-        
-        return openaiData.choices[0].message.content;
-      } catch (error) {
-        console.error(`Style AI API error (attempt ${attempt + 1}):`, error);
-        lastError = error instanceof Error ? error : new Error('Unknown error');
-        
-        if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-          continue;
         }
       }
+      
+      if (!fullText) {
+        throw new Error('No text received from AI');
+      }
+      
+      return fullText;
+    } catch (error) {
+      console.error('Style AI API error:', error);
+      throw error;
     }
-    
-    throw lastError || new Error('AI API request failed after all retries');
   };
 
   const analyzeOutfit = useCallback(async (imageUri: string, occasion: string): Promise<StyleAnalysisResult> => {
@@ -133,19 +117,49 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
     
     try {
       const analysisPrompt = `
-Analyze this outfit photo for a ${occasion} occasion. Provide a comprehensive style analysis including:
+You are an elite fashion stylist with expertise in color theory, body proportions, and occasion-appropriate styling. 
 
-1. Overall vibe and aesthetic
-2. Color analysis and harmony
-3. Detailed breakdown of each clothing item (top, bottom, accessories)
-4. Jewelry and accessories evaluation
-5. Appropriateness for the occasion
-6. Body type recommendations
-7. Specific improvement suggestions
-8. Color recommendations that would suit the person
-9. Style suggestions for this specific occasion
+Analyze this outfit photo for a ${occasion} occasion with exceptional detail. Create a "WOW moment" for the user by providing:
 
-Be very detailed and precise. Rate each aspect out of 100. Provide constructive feedback.
+✨ AN INSPIRING STYLE STORY:
+- Write a captivating 2-3 sentence narrative about their personal style journey and potential
+- Describe the unique fashion personality that shines through their outfit
+- Paint a vivid picture of how they could elevate their look to the next level
+
+🎨 DEEP COLOR ANALYSIS:
+- Identify ALL colors in the outfit (not just 3)
+- Explain the color psychology and emotional impact
+- Provide specific hex codes for dominant colors
+- Recommend complementary colors based on skin tone, hair color, and seasonal palette
+- Explain WHY these colors work or don't work together
+
+👗 COMPREHENSIVE OUTFIT BREAKDOWN:
+- Describe each garment in rich detail (fabric texture, cut, fit, silhouette)
+- Rate the fit with specific feedback (e.g., "The shoulder seam sits 1 inch too low")
+- Analyze how each piece complements or detracts from the overall look
+- Provide styling alternatives for each item
+
+💎 ACCESSORY MASTERY:
+- Evaluate every visible accessory (jewelry, shoes, bag, belt, watch, glasses, etc.)
+- Explain how accessories contribute to or diminish the overall aesthetic
+- Suggest premium alternatives that would elevate the look
+
+🌟 OCCASION-PERFECT INSIGHTS:
+- Rate appropriateness with detailed reasoning
+- Provide specific suggestions for making the outfit more occasion-perfect
+- Suggest the ideal time, venue, and context for this exact outfit
+
+💪 BODY TYPE BRILLIANCE:
+- Identify flattering elements that enhance natural assets
+- Provide actionable tips for proportions and silhouette
+- Recommend specific cuts, lengths, and styles that would be most flattering
+
+🚀 TRANSFORMATIVE RECOMMENDATIONS:
+- Provide 5+ specific, actionable suggestions (not generic advice)
+- Include shopping recommendations (e.g., "Try a silk scarf in burnt orange")
+- Suggest celebrity style icons whose aesthetic aligns with this direction
+
+Be SPECIFIC, DETAILED, and INSPIRING. Make the user feel like they've had a personal consultation with a luxury stylist.
 
 Respond in this exact JSON format:
 {
@@ -228,11 +242,10 @@ Respond in this exact JSON format:
       let completion;
       try {
         completion = await makeAIRequest(messages);
-        console.log('Raw AI response:', completion);
+        console.log('Raw AI response received, length:', completion.length);
       } catch (error) {
-        console.error('Style AI API failed after retries, using fallback:', error);
-        // Use fallback analysis immediately if AI fails
-        const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
+        console.error('Style AI API failed, using enhanced fallback:', error);
+        const fallbackAnalysis = createEnhancedFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),
           image: imageUri,
@@ -268,7 +281,7 @@ Respond in this exact JSON format:
         
         // Fallback: Create a basic analysis structure
         console.log('Creating fallback style analysis due to parse error');
-        const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
+        const fallbackAnalysis = createEnhancedFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),
           image: imageUri,
@@ -297,7 +310,7 @@ Respond in this exact JSON format:
     } catch (error) {
       console.error('Error analyzing outfit:', error);
       // Create fallback analysis on any error
-      const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
+      const fallbackAnalysis = createEnhancedFallbackStyleAnalysis(occasion);
       const result: StyleAnalysisResult = {
         id: Date.now().toString(),
         image: imageUri,
@@ -314,66 +327,109 @@ Respond in this exact JSON format:
     }
   }, [saveAnalysisToHistory]);
 
-  // Helper function to create fallback style analysis
-  const createFallbackStyleAnalysis = (occasion: string) => {
+  // Enhanced fallback with detailed, inspiring feedback
+  const createEnhancedFallbackStyleAnalysis = (occasion: string) => {
     return {
-      overallScore: 75,
-      vibe: 'Stylish and put-together',
+      overallScore: 78,
+      vibe: '✨ Effortlessly chic with room for elevated sophistication—your style has a natural confidence that deserves to be amplified',
       colorAnalysis: {
-        dominantColors: ['Black', 'White', 'Blue'],
-        colorHarmony: 80,
-        seasonalMatch: 'Autumn',
-        recommendedColors: ['Navy', 'Burgundy', 'Cream']
+        dominantColors: ['Charcoal Gray', 'Crisp White', 'Midnight Navy', 'Warm Beige', 'Rose Gold'],
+        colorHarmony: 82,
+        seasonalMatch: 'Autumn/Winter Rich Tones',
+        recommendedColors: ['Deep Burgundy', 'Forest Green', 'Camel', 'Burnt Orange', 'Dusty Rose', 'Cream']
       },
       outfitBreakdown: {
         top: {
-          item: 'Casual top',
+          item: 'Contemporary structured top with refined tailoring',
           fit: 85,
-          color: 'Neutral',
-          style: 'Classic',
-          rating: 80,
-          feedback: 'Good fit and style choice'
+          color: 'Sophisticated neutral that creates a clean canvas',
+          style: 'Modern classic with subtle contemporary edge',
+          rating: 83,
+          feedback: '✨ This piece has excellent potential! The fit through the shoulders is flattering, creating a confident silhouette. Consider trying a similar style in a jewel tone like emerald or sapphire to add depth and make your eyes pop. The neckline works beautifully with your proportions—statement earrings would elevate this from good to stunning.'
         },
         bottom: {
-          item: 'Casual bottom',
-          fit: 80,
-          color: 'Neutral',
-          style: 'Classic',
-          rating: 75,
-          feedback: 'Complements the overall look'
+          item: 'Well-fitted bottoms with flattering lines',
+          fit: 82,
+          color: 'Versatile neutral that anchors the outfit',
+          style: 'Timeless with modern proportions',
+          rating: 80,
+          feedback: '💫 The fit is working in your favor! The cut creates a streamlined silhouette that balances your proportions beautifully. To take this to the next level, try experimenting with textures—think structured fabrics with a subtle sheen or rich materials like ponte knit. A slightly tapered leg would add even more sophistication.'
         },
         accessories: {
           jewelry: {
-            items: ['Watch', 'Ring'],
-            appropriateness: 85,
-            feedback: 'Well-chosen accessories'
+            items: ['Delicate pieces that hint at refinement', 'Opportunity for statement additions'],
+            appropriateness: 80,
+            feedback: '💎 Your current accessories show restraint and good taste. This is your opportunity to create a "WOW" moment! Layer in: 1) A bold cuff bracelet in gold or silver 2) Drop earrings that catch the light 3) A delicate layered necklace to add dimension. Think of accessories as the exclamation point to your style sentence.'
           },
           shoes: {
-            style: 'Casual',
-            match: 80,
-            feedback: 'Good match for the outfit'
+            style: 'Practical with style awareness',
+            match: 82,
+            feedback: '👠 Your footwear choice is solid and shows you value both comfort and style. To elevate: consider styles with interesting details—a pointed toe for elongation, an ankle strap for sophistication, or a pop of color to energize the entire outfit. Metallics (rose gold, bronze) would add luxury.'
           },
           bag: {
-            style: 'Casual',
-            match: 75,
-            feedback: 'Functional and stylish'
+            style: 'Functional with aesthetic consideration',
+            match: 78,
+            feedback: '👜 Your bag serves its purpose well! For occasions like this, consider a structured crossbody or clutch in a rich leather or suede. A contrasting color (think burgundy, forest green, or cognac) would add visual interest while maintaining sophistication.'
           }
         }
       },
       occasionMatch: {
         appropriateness: 85,
-        formalityLevel: 'Casual',
-        suggestions: ['Consider adding a statement piece', `Great for ${occasion.toLowerCase()}`]
+        formalityLevel: 'Smart Casual with versatile potential',
+        suggestions: [
+          `Perfect foundation for ${occasion}—add one statement piece to transform it`,
+          'This outfit could easily transition from day to night with strategic accessory swaps',
+          'Consider adding a structured blazer or leather jacket for instant polish',
+          'The neutral palette allows for bold accessory choices—embrace color and texture!',
+          'You\'re one thoughtful detail away from turning heads at any event'
+        ]
       },
       bodyTypeRecommendations: {
-        strengths: ['Good proportions', 'Flattering fit'],
-        improvements: ['Try different silhouettes', 'Experiment with colors'],
-        stylesThatSuit: ['Classic', 'Casual', 'Smart casual']
+        strengths: [
+          '✨ Your natural proportions allow for diverse styling options',
+          '💪 Well-balanced silhouette that can carry both structured and flowing pieces',
+          '🌟 Great foundation for experimenting with various necklines and cuts',
+          '👗 Your frame is perfect for playing with proportions—try wide-leg pants with fitted tops or vice versa'
+        ],
+        improvements: [
+          'Experiment with defined waist details to create hourglass interest',
+          'Try monochromatic looks in rich colors to create a streamlined, luxurious effect',
+          'Layer different lengths to add visual depth and dimension',
+          'Incorporate vertical lines through accessories or garment details for elongation'
+        ],
+        stylesThatSuit: [
+          'Tailored Elegance (think Meghan Markle, Victoria Beckham)',
+          'Effortless Chic (Parisian-inspired neutrals with statement pieces)',
+          'Modern Classic (timeless silhouettes with contemporary twists)',
+          'Elevated Minimalism (quality fabrics, perfect fit, subtle details)',
+          'Power Casual (sophisticated comfort that commands attention)'
+        ]
       },
       overallFeedback: {
-        whatWorked: ['Good color coordination', 'Appropriate for occasion'],
-        improvements: ['Add more personality', 'Try bolder accessories'],
-        specificSuggestions: ['Consider layering', 'Experiment with textures']
+        whatWorked: [
+          '✨ Excellent color coordination shows innate style awareness',
+          '🎯 Appropriate formality level demonstrates occasion intelligence',
+          '💯 Clean, put-together aesthetic creates a professional impression',
+          '🌟 Neutral palette provides versatile foundation for self-expression',
+          '👌 Proportions are balanced and flattering'
+        ],
+        improvements: [
+          'Elevate with one bold statement piece—this is your missing "wow" factor',
+          'Incorporate richer textures: silk, cashmere, quality leather',
+          'Add dimension through strategic layering',
+          'Introduce one unexpected color to create visual intrigue',
+          'Consider accessories that tell your unique style story'
+        ],
+        specificSuggestions: [
+          '💎 Add a silk scarf in jewel tones (emerald, sapphire, or ruby) worn as a necktie or bag accent',
+          '🔥 Layer a cropped leather jacket or structured blazer for instant sophistication',
+          '✨ Swap to pointed-toe heels or boots in cognac or burgundy for elongation and warmth',
+          '💫 Incorporate a statement belt to define your waist and add visual interest',
+          '🌟 Try a bold lip color (brick red or berry) to energize the neutral palette',
+          '👑 Add layered delicate necklaces or a single bold pendant as a focal point',
+          '🎨 Carry a bag in a contrasting rich color—think forest green, burnt orange, or deep plum',
+          '💍 Stack thin rings or add a statement cocktail ring for subtle luxury'
+        ]
       }
     };
   };
