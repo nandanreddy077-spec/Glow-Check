@@ -278,36 +278,33 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         return { success: false, error: 'In-app purchases not supported on web. Please use the mobile app.' };
       }
       
-      // Initialize payment service
       const initialized = await paymentService.initialize();
       if (!initialized) {
         return { success: false, error: 'Payment service unavailable. Please try again later.' };
       }
       
-      // Get the product ID for the subscription type
       const productId = type === 'monthly' ? PRODUCT_IDS.MONTHLY : PRODUCT_IDS.YEARLY;
       
-      // Attempt the purchase
       const result = await paymentService.purchaseProduct(productId);
       
       if (result.success && result.transactionId && result.purchaseToken) {
-        console.log('Purchase successful:', result);
+        console.log('Purchase successful! Activating premium access...');
         
-        // Track the purchase event
         const price = type === 'yearly' ? 99 : 8.99;
         trackPurchaseEvent(productId, price, 'USD');
         
-        // Update subscription state
         await setPremium(true, type);
         await setSubscriptionData({
           purchaseToken: result.purchaseToken,
           originalTransactionId: result.transactionId,
+          hasAddedPayment: true,
+          hasStartedTrial: false,
+          trialStartedAt: undefined,
+          trialEndsAt: undefined,
         });
         
-        // Sync with backend after successful purchase
         if (user?.id) {
           try {
-            // Update user's RevenueCat user ID in Supabase
             await supabase
               .from('user_profiles')
               .update({ 
@@ -317,12 +314,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
                 updated_at: new Date().toISOString()
               })
               .eq('id', user.id);
+            
+            console.log('Premium status synced with backend');
           } catch (backendError) {
             console.error('Failed to update backend subscription status:', backendError);
-            // Don't fail the purchase if backend update fails
           }
         }
         
+        console.log('Premium activated successfully!');
         return { 
           success: true, 
           purchaseToken: result.purchaseToken,

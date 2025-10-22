@@ -16,6 +16,12 @@ interface TrialTracking {
   payment_added_at?: string;
 }
 
+interface UsageTracking {
+  glow_analysis: number;
+  style_analysis: number;
+  last_reset_date: string;
+}
+
 interface FreemiumContextType {
   canScanGlow: boolean;
   canScanStyle: boolean;
@@ -42,6 +48,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   const { user } = useAuth();
   const { state: subState } = useSubscription();
   const [trialTracking, setTrialTracking] = useState<TrialTracking | null>(null);
+  const [usageTracking, setUsageTracking] = useState<UsageTracking>({ glow_analysis: 0, style_analysis: 0, last_reset_date: new Date().toISOString().split('T')[0] });
   const [showTrialUpgradeModal, setShowTrialUpgradeModal] = useState<boolean>(false);
 
   const isFreeUser = useMemo(() => {
@@ -61,26 +68,43 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   }, [subState.isPremium]);
 
   const hasUsedFreeScan = useMemo(() => {
-    return (trialTracking?.free_scans_used || 0) >= 1;
-  }, [trialTracking?.free_scans_used]);
+    return usageTracking.glow_analysis >= 1 || usageTracking.style_analysis >= 1;
+  }, [usageTracking.glow_analysis, usageTracking.style_analysis]);
 
   const loadUsage = useCallback(async () => {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: trialData, error: trialError } = await supabase
         .from('trial_tracking')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading scan usage:', error.message || error);
-        return;
+      if (trialError && trialError.code !== 'PGRST116') {
+        console.error('Error loading trial tracking:', trialError.message || trialError);
+      } else if (trialData) {
+        setTrialTracking(trialData);
       }
 
-      if (data) {
-        setTrialTracking(data);
+      const { data: usageData, error: usageError } = await supabase
+        .from('usage_tracking')
+        .select('feature_type, usage_count, last_reset_date')
+        .eq('user_id', user.id)
+        .in('feature_type', ['glow_analysis', 'style_analysis']);
+
+      if (usageError) {
+        console.error('Error loading usage tracking:', usageError.message || usageError);
+      } else if (usageData) {
+        const today = new Date().toISOString().split('T')[0];
+        const glowUsage = usageData.find(u => u.feature_type === 'glow_analysis');
+        const styleUsage = usageData.find(u => u.feature_type === 'style_analysis');
+        
+        setUsageTracking({
+          glow_analysis: glowUsage && glowUsage.last_reset_date === today ? glowUsage.usage_count : 0,
+          style_analysis: styleUsage && styleUsage.last_reset_date === today ? styleUsage.usage_count : 0,
+          last_reset_date: today,
+        });
       }
     } catch (error: any) {
       console.error('Error loading scan usage:', error?.message || String(error));
@@ -92,190 +116,158 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   }, [loadUsage]);
 
   const glowScansToday = useMemo(() => {
-    if (!trialTracking) return 0;
-    if (!subState.hasStartedTrial) return trialTracking.free_scans_used || 0;
-    const today = new Date().toISOString().split('T')[0];
-    const lastScanDate = trialTracking.last_free_scan_at?.split('T')[0];
-    return lastScanDate === today ? (trialTracking.free_scans_used || 0) : 0;
-  }, [trialTracking, subState.hasStartedTrial]);
+    return usageTracking.glow_analysis;
+  }, [usageTracking.glow_analysis]);
 
   const styleScansToday = useMemo(() => {
-    if (!trialTracking) return 0;
-    if (!subState.hasStartedTrial) return trialTracking.free_scans_used || 0;
-    const today = new Date().toISOString().split('T')[0];
-    const lastScanDate = trialTracking.last_free_scan_at?.split('T')[0];
-    return lastScanDate === today ? (trialTracking.free_scans_used || 0) : 0;
-  }, [trialTracking, subState.hasStartedTrial]);
+    return usageTracking.style_analysis;
+  }, [usageTracking.style_analysis]);
 
   const canScanGlow = useMemo(() => {
     if (subState.isPremium) return true;
     
     if (subState.hasStartedTrial) {
-      const today = new Date().toISOString().split('T')[0];
-      const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
-      const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
-      console.log('Trial scan check:', { scansToday, limit: TRIAL_DAILY_SCANS, canScan: scansToday < TRIAL_DAILY_SCANS });
+      const scansToday = usageTracking.glow_analysis;
+      console.log('Trial glow scan check:', { scansToday, limit: TRIAL_DAILY_SCANS, canScan: scansToday < TRIAL_DAILY_SCANS });
       return scansToday < TRIAL_DAILY_SCANS;
     }
     
-    const canScan = (trialTracking?.free_scans_used || 0) < FREE_SCANS;
-    console.log('Free scan check:', { used: trialTracking?.free_scans_used, limit: FREE_SCANS, canScan });
+    const canScan = usageTracking.glow_analysis < FREE_SCANS;
+    console.log('Free glow scan check:', { used: usageTracking.glow_analysis, limit: FREE_SCANS, canScan });
     return canScan;
-  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
+  }, [subState.isPremium, subState.hasStartedTrial, usageTracking.glow_analysis]);
 
   const canScanStyle = useMemo(() => {
     if (subState.isPremium) return true;
     
     if (subState.hasStartedTrial) {
-      const today = new Date().toISOString().split('T')[0];
-      const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
-      const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      const scansToday = usageTracking.style_analysis;
       console.log('Trial style scan check:', { scansToday, limit: TRIAL_DAILY_SCANS, canScan: scansToday < TRIAL_DAILY_SCANS });
       return scansToday < TRIAL_DAILY_SCANS;
     }
     
-    const canScan = (trialTracking?.free_scans_used || 0) < FREE_SCANS;
-    console.log('Free style scan check:', { used: trialTracking?.free_scans_used, limit: FREE_SCANS, canScan });
+    const canScan = usageTracking.style_analysis < FREE_SCANS;
+    console.log('Free style scan check:', { used: usageTracking.style_analysis, limit: FREE_SCANS, canScan });
     return canScan;
-  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
+  }, [subState.isPremium, subState.hasStartedTrial, usageTracking.style_analysis]);
 
   const glowScansLeft = useMemo(() => {
     if (subState.isPremium) return Infinity;
     
     if (subState.hasStartedTrial) {
-      const today = new Date().toISOString().split('T')[0];
-      const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
-      const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      const scansToday = usageTracking.glow_analysis;
       return Math.max(0, TRIAL_DAILY_SCANS - scansToday);
     }
     
-    return Math.max(0, FREE_SCANS - (trialTracking?.free_scans_used || 0));
-  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
+    return Math.max(0, FREE_SCANS - usageTracking.glow_analysis);
+  }, [subState.isPremium, subState.hasStartedTrial, usageTracking.glow_analysis]);
 
   const styleScansLeft = useMemo(() => {
     if (subState.isPremium) return Infinity;
     
     if (subState.hasStartedTrial) {
-      const today = new Date().toISOString().split('T')[0];
-      const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
-      const scansToday = lastScanDate === today ? (trialTracking?.free_scans_used || 0) : 0;
+      const scansToday = usageTracking.style_analysis;
       return Math.max(0, TRIAL_DAILY_SCANS - scansToday);
     }
     
-    return Math.max(0, FREE_SCANS - (trialTracking?.free_scans_used || 0));
-  }, [subState.isPremium, subState.hasStartedTrial, trialTracking?.free_scans_used, trialTracking?.last_free_scan_at]);
+    return Math.max(0, FREE_SCANS - usageTracking.style_analysis);
+  }, [subState.isPremium, subState.hasStartedTrial, usageTracking.style_analysis]);
 
   const incrementGlowScan = useCallback(async () => {
     if (!user?.id) return;
 
     const now = new Date().toISOString();
     const today = new Date().toISOString().split('T')[0];
-    const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
     
     console.log('Incrementing glow scan...');
-    console.log('Current state:', { hasStartedTrial: subState.hasStartedTrial, today, lastScanDate, currentUsed: trialTracking?.free_scans_used });
-    
-    let newCount;
-    if (subState.hasStartedTrial) {
-      if (lastScanDate === today) {
-        newCount = (trialTracking?.free_scans_used || 0) + 1;
-      } else {
-        newCount = 1;
-      }
-    } else {
-      newCount = (trialTracking?.free_scans_used || 0) + 1;
-    }
-    
-    console.log('New scan count will be:', newCount);
+    console.log('Current state:', { hasStartedTrial: subState.hasStartedTrial, today, currentUsed: usageTracking.glow_analysis });
 
     try {
-      const { error } = await supabase
+      const { error } = await supabase.rpc('increment_usage_tracking', {
+        p_user_id: user.id,
+        p_feature_type: 'glow_analysis'
+      });
+
+      if (error) {
+        console.error('Error incrementing glow scan:', error.message || error);
+        return;
+      }
+
+      const { error: trialError } = await supabase
         .from('trial_tracking')
         .upsert({
           id: user.id,
           first_scan_at: trialTracking?.first_scan_at || now,
-          last_free_scan_at: now,
-          free_scans_used: newCount,
           results_unlocked_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
           updated_at: now,
         }, {
           onConflict: 'id'
         });
 
-      if (error) {
-        console.error('Error incrementing glow scan:', error.message || error);
-        return;
+      if (trialError) {
+        console.error('Error updating trial tracking:', trialError.message || trialError);
       }
       
-      console.log('Scan incremented successfully. Reloading usage...');
+      console.log('Glow scan incremented successfully. Reloading usage...');
       await loadUsage();
-      
-      console.log('After increment - Trial user can scan more:', subState.hasStartedTrial);
 
-      if (!subState.isPremium && !subState.hasStartedTrial && newCount >= FREE_SCANS) {
+      const newGlowCount = usageTracking.glow_analysis + 1;
+      if (!subState.isPremium && !subState.hasStartedTrial && newGlowCount >= FREE_SCANS) {
         console.log('Showing trial upgrade modal');
         setShowTrialUpgradeModal(true);
       }
     } catch (error: any) {
       console.error('Failed to increment glow scan:', error?.message || String(error));
     }
-  }, [user?.id, trialTracking, subState.isPremium, subState.hasStartedTrial, loadUsage]);
+  }, [user?.id, trialTracking, subState.isPremium, subState.hasStartedTrial, usageTracking.glow_analysis, loadUsage]);
 
   const incrementStyleScan = useCallback(async () => {
     if (!user?.id) return;
 
     const now = new Date().toISOString();
     const today = new Date().toISOString().split('T')[0];
-    const lastScanDate = trialTracking?.last_free_scan_at?.split('T')[0];
     
     console.log('Incrementing style scan...');
-    console.log('Current state:', { hasStartedTrial: subState.hasStartedTrial, today, lastScanDate, currentUsed: trialTracking?.free_scans_used });
-    
-    let newCount;
-    if (subState.hasStartedTrial) {
-      if (lastScanDate === today) {
-        newCount = (trialTracking?.free_scans_used || 0) + 1;
-      } else {
-        newCount = 1;
-      }
-    } else {
-      newCount = (trialTracking?.free_scans_used || 0) + 1;
-    }
-    
-    console.log('New scan count will be:', newCount);
+    console.log('Current state:', { hasStartedTrial: subState.hasStartedTrial, today, currentUsed: usageTracking.style_analysis });
 
     try {
-      const { error } = await supabase
+      const { error } = await supabase.rpc('increment_usage_tracking', {
+        p_user_id: user.id,
+        p_feature_type: 'style_analysis'
+      });
+
+      if (error) {
+        console.error('Error incrementing style scan:', error.message || error);
+        return;
+      }
+
+      const { error: trialError } = await supabase
         .from('trial_tracking')
         .upsert({
           id: user.id,
           first_scan_at: trialTracking?.first_scan_at || now,
-          last_free_scan_at: now,
-          free_scans_used: newCount,
           results_unlocked_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
           updated_at: now,
         }, {
           onConflict: 'id'
         });
 
-      if (error) {
-        console.error('Error incrementing style scan:', error.message || error);
-        return;
+      if (trialError) {
+        console.error('Error updating trial tracking:', trialError.message || trialError);
       }
       
       console.log('Style scan incremented successfully. Reloading usage...');
       await loadUsage();
-      
-      console.log('After increment - Trial user can scan more:', subState.hasStartedTrial);
 
-      if (!subState.isPremium && !subState.hasStartedTrial && newCount >= FREE_SCANS) {
+      const newStyleCount = usageTracking.style_analysis + 1;
+      if (!subState.isPremium && !subState.hasStartedTrial && newStyleCount >= FREE_SCANS) {
         console.log('Showing trial upgrade modal');
         setShowTrialUpgradeModal(true);
       }
     } catch (error: any) {
       console.error('Failed to increment style scan:', error?.message || String(error));
     }
-  }, [user?.id, trialTracking, subState.isPremium, subState.hasStartedTrial, loadUsage]);
+  }, [user?.id, trialTracking, subState.isPremium, subState.hasStartedTrial, usageTracking.style_analysis, loadUsage]);
 
   const refreshUsage = useCallback(async () => {
     await loadUsage();

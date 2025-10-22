@@ -53,12 +53,13 @@ export default function StartTrialScreen() {
       console.log('Purchase result:', result);
       
       if (result.success) {
+        console.log('Payment method added successfully - activating 3-day trial');
         await startLocalTrial(3);
         await setSubscriptionData({ hasAddedPayment: true });
         
         Alert.alert(
-          '🎉 Welcome to Premium!', 
-          'Your 3-day free trial is now active! Enjoy unlimited scans, full results access, and all premium features. You won\'t be charged until the trial ends.',
+          '🎉 Welcome to Your Free Trial!', 
+          'Your 3-day free trial is now active! Enjoy unlimited scans and all premium features. You won\'t be charged until the trial ends.',
           [{ 
             text: 'Start Your Glow Journey ✨', 
             style: 'default', 

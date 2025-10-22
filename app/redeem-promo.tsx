@@ -86,15 +86,6 @@ export default function RedeemPromoScreen() {
       return;
     }
 
-    if (state.hasStartedTrial) {
-      Alert.alert(
-        'Trial Already Active',
-        'You have already started a trial. Promo codes cannot be applied to existing trials.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
     setIsRedeeming(true);
     setValidationError(null);
 
@@ -126,7 +117,7 @@ export default function RedeemPromoScreen() {
     } finally {
       setIsRedeeming(false);
     }
-  }, [promoCode, validatePromoCode, state.isPremium, state.hasStartedTrial, startLocalTrial]);
+  }, [promoCode, validatePromoCode, state.isPremium, startLocalTrial]);
 
   const handleBack = useCallback(() => {
     router.back();
