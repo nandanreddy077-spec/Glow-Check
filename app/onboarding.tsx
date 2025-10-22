@@ -6,7 +6,6 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { useUser } from '@/contexts/UserContext';
 import { ChevronRight, Heart, Sparkles, Star } from 'lucide-react-native';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
-import GlowCheckLogo from '@/components/GlowCheckLogo';
 import { useTheme } from '@/contexts/ThemeContext';
 import { startDailyNotifications } from '@/lib/notifications';
 
@@ -194,9 +193,6 @@ export default function OnboardingScreen() {
                 }
               ]}
             >
-              <View style={styles.logoContainerOnboarding}>
-                <GlowCheckLogo size="large" showText={true} />
-              </View>
               <View style={styles.imageContainer}>
                 <LinearGradient 
                   colors={i === 0 ? gradient.primary : i === 1 ? gradient.secondary : gradient.tertiary} 
@@ -337,9 +333,6 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     paddingTop: 80, 
     paddingHorizontal: spacing.xl,
     flex: 1
-  },
-  logoContainerOnboarding: {
-    marginBottom: spacing.lg,
   },
   imageContainer: {
     position: 'relative',
