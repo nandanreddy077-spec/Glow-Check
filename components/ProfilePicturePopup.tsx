@@ -78,11 +78,12 @@ export default function ProfilePicturePopup({ visible, onClose }: ProfilePicture
   }, [visible, fadeAnim, scaleAnim, sparkleAnim]);
 
   const handleAddPhoto = () => {
-    console.log('handleAddPhoto triggered');
+    console.log('handleAddPhoto triggered - opening photo picker');
     setShowPhotoPicker(true);
   };
 
   const handlePhotoPickerClose = () => {
+    console.log('handlePhotoPickerClose called - user avatar:', user?.avatar);
     setShowPhotoPicker(false);
     if (user?.avatar) {
       onClose();
@@ -217,6 +218,7 @@ export default function ProfilePicturePopup({ visible, onClose }: ProfilePicture
                 style={styles.addPhotoButton}
                 onPress={handleAddPhoto}
                 activeOpacity={0.8}
+                disabled={showPhotoPicker}
               >
                 <LinearGradient
                   colors={gradient.primary}
@@ -245,10 +247,12 @@ export default function ProfilePicturePopup({ visible, onClose }: ProfilePicture
         </Animated.View>
       </Modal>
       
-      <PhotoPickerModal 
-        visible={showPhotoPicker} 
-        onClose={handlePhotoPickerClose} 
-      />
+      {showPhotoPicker && (
+        <PhotoPickerModal 
+          visible={showPhotoPicker} 
+          onClose={handlePhotoPickerClose} 
+        />
+      )}
     </>
   );
 }
