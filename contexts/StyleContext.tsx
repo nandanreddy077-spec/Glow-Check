@@ -85,7 +85,7 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
