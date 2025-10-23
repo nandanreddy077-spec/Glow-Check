@@ -57,33 +57,18 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
   const makeAIRequest = async (messages: any[], maxRetries = 2): Promise<any> => {
     let lastError: Error | null = null;
     
-    // Check if toolkit URL is configured
-    if (!process.env.EXPO_PUBLIC_TOOLKIT_URL) {
-      console.error('❌ EXPO_PUBLIC_TOOLKIT_URL not configured in .env file');
-      throw new Error('AI service not configured. Please check environment variables.');
-    }
-    
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
-        console.log('Using Toolkit URL:', process.env.EXPO_PUBLIC_TOOLKIT_URL);
         
         const completion = await generateText({ messages });
-        console.log('✅ AI response received successfully');
+        console.log('AI response received successfully');
         return completion;
       } catch (error) {
-        console.error(`❌ Style AI API error (attempt ${attempt + 1}):`, error);
-        
-        // Log more details about the error
-        if (error instanceof Error) {
-          console.error('Error message:', error.message);
-          console.error('Error stack:', error.stack);
-        }
-        
+        console.error(`Style AI API error (attempt ${attempt + 1}):`, error);
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
-          console.log(`⏳ Retrying in ${1000 * (attempt + 1)}ms...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
