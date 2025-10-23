@@ -360,40 +360,47 @@ export default function AnalysisLoadingScreen() {
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`Analysis AI API attempt ${attempt + 1}/${maxRetries + 1}`);
-        console.log('Messages to send:', JSON.stringify(messages, null, 2));
+        console.log(`📊 Analysis AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        // Use Rork Toolkit's generateText API
-        const completion = await generateText({ messages });
+        // Use Rork Toolkit's generateText API with timeout
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Request timeout')), 15000); // 15 second timeout
+        });
+        
+        const requestPromise = generateText({ messages });
+        
+        const completion = await Promise.race([requestPromise, timeoutPromise]);
         
         if (completion) {
-          console.log('Rork Toolkit AI response received successfully');
+          console.log('✅ Rork Toolkit AI response received successfully');
           return completion;
         }
         
         throw new Error('No completion in AI response');
       } catch (error) {
-        console.error(`Analysis AI API error (attempt ${attempt + 1}):`, error);
+        console.error(`❌ Analysis AI API error (attempt ${attempt + 1}):`, error);
         
         // Check if it's a network error and log details
         if (error instanceof Error) {
-          console.error('Error name:', error.name);
-          console.error('Error message:', error.message);
-          console.error('Error stack:', error.stack);
+          console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            type: error.constructor.name
+          });
         }
         
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
-          const delay = 1000 * (attempt + 1);
-          console.log(`Waiting ${delay}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          const delayMs = 1000 * (attempt + 1);
+          console.log(`⏳ Waiting ${delayMs}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
           continue;
         }
       }
     }
     
-    console.error('All API attempts failed. Using fallback analysis.');
+    console.log('🔄 All API attempts failed, will use fallback analysis');
     throw lastError || new Error('AI API request failed after all retries');
   };
 
@@ -477,11 +484,11 @@ Respond with ONLY a valid JSON object with this structure:
 
       let analysisText;
       try {
-        console.log('⚠️ Attempting Rork Toolkit AI analysis...');
+        console.log('🚀 Attempting Rork Toolkit AI analysis...');
         analysisText = await makeAIRequest(messages);
-        console.log('✅ Raw AI response received:', analysisText.substring(0, 200));
+        console.log('✅ Raw AI response received, length:', analysisText?.length || 0);
       } catch (error) {
-        console.error('❌ Analysis AI API failed, using fallback:', error);
+        console.error('❌ Analysis AI API failed after all retries, using fallback:', error);
         console.log('🔄 Using enhanced fallback analysis (Google Vision + algorithms)...');
         console.log('📊 Fallback provides accurate results based on facial feature detection');
         return generateFallbackAnalysis(visionData);

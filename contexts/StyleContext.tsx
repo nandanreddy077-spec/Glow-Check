@@ -59,28 +59,46 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
+        console.log(`🎨 Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        // Use Rork Toolkit's generateText API
-        const completion = await generateText({ messages });
+        // Use Rork Toolkit's generateText API with timeout
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Request timeout')), 15000); // 15 second timeout
+        });
+        
+        const requestPromise = generateText({ messages });
+        
+        const completion = await Promise.race([requestPromise, timeoutPromise]);
         
         if (completion) {
-          console.log('Rork Toolkit AI response received successfully');
+          console.log('✅ Rork Toolkit AI response received successfully');
           return completion;
         }
         
         throw new Error('No completion in AI response');
       } catch (error) {
-        console.error(`Style AI API error (attempt ${attempt + 1}):`, error);
+        console.error(`❌ Style AI API error (attempt ${attempt + 1}):`, error);
+        
+        if (error instanceof Error) {
+          console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            type: error.constructor.name
+          });
+        }
+        
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          const delayMs = 1000 * (attempt + 1);
+          console.log(`⏳ Waiting ${delayMs}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
           continue;
         }
       }
     }
     
+    console.log('🔄 All AI attempts failed, will use fallback analysis');
     throw lastError || new Error('AI API request failed after all retries');
   };
 
@@ -183,10 +201,13 @@ Respond in this exact JSON format:
 
       let completion;
       try {
+        console.log('🚀 Attempting AI style analysis...');
         completion = await makeAIRequest(messages);
-        console.log('Raw AI response:', completion);
+        console.log('✅ Raw AI response received, length:', completion?.length || 0);
       } catch (error) {
-        console.error('Style AI API failed after retries, using fallback:', error);
+        console.error('❌ Style AI API failed after all retries, using fallback:', error);
+        console.log('📊 Creating enhanced fallback style analysis...');
+        
         // Use fallback analysis immediately if AI fails
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
@@ -197,6 +218,7 @@ Respond in this exact JSON format:
           timestamp: new Date()
         };
         
+        console.log('✅ Fallback analysis created successfully');
         setAnalysisResult(result);
         await saveAnalysisToHistory(result);
         return result;
