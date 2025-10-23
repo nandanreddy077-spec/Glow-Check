@@ -13,6 +13,7 @@ import { useAnalysis, AnalysisResult } from '@/contexts/AnalysisContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
+import { generateText } from '@rork/toolkit-sdk';
 
 
 
@@ -361,60 +362,13 @@ export default function AnalysisLoadingScreen() {
       try {
         console.log(`Analysis AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        // Try the original API first
-        try {
-          const response = await fetch('https://toolkit.rork.com/text/llm/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ messages })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.completion) {
-              return data.completion;
-            }
-          }
-        } catch {
-          console.log('Primary API failed, trying fallback...');
-        }
+        const completion = await generateText({ messages });
         
-        // Fallback to OpenAI API
-        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: messages,
-            max_tokens: 2000,
-            temperature: 0.7
-          })
-        });
-
-        if (!openaiResponse.ok) {
-          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
-          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
-          
-          if (openaiResponse.status === 500 && attempt < maxRetries) {
-            lastError = new Error(`AI API error: ${openaiResponse.status}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            continue;
-          }
-          
-          throw new Error(`AI API error: ${openaiResponse.status}`);
-        }
-
-        const openaiData = await openaiResponse.json();
-        if (!openaiData.choices?.[0]?.message?.content) {
+        if (!completion) {
           throw new Error('No completion in AI response');
         }
         
-        return openaiData.choices[0].message.content;
+        return completion;
       } catch (error) {
         console.error(`Analysis AI API error (attempt ${attempt + 1}):`, error);
         lastError = error instanceof Error ? error : new Error('Unknown error');

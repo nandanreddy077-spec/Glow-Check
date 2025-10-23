@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { StyleAnalysisResult } from '@/types/user';
+import { generateText } from '@rork/toolkit-sdk';
 
 const OCCASIONS = [
   { id: 'casual', name: 'Casual Day Out', icon: '👕' },
@@ -60,33 +61,13 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
       try {
         console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        const response = await fetch('https://toolkit.rork.com/text/llm/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ messages })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Unknown error');
-          console.error(`Rork Toolkit API Response not OK (attempt ${attempt + 1}):`, response.status, errorText);
-          
-          if (response.status >= 500 && attempt < maxRetries) {
-            lastError = new Error(`AI API error: ${response.status}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            continue;
-          }
-          
-          throw new Error(`AI API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data.completion) {
+        const completion = await generateText({ messages });
+        
+        if (!completion) {
           throw new Error('No completion in AI response');
         }
         
-        return data.completion;
+        return completion;
       } catch (error) {
         console.error(`Style AI API error (attempt ${attempt + 1}):`, error);
         lastError = error instanceof Error ? error : new Error('Unknown error');
