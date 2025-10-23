@@ -386,7 +386,7 @@ export default function AnalysisLoadingScreen() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
