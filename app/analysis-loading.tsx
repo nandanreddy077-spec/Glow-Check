@@ -361,6 +361,7 @@ export default function AnalysisLoadingScreen() {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Analysis AI API attempt ${attempt + 1}/${maxRetries + 1}`);
+        console.log('Messages to send:', JSON.stringify(messages, null, 2));
         
         // Use Rork Toolkit's generateText API
         const completion = await generateText({ messages });
@@ -373,15 +374,26 @@ export default function AnalysisLoadingScreen() {
         throw new Error('No completion in AI response');
       } catch (error) {
         console.error(`Analysis AI API error (attempt ${attempt + 1}):`, error);
+        
+        // Check if it's a network error and log details
+        if (error instanceof Error) {
+          console.error('Error name:', error.name);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
+        
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          const delay = 1000 * (attempt + 1);
+          console.log(`Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
       }
     }
     
+    console.error('All API attempts failed. Using fallback analysis.');
     throw lastError || new Error('AI API request failed after all retries');
   };
 
@@ -465,11 +477,13 @@ Respond with ONLY a valid JSON object with this structure:
 
       let analysisText;
       try {
+        console.log('⚠️ Attempting Rork Toolkit AI analysis...');
         analysisText = await makeAIRequest(messages);
-        console.log('Raw AI response:', analysisText);
+        console.log('✅ Raw AI response received:', analysisText.substring(0, 200));
       } catch (error) {
-        console.error('Analysis AI API failed after retries, using fallback:', error);
-        console.log('🔄 Using enhanced fallback analysis due to API error...');
+        console.error('❌ Analysis AI API failed, using fallback:', error);
+        console.log('🔄 Using enhanced fallback analysis (Google Vision + algorithms)...');
+        console.log('📊 Fallback provides accurate results based on facial feature detection');
         return generateFallbackAnalysis(visionData);
       }
       
