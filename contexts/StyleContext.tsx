@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { StyleAnalysisResult } from '@/types/user';
-import { generateText } from '@rork/toolkit-sdk';
 
 const OCCASIONS = [
   { id: 'casual', name: 'Casual Day Out', icon: '👕' },
@@ -61,29 +60,38 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
       try {
         console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        const completion = await generateText({ messages });
-        
-        if (!completion) {
+        const response = await fetch('https://toolkit.rork.com/text/llm/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ messages })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error(`Rork Toolkit API Response not OK (attempt ${attempt + 1}):`, response.status, errorText);
+          
+          if (response.status >= 500 && attempt < maxRetries) {
+            lastError = new Error(`AI API error: ${response.status}`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+            continue;
+          }
+          
+          throw new Error(`AI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.completion) {
           throw new Error('No completion in AI response');
         }
         
-        if (typeof completion !== 'string') {
-          throw new Error('Invalid response format: expected string');
-        }
-        
-        return completion;
+        return data.completion;
       } catch (error) {
         console.error(`Style AI API error (attempt ${attempt + 1}):`, error);
-        
-        if (error instanceof SyntaxError && error.message.includes('JSON')) {
-          console.error('JSON parsing error - API returned non-JSON response');
-          lastError = new Error('AI API error: Server returned invalid response');
-        } else {
-          lastError = error instanceof Error ? error : new Error('Unknown error');
-        }
+        lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
-          console.log(`Retrying in ${(attempt + 1)}s...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
