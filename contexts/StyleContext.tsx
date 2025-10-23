@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { StyleAnalysisResult } from '@/types/user';
-import { generateText } from '@rork/toolkit-sdk';
 
 const OCCASIONS = [
   { id: 'casual', name: 'Casual Day Out', icon: '👕' },
@@ -53,52 +52,79 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
     }
   }, [analysisHistory]);
 
-  // Utility function for making AI API calls with retry logic using Rork Toolkit
+  // Utility function for making AI API calls with retry logic
   const makeAIRequest = async (messages: any[], maxRetries = 2): Promise<any> => {
     let lastError: Error | null = null;
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`🎨 Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
+        console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        // Use Rork Toolkit's generateText API with timeout
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), 15000); // 15 second timeout
-        });
-        
-        const requestPromise = generateText({ messages });
-        
-        const completion = await Promise.race([requestPromise, timeoutPromise]);
-        
-        if (completion) {
-          console.log('✅ Rork Toolkit AI response received successfully');
-          return completion;
-        }
-        
-        throw new Error('No completion in AI response');
-      } catch (error) {
-        console.error(`❌ Style AI API error (attempt ${attempt + 1}):`, error);
-        
-        if (error instanceof Error) {
-          console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            type: error.constructor.name
+        // Try the original API first
+        try {
+          const response = await fetch('https://toolkit.rork.com/text/llm/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ messages })
           });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.completion) {
+              return data.completion;
+            }
+          }
+        } catch (error) {
+          console.log('Primary API failed, trying fallback...');
         }
         
+        // Fallback to OpenAI API
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: messages,
+            max_tokens: 2000,
+            temperature: 0.7
+          })
+        });
+
+        if (!openaiResponse.ok) {
+          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
+          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
+          
+          if (openaiResponse.status === 500 && attempt < maxRetries) {
+            lastError = new Error(`AI API error: ${openaiResponse.status}`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+            continue;
+          }
+          
+          throw new Error(`AI API error: ${openaiResponse.status}`);
+        }
+
+        const openaiData = await openaiResponse.json();
+        if (!openaiData.choices?.[0]?.message?.content) {
+          throw new Error('No completion in AI response');
+        }
+        
+        return openaiData.choices[0].message.content;
+      } catch (error) {
+        console.error(`Style AI API error (attempt ${attempt + 1}):`, error);
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
-          const delayMs = 1000 * (attempt + 1);
-          console.log(`⏳ Waiting ${delayMs}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
       }
     }
     
-    console.log('🔄 All AI attempts failed, will use fallback analysis');
     throw lastError || new Error('AI API request failed after all retries');
   };
 
@@ -201,13 +227,10 @@ Respond in this exact JSON format:
 
       let completion;
       try {
-        console.log('🚀 Attempting AI style analysis...');
         completion = await makeAIRequest(messages);
-        console.log('✅ Raw AI response received, length:', completion?.length || 0);
+        console.log('Raw AI response:', completion);
       } catch (error) {
-        console.error('❌ Style AI API failed after all retries, using fallback:', error);
-        console.log('📊 Creating enhanced fallback style analysis...');
-        
+        console.error('Style AI API failed after retries, using fallback:', error);
         // Use fallback analysis immediately if AI fails
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
@@ -218,7 +241,6 @@ Respond in this exact JSON format:
           timestamp: new Date()
         };
         
-        console.log('✅ Fallback analysis created successfully');
         setAnalysisResult(result);
         await saveAnalysisToHistory(result);
         return result;
@@ -226,45 +248,26 @@ Respond in this exact JSON format:
 
       let analysisData;
       try {
-        // Check if the response is valid before processing
-        if (!completion || typeof completion !== 'string') {
-          console.error('❌ Invalid AI response type:', typeof completion);
-          throw new Error('Invalid AI response format');
-        }
-        
-        // Log the raw response for debugging
-        console.log('📝 Raw AI response preview:', completion.substring(0, 200));
-        
         let cleanedResponse = completion.replace(/```json\n?|```\n?/g, '').trim();
         
         // If the response doesn't start with {, try to find JSON in the response
         if (!cleanedResponse.startsWith('{')) {
-          console.log('⚠️ Response does not start with {, attempting to extract JSON...');
           const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             cleanedResponse = jsonMatch[0];
-            console.log('✅ JSON extracted successfully');
           } else {
-            console.error('❌ No valid JSON found in style response');
-            console.error('Response content:', cleanedResponse.substring(0, 500));
+            console.error('No valid JSON found in style response:', cleanedResponse);
             throw new Error('No valid JSON found in AI response');
           }
         }
         
         analysisData = JSON.parse(cleanedResponse);
-        console.log('✅ Successfully parsed style analysis JSON');
       } catch (parseError) {
-        console.error('❌ JSON parse error:', parseError);
-        if (parseError instanceof Error) {
-          console.error('Parse error details:', {
-            name: parseError.name,
-            message: parseError.message
-          });
-        }
-        console.error('Problematic response (first 500 chars):', completion?.substring(0, 500) || 'undefined');
+        console.error('JSON parse error:', parseError);
+        console.log('Problematic response:', completion);
         
         // Fallback: Create a basic analysis structure
-        console.log('🔄 Creating fallback style analysis due to parse error');
+        console.log('Creating fallback style analysis due to parse error');
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),

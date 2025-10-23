@@ -13,7 +13,6 @@ import { useAnalysis, AnalysisResult } from '@/contexts/AnalysisContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
-import { generateText } from '@rork/toolkit-sdk';
 
 
 
@@ -354,53 +353,79 @@ export default function AnalysisLoadingScreen() {
     }
   };
 
-  // Utility function for making AI API calls with retry logic using Rork Toolkit
+  // Utility function for making AI API calls with retry logic
   const makeAIRequest = async (messages: any[], maxRetries = 2): Promise<any> => {
     let lastError: Error | null = null;
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`📊 Analysis AI API attempt ${attempt + 1}/${maxRetries + 1}`);
+        console.log(`Analysis AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        // Use Rork Toolkit's generateText API with timeout
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), 15000); // 15 second timeout
-        });
-        
-        const requestPromise = generateText({ messages });
-        
-        const completion = await Promise.race([requestPromise, timeoutPromise]);
-        
-        if (completion) {
-          console.log('✅ Rork Toolkit AI response received successfully');
-          return completion;
-        }
-        
-        throw new Error('No completion in AI response');
-      } catch (error) {
-        console.error(`❌ Analysis AI API error (attempt ${attempt + 1}):`, error);
-        
-        // Check if it's a network error and log details
-        if (error instanceof Error) {
-          console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            type: error.constructor.name
+        // Try the original API first
+        try {
+          const response = await fetch('https://toolkit.rork.com/text/llm/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ messages })
           });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.completion) {
+              return data.completion;
+            }
+          }
+        } catch {
+          console.log('Primary API failed, trying fallback...');
         }
         
+        // Fallback to OpenAI API
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: messages,
+            max_tokens: 2000,
+            temperature: 0.7
+          })
+        });
+
+        if (!openaiResponse.ok) {
+          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
+          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
+          
+          if (openaiResponse.status === 500 && attempt < maxRetries) {
+            lastError = new Error(`AI API error: ${openaiResponse.status}`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+            continue;
+          }
+          
+          throw new Error(`AI API error: ${openaiResponse.status}`);
+        }
+
+        const openaiData = await openaiResponse.json();
+        if (!openaiData.choices?.[0]?.message?.content) {
+          throw new Error('No completion in AI response');
+        }
+        
+        return openaiData.choices[0].message.content;
+      } catch (error) {
+        console.error(`Analysis AI API error (attempt ${attempt + 1}):`, error);
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
-          const delayMs = 1000 * (attempt + 1);
-          console.log(`⏳ Waiting ${delayMs}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
       }
     }
     
-    console.log('🔄 All API attempts failed, will use fallback analysis');
     throw lastError || new Error('AI API request failed after all retries');
   };
 
@@ -484,24 +509,13 @@ Respond with ONLY a valid JSON object with this structure:
 
       let analysisText;
       try {
-        console.log('🚀 Attempting Rork Toolkit AI analysis...');
         analysisText = await makeAIRequest(messages);
-        console.log('✅ Raw AI response received, length:', analysisText?.length || 0);
+        console.log('Raw AI response:', analysisText);
       } catch (error) {
-        console.error('❌ Analysis AI API failed after all retries, using fallback:', error);
-        console.log('🔄 Using enhanced fallback analysis (Google Vision + algorithms)...');
-        console.log('📊 Fallback provides accurate results based on facial feature detection');
+        console.error('Analysis AI API failed after retries, using fallback:', error);
+        console.log('🔄 Using enhanced fallback analysis due to API error...');
         return generateFallbackAnalysis(visionData);
       }
-      
-      // Validate AI response before parsing
-      if (!analysisText || typeof analysisText !== 'string') {
-        console.error('❌ Invalid AI response type:', typeof analysisText);
-        console.log('🔄 Using fallback analysis due to invalid response type');
-        return generateFallbackAnalysis(visionData);
-      }
-      
-      console.log('📝 AI response preview (first 200 chars):', analysisText.substring(0, 200));
       
       // Parse JSON response with better error handling
       let cleanedText = analysisText.trim();
@@ -514,14 +528,12 @@ Respond with ONLY a valid JSON object with this structure:
       const jsonEnd = cleanedText.lastIndexOf('}');
       
       if (jsonStart === -1 || jsonEnd === -1 || jsonStart >= jsonEnd) {
-        console.error('❌ No valid JSON structure found in response');
-        console.error('Response preview:', cleanedText.substring(0, 300));
-        console.log('🔄 Using fallback analysis due to invalid JSON structure');
-        return generateFallbackAnalysis(visionData);
+        console.error('No valid JSON structure found in response');
+        throw new Error('No valid JSON found in AI response');
       }
       
       const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
-      console.log('✅ Extracted JSON string, length:', jsonString.length);
+      console.log('Extracted JSON string:', jsonString);
       
       try {
         // First attempt: parse as-is
@@ -1028,8 +1040,8 @@ Respond with ONLY a valid JSON object with this structure:
       
       const face = faceAnnotations[0];
       
-      // Adjusted confidence threshold for better user experience
-      const minConfidence = isProfile ? 0.2 : 0.35; // More lenient thresholds
+      // Professional-grade confidence threshold
+      const minConfidence = isProfile ? 0.3 : 0.5; // More lenient for profiles
       const detectionConfidence = face.detectionConfidence || 0;
       console.log(`${angle} face detection confidence:`, detectionConfidence);
       
@@ -1038,59 +1050,58 @@ Respond with ONLY a valid JSON object with this structure:
         return false;
       }
       
-      // Check facial landmarks based on view type (more lenient)
+      // Check facial landmarks based on view type
       const landmarks = face.landmarks || [];
       const requiredLandmarks = isProfile 
         ? ['NOSE_TIP'] // Minimal for profiles
-        : ['NOSE_TIP']; // Only require nose tip for better compatibility
+        : ['LEFT_EYE', 'RIGHT_EYE', 'NOSE_TIP']; // Full for front view
       
       const foundLandmarks = landmarks.map((l: any) => l.type);
       const missingLandmarks = requiredLandmarks.filter(required => 
         !foundLandmarks.includes(required)
       );
       
-      // Only warn if too many landmarks are missing, don't fail
-      if (missingLandmarks.length > 0 && landmarks.length < 5) {
-        console.log(`⚠️ Few facial landmarks in ${angle} view:`, missingLandmarks, 'Total:', landmarks.length);
-        // Continue anyway if we have some landmarks
+      if (missingLandmarks.length > 0) {
+        console.log(`❌ Missing facial landmarks in ${angle} view:`, missingLandmarks);
+        return false;
       }
       
-      // Check face size (more lenient)
+      // Check face size
       const boundingPoly = face.boundingPoly;
       if (boundingPoly && boundingPoly.vertices) {
         const vertices = boundingPoly.vertices;
         const width = Math.abs(vertices[1].x - vertices[0].x);
         const height = Math.abs(vertices[2].y - vertices[0].y);
         
-        const minSize = isProfile ? 50 : 60; // Much smaller minimum for better compatibility
+        const minSize = isProfile ? 80 : 100; // Smaller minimum for profiles
         if (width < minSize || height < minSize) {
-          console.log(`⚠️ Face size small in ${angle} view:`, { width, height }, `(recommended: ${minSize * 2}x${minSize * 2})`);
-          // Warn but don't fail - allow smaller faces
+          console.log(`❌ Face too small in ${angle} view:`, { width, height }, `(required: ${minSize}x${minSize})`);
+          return false;
         }
       }
       
-      // Check face angles with appropriate thresholds (more lenient)
+      // Check face angles with appropriate thresholds
       const rollAngle = Math.abs(face.rollAngle || 0);
       const panAngle = Math.abs(face.panAngle || 0);
       const tiltAngle = Math.abs(face.tiltAngle || 0);
       
-      const maxAngle = isProfile ? 90 : 60; // More lenient angle limits
+      const maxAngle = isProfile ? 90 : 45; // Allow more rotation for profiles
       if (!isProfile && (rollAngle > maxAngle || panAngle > maxAngle || tiltAngle > maxAngle)) {
-        console.log(`⚠️ Face angle somewhat extreme in ${angle} view:`, { rollAngle, panAngle, tiltAngle }, `(recommended max: ${maxAngle}°)`);
-        // Warn but continue - allow more angle variation
+        console.log(`❌ Face angle too extreme in ${angle} view:`, { rollAngle, panAngle, tiltAngle }, `(max: ${maxAngle}°)`);
+        return false;
       }
       
-      // Check image quality (warn only, don't fail)
+      // Check image quality
       const underExposedLikelihood = face.underExposedLikelihood;
       if (underExposedLikelihood === 'VERY_LIKELY') {
-        console.log(`⚠️ Face under-exposed in ${angle} view:`, underExposedLikelihood, '- Results may be less accurate');
-        // Continue anyway
+        console.log(`❌ Face severely under-exposed in ${angle} view:`, underExposedLikelihood);
+        return false;
       }
       
       const blurredLikelihood = face.blurredLikelihood;
       if (blurredLikelihood === 'VERY_LIKELY') {
-        console.log(`⚠️ Face blurred in ${angle} view:`, blurredLikelihood, '- Results may be less accurate');
-        // Continue anyway
+        console.log(`❌ Face severely blurred in ${angle} view:`, blurredLikelihood);
+        return false;
       }
       
       console.log(`✅ ${angle} face validation passed`);
