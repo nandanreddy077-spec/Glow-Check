@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { StyleAnalysisResult } from '@/types/user';
+import { generateText } from '@rork/toolkit-sdk';
 
 const OCCASIONS = [
   { id: 'casual', name: 'Casual Day Out', icon: '👕' },
@@ -52,7 +53,7 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
     }
   }, [analysisHistory]);
 
-  // Utility function for making AI API calls with retry logic
+  // Utility function for making AI API calls with retry logic using Rork Toolkit
   const makeAIRequest = async (messages: any[], maxRetries = 2): Promise<any> => {
     let lastError: Error | null = null;
     
@@ -60,60 +61,15 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
       try {
         console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        // Try the original API first
-        try {
-          const response = await fetch('https://toolkit.rork.com/text/llm/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ messages })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.completion) {
-              return data.completion;
-            }
-          }
-        } catch (error) {
-          console.log('Primary API failed, trying fallback...');
+        // Use Rork Toolkit's generateText API
+        const completion = await generateText({ messages });
+        
+        if (completion) {
+          console.log('Rork Toolkit AI response received successfully');
+          return completion;
         }
         
-        // Fallback to OpenAI API
-        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_OPENAI_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: messages,
-            max_tokens: 2000,
-            temperature: 0.7
-          })
-        });
-
-        if (!openaiResponse.ok) {
-          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
-          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
-          
-          if (openaiResponse.status === 500 && attempt < maxRetries) {
-            lastError = new Error(`AI API error: ${openaiResponse.status}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            continue;
-          }
-          
-          throw new Error(`AI API error: ${openaiResponse.status}`);
-        }
-
-        const openaiData = await openaiResponse.json();
-        if (!openaiData.choices?.[0]?.message?.content) {
-          throw new Error('No completion in AI response');
-        }
-        
-        return openaiData.choices[0].message.content;
+        throw new Error('No completion in AI response');
       } catch (error) {
         console.error(`Style AI API error (attempt ${attempt + 1}):`, error);
         lastError = error instanceof Error ? error : new Error('Unknown error');
