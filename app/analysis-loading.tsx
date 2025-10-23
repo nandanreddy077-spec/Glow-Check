@@ -368,17 +368,29 @@ export default function AnalysisLoadingScreen() {
           throw new Error('No completion in AI response');
         }
         
+        if (typeof completion !== 'string') {
+          throw new Error('Invalid response format: expected string');
+        }
+        
         return completion;
       } catch (error) {
         console.error(`Analysis AI API error (attempt ${attempt + 1}):`, error);
-        lastError = error instanceof Error ? error : new Error('Unknown error');
+        
+        if (error instanceof SyntaxError && error.message.includes('JSON')) {
+          console.error('JSON parsing error - API returned non-JSON response');
+          lastError = new Error('AI API error: Server returned invalid response');
+        } else {
+          lastError = error instanceof Error ? error : new Error('Unknown error');
+        }
         
         if (attempt < maxRetries) {
+          console.log(`Retrying in ${(attempt + 1)}s...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
       }
     }
+    
     
     throw lastError || new Error('AI API request failed after all retries');
   };
