@@ -996,8 +996,8 @@ Respond with ONLY a valid JSON object with this structure:
       
       const face = faceAnnotations[0];
       
-      // Professional-grade confidence threshold
-      const minConfidence = isProfile ? 0.3 : 0.5; // More lenient for profiles
+      // Adjusted confidence threshold for better user experience
+      const minConfidence = isProfile ? 0.2 : 0.35; // More lenient thresholds
       const detectionConfidence = face.detectionConfidence || 0;
       console.log(`${angle} face detection confidence:`, detectionConfidence);
       
@@ -1006,58 +1006,59 @@ Respond with ONLY a valid JSON object with this structure:
         return false;
       }
       
-      // Check facial landmarks based on view type
+      // Check facial landmarks based on view type (more lenient)
       const landmarks = face.landmarks || [];
       const requiredLandmarks = isProfile 
         ? ['NOSE_TIP'] // Minimal for profiles
-        : ['LEFT_EYE', 'RIGHT_EYE', 'NOSE_TIP']; // Full for front view
+        : ['NOSE_TIP']; // Only require nose tip for better compatibility
       
       const foundLandmarks = landmarks.map((l: any) => l.type);
       const missingLandmarks = requiredLandmarks.filter(required => 
         !foundLandmarks.includes(required)
       );
       
-      if (missingLandmarks.length > 0) {
-        console.log(`❌ Missing facial landmarks in ${angle} view:`, missingLandmarks);
-        return false;
+      // Only warn if too many landmarks are missing, don't fail
+      if (missingLandmarks.length > 0 && landmarks.length < 5) {
+        console.log(`⚠️ Few facial landmarks in ${angle} view:`, missingLandmarks, 'Total:', landmarks.length);
+        // Continue anyway if we have some landmarks
       }
       
-      // Check face size
+      // Check face size (more lenient)
       const boundingPoly = face.boundingPoly;
       if (boundingPoly && boundingPoly.vertices) {
         const vertices = boundingPoly.vertices;
         const width = Math.abs(vertices[1].x - vertices[0].x);
         const height = Math.abs(vertices[2].y - vertices[0].y);
         
-        const minSize = isProfile ? 80 : 100; // Smaller minimum for profiles
+        const minSize = isProfile ? 50 : 60; // Much smaller minimum for better compatibility
         if (width < minSize || height < minSize) {
-          console.log(`❌ Face too small in ${angle} view:`, { width, height }, `(required: ${minSize}x${minSize})`);
-          return false;
+          console.log(`⚠️ Face size small in ${angle} view:`, { width, height }, `(recommended: ${minSize * 2}x${minSize * 2})`);
+          // Warn but don't fail - allow smaller faces
         }
       }
       
-      // Check face angles with appropriate thresholds
+      // Check face angles with appropriate thresholds (more lenient)
       const rollAngle = Math.abs(face.rollAngle || 0);
       const panAngle = Math.abs(face.panAngle || 0);
       const tiltAngle = Math.abs(face.tiltAngle || 0);
       
-      const maxAngle = isProfile ? 90 : 45; // Allow more rotation for profiles
+      const maxAngle = isProfile ? 90 : 60; // More lenient angle limits
       if (!isProfile && (rollAngle > maxAngle || panAngle > maxAngle || tiltAngle > maxAngle)) {
-        console.log(`❌ Face angle too extreme in ${angle} view:`, { rollAngle, panAngle, tiltAngle }, `(max: ${maxAngle}°)`);
-        return false;
+        console.log(`⚠️ Face angle somewhat extreme in ${angle} view:`, { rollAngle, panAngle, tiltAngle }, `(recommended max: ${maxAngle}°)`);
+        // Warn but continue - allow more angle variation
       }
       
-      // Check image quality
+      // Check image quality (warn only, don't fail)
       const underExposedLikelihood = face.underExposedLikelihood;
       if (underExposedLikelihood === 'VERY_LIKELY') {
-        console.log(`❌ Face severely under-exposed in ${angle} view:`, underExposedLikelihood);
-        return false;
+        console.log(`⚠️ Face under-exposed in ${angle} view:`, underExposedLikelihood, '- Results may be less accurate');
+        // Continue anyway
       }
       
       const blurredLikelihood = face.blurredLikelihood;
       if (blurredLikelihood === 'VERY_LIKELY') {
-        console.log(`❌ Face severely blurred in ${angle} view:`, blurredLikelihood);
-        return false;
+        console.log(`⚠️ Face blurred in ${angle} view:`, blurredLikelihood, '- Results may be less accurate');
+        // Continue anyway
       }
       
       console.log(`✅ ${angle} face validation passed`);
