@@ -494,6 +494,15 @@ Respond with ONLY a valid JSON object with this structure:
         return generateFallbackAnalysis(visionData);
       }
       
+      // Validate AI response before parsing
+      if (!analysisText || typeof analysisText !== 'string') {
+        console.error('❌ Invalid AI response type:', typeof analysisText);
+        console.log('🔄 Using fallback analysis due to invalid response type');
+        return generateFallbackAnalysis(visionData);
+      }
+      
+      console.log('📝 AI response preview (first 200 chars):', analysisText.substring(0, 200));
+      
       // Parse JSON response with better error handling
       let cleanedText = analysisText.trim();
       
@@ -505,12 +514,14 @@ Respond with ONLY a valid JSON object with this structure:
       const jsonEnd = cleanedText.lastIndexOf('}');
       
       if (jsonStart === -1 || jsonEnd === -1 || jsonStart >= jsonEnd) {
-        console.error('No valid JSON structure found in response');
-        throw new Error('No valid JSON found in AI response');
+        console.error('❌ No valid JSON structure found in response');
+        console.error('Response preview:', cleanedText.substring(0, 300));
+        console.log('🔄 Using fallback analysis due to invalid JSON structure');
+        return generateFallbackAnalysis(visionData);
       }
       
       const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
-      console.log('Extracted JSON string:', jsonString);
+      console.log('✅ Extracted JSON string, length:', jsonString.length);
       
       try {
         // First attempt: parse as-is

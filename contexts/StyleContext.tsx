@@ -226,26 +226,45 @@ Respond in this exact JSON format:
 
       let analysisData;
       try {
+        // Check if the response is valid before processing
+        if (!completion || typeof completion !== 'string') {
+          console.error('❌ Invalid AI response type:', typeof completion);
+          throw new Error('Invalid AI response format');
+        }
+        
+        // Log the raw response for debugging
+        console.log('📝 Raw AI response preview:', completion.substring(0, 200));
+        
         let cleanedResponse = completion.replace(/```json\n?|```\n?/g, '').trim();
         
         // If the response doesn't start with {, try to find JSON in the response
         if (!cleanedResponse.startsWith('{')) {
+          console.log('⚠️ Response does not start with {, attempting to extract JSON...');
           const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             cleanedResponse = jsonMatch[0];
+            console.log('✅ JSON extracted successfully');
           } else {
-            console.error('No valid JSON found in style response:', cleanedResponse);
+            console.error('❌ No valid JSON found in style response');
+            console.error('Response content:', cleanedResponse.substring(0, 500));
             throw new Error('No valid JSON found in AI response');
           }
         }
         
         analysisData = JSON.parse(cleanedResponse);
+        console.log('✅ Successfully parsed style analysis JSON');
       } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        console.log('Problematic response:', completion);
+        console.error('❌ JSON parse error:', parseError);
+        if (parseError instanceof Error) {
+          console.error('Parse error details:', {
+            name: parseError.name,
+            message: parseError.message
+          });
+        }
+        console.error('Problematic response (first 500 chars):', completion?.substring(0, 500) || 'undefined');
         
         // Fallback: Create a basic analysis structure
-        console.log('Creating fallback style analysis due to parse error');
+        console.log('🔄 Creating fallback style analysis due to parse error');
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),
