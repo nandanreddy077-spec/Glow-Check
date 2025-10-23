@@ -62,7 +62,7 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
         
         // Try the original API first
         try {
-          const response = await fetch('https://toolkit.rork.com/text/llm/', {
+          const response = await fetch(`${(process.env.EXPO_PUBLIC_TOOLKIT_URL ?? 'https://toolkit.rork.com').replace(/\/$/, '')}/text/llm/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -80,12 +80,16 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
           console.log('Primary API failed, trying fallback...');
         }
         
-        // Fallback to OpenAI API
+        // Fallback to OpenAI API (only if a key is provided)
+        const fallbackKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
+        if (!fallbackKey) {
+          throw new Error('OpenAI key not configured');
+        }
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
+            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? ''}`
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
@@ -115,7 +119,7 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
         
         return openaiData.choices[0].message.content;
       } catch (error) {
-        console.error(`Style AI API error (attempt ${attempt + 1}):`, error);
+        console.error(`Style AI API error (attempt ${attempt + 1}):`, error instanceof Error ? error.message : String(error));
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
