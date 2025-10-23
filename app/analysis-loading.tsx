@@ -382,17 +382,11 @@ export default function AnalysisLoadingScreen() {
         }
         
         // Fallback to OpenAI API
-        const openaiApiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
-        if (!openaiApiKey || openaiApiKey === 'YOUR_OPENAI_API_KEY_HERE') {
-          console.error('❌ OpenAI API key not configured. Please set EXPO_PUBLIC_OPENAI_API_KEY in .env file');
-          throw new Error('OpenAI API key not configured');
-        }
-        
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openaiApiKey}`
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY || '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'}`
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
