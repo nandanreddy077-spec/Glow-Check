@@ -101,7 +101,7 @@ export default function ProfilePicturePopup({ visible, onClose }: ProfilePicture
   return (
     <>
       <Modal
-        visible={visible}
+        visible={visible && !showPhotoPicker}
         animationType="none"
         statusBarTranslucent
         transparent={true}
@@ -248,12 +248,10 @@ export default function ProfilePicturePopup({ visible, onClose }: ProfilePicture
         </Animated.View>
       </Modal>
       
-      {showPhotoPicker && (
-        <PhotoPickerModal 
-          visible={showPhotoPicker} 
-          onClose={handlePhotoPickerClose} 
-        />
-      )}
+      <PhotoPickerModal 
+        visible={showPhotoPicker} 
+        onClose={handlePhotoPickerClose} 
+      />
     </>
   );
 }
