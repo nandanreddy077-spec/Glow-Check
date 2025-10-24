@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useUser } from '@/contexts/UserContext';
-import { ChevronRight, Heart, Sparkles, Star } from 'lucide-react-native';
+import { ChevronRight, Sparkles, Star, Zap } from 'lucide-react-native';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { startDailyNotifications } from '@/lib/notifications';
@@ -14,26 +14,42 @@ interface Slide {
   title: string;
   subtitle: string;
   image: string;
+  stats: { value: string; label: string }[];
 }
 
 const slides: Slide[] = [
   {
     id: '1',
-    title: 'Discover Your Natural Radiance ✨',
-    subtitle: 'AI-powered beauty insights that celebrate your unique glow. Get personalized skincare recommendations, style suggestions, and confidence-boosting tips tailored just for you.',
+    title: 'Your Beauty Intelligence',
+    subtitle: 'AI-powered analysis reveals your unique radiance and creates personalized beauty plans',
     image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/wdrokw9xnolfhtc6301rh',
+    stats: [
+      { value: '92%', label: 'Accuracy' },
+      { value: '10s', label: 'Analysis' },
+      { value: '1M+', label: 'Users' },
+    ],
   },
   {
     id: '2',
-    title: 'Nurture Your Beautiful Self 💖',
-    subtitle: 'Transform your daily routine with personalized beauty coaching. Track your glow journey, build healthy habits, and unlock your most radiant self with gentle guidance.',
+    title: 'Transform Your Routine',
+    subtitle: 'Daily coaching and tracking that adapts to your progress and lifestyle',
     image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1080&auto=format&fit=crop',
+    stats: [
+      { value: '30', label: 'Day Plans' },
+      { value: '50+', label: 'Products' },
+      { value: '24/7', label: 'Support' },
+    ],
   },
   {
     id: '3',
-    title: 'Join Our Beauty Community 🌟',
-    subtitle: 'Connect with thousands of beautiful souls sharing their glow journeys. Get inspired, share tips, celebrate wins, and support each other in a loving, judgment-free space.',
+    title: 'Join the Movement',
+    subtitle: 'Connect with a global community celebrating authentic beauty and self-care',
     image: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1080&auto=format&fit=crop',
+    stats: [
+      { value: '500K+', label: 'Community' },
+      { value: '4.9', label: 'Rating' },
+      { value: 'Free', label: 'Trial' },
+    ],
   },
 ];
 
@@ -41,11 +57,12 @@ export default function OnboardingScreen() {
   const { setIsFirstTime } = useUser();
   const { theme } = useTheme();
   const width = Dimensions.get('window').width;
+  const height = Dimensions.get('window').height;
   const scrollX = useRef(new Animated.Value(0)).current;
   const [index, setIndex] = useState<number>(0);
   const scrollRef = useRef<ScrollView | null>(null);
   const [sparkleAnim] = useState(new Animated.Value(0));
-  const [floatingAnim] = useState(new Animated.Value(0));
+  const [pulseAnim] = useState(new Animated.Value(0));
   
   const palette = getPalette(theme);
   const gradient = getGradient(theme);
@@ -55,40 +72,40 @@ export default function OnboardingScreen() {
       Animated.sequence([
         Animated.timing(sparkleAnim, {
           toValue: 1,
-          duration: 3000,
+          duration: 2000,
           useNativeDriver: true,
         }),
         Animated.timing(sparkleAnim, {
           toValue: 0,
-          duration: 3000,
+          duration: 2000,
           useNativeDriver: true,
         }),
       ])
     );
     
-    const floatingAnimation = Animated.loop(
+    const pulseAnimation = Animated.loop(
       Animated.sequence([
-        Animated.timing(floatingAnim, {
+        Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 4000,
+          duration: 1500,
           useNativeDriver: true,
         }),
-        Animated.timing(floatingAnim, {
+        Animated.timing(pulseAnim, {
           toValue: 0,
-          duration: 4000,
+          duration: 1500,
           useNativeDriver: true,
         }),
       ])
     );
     
     sparkleAnimation.start();
-    floatingAnimation.start();
+    pulseAnimation.start();
     
     return () => {
       sparkleAnimation.stop();
-      floatingAnimation.stop();
+      pulseAnimation.stop();
     };
-  }, [sparkleAnim, floatingAnim]);
+  }, [sparkleAnim, pulseAnim]);
 
   const handleNext = useCallback(async () => {
     const next = index + 1;
@@ -97,7 +114,6 @@ export default function OnboardingScreen() {
       scrollRef.current?.scrollTo({ x: next * width, animated: true });
     } else {
       setIsFirstTime(false);
-      // Start notifications when user completes onboarding
       await startDailyNotifications();
       router.replace('/signup');
     }
@@ -105,69 +121,23 @@ export default function OnboardingScreen() {
 
   const handleSkip = useCallback(async () => {
     setIsFirstTime(false);
-    // Start notifications when user skips onboarding
     await startDailyNotifications();
     router.replace('/signup');
   }, [setIsFirstTime]);
 
   const dotPosition = Animated.divide(scrollX, width);
 
-  const styles = createStyles(palette);
+  const styles = createStyles(palette, height);
 
   return (
     <ErrorBoundary>
       <View style={styles.container} testID="onboarding-screen">
         <StatusBar barStyle={theme === 'light' ? 'dark-content' : 'light-content'} />
-        <LinearGradient colors={getGradient(theme).hero} style={styles.gradient} />
         
-        {/* Floating decorative elements */}
-        <Animated.View 
-          style={[
-            styles.floatingSparkle1,
-            {
-              opacity: sparkleAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.3, 0.8],
-              }),
-              transform: [{
-                rotate: sparkleAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0deg', '360deg'],
-                })
-              }]
-            }
-          ]}
-        >
-          <Sparkles color={palette.blush} size={16} fill={palette.blush} />
-        </Animated.View>
-        
-        <Animated.View 
-          style={[
-            styles.floatingSparkle2,
-            {
-              opacity: sparkleAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.4, 0.9],
-              }),
-            }
-          ]}
-        >
-          <Heart color={palette.lavender} size={14} fill={palette.lavender} />
-        </Animated.View>
-        
-        <Animated.View 
-          style={[
-            styles.floatingSparkle3,
-            {
-              opacity: floatingAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.5, 1],
-              }),
-            }
-          ]}
-        >
-          <Star color={palette.champagne} size={12} fill={palette.champagne} />
-        </Animated.View>
+        <LinearGradient 
+          colors={gradient.hero} 
+          style={StyleSheet.absoluteFillObject}
+        />
 
         <Animated.ScrollView
           horizontal
@@ -176,142 +146,232 @@ export default function OnboardingScreen() {
           ref={scrollRef}
           onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
           scrollEventThrottle={16}
+          onMomentumScrollEnd={(e) => {
+            const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+            setIndex(newIndex);
+          }}
         >
-          {slides.map((s, i) => (
-            <Animated.View 
-              key={s.id} 
-              style={[
-                styles.slide, 
-                { width },
-                {
-                  transform: [{
-                    translateY: floatingAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, -8 + (i * 3)],
-                    })
-                  }]
-                }
-              ]}
-            >
-              <View style={styles.imageContainer}>
-                <LinearGradient 
-                  colors={i === 0 ? gradient.primary : i === 1 ? gradient.secondary : gradient.tertiary} 
-                  style={styles.imageGradientBorder}
-                >
-                  <View style={styles.imageWrapper}>
-                    <Image source={{ uri: s.image }} style={styles.heroImage} resizeMode="cover" />
-                    <LinearGradient 
-                      colors={['transparent', 'rgba(0,0,0,0.1)']} 
-                      style={styles.imageOverlay} 
-                    />
-                  </View>
-                </LinearGradient>
-                <View style={styles.imageGlow} />
-              </View>
-
-              <View style={styles.contentContainer}>
-                <Text style={styles.title}>{s.title}</Text>
-                <Text style={styles.subtitle}>{s.subtitle}</Text>
-                
-                <View style={styles.featureHighlight}>
-                  <Heart color={palette.primary} size={16} fill={palette.blush} />
-                  <Text style={styles.featureText}>
-                    {i === 0 ? 'AI-Powered & Personal' : i === 1 ? 'Gentle & Transformative' : 'Supportive & Inspiring'}
-                  </Text>
-                </View>
-                
-                <View style={styles.benefitsContainer}>
-                  {i === 0 && (
-                    <>
-                      <View style={styles.benefitItem}>
-                        <Sparkles color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>Instant skin analysis</Text>
-                      </View>
-                      <View style={styles.benefitItem}>
-                        <Sparkles color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>Personalized recommendations</Text>
-                      </View>
-                      <View style={styles.benefitItem}>
-                        <Sparkles color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>Style matching technology</Text>
-                      </View>
-                    </>
-                  )}
-                  {i === 1 && (
-                    <>
-                      <View style={styles.benefitItem}>
-                        <Heart color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>30-day glow plans</Text>
-                      </View>
-                      <View style={styles.benefitItem}>
-                        <Heart color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>Daily beauty coaching</Text>
-                      </View>
-                      <View style={styles.benefitItem}>
-                        <Heart color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>Progress tracking</Text>
-                      </View>
-                    </>
-                  )}
-                  {i === 2 && (
-                    <>
-                      <View style={styles.benefitItem}>
-                        <Star color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>Beauty circles & groups</Text>
-                      </View>
-                      <View style={styles.benefitItem}>
-                        <Star color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>Share your glow journey</Text>
-                      </View>
-                      <View style={styles.benefitItem}>
-                        <Star color={palette.primary} size={12} fill={palette.blush} />
-                        <Text style={styles.benefitText}>Expert tips & challenges</Text>
-                      </View>
-                    </>
-                  )}
-                </View>
-              </View>
-            </Animated.View>
-          ))}
-        </Animated.ScrollView>
-
-        <View style={styles.pagination}>
-          {slides.map((_, i) => {
-            const opacity = dotPosition.interpolate({
+          {slides.map((s, i) => {
+            const scale = dotPosition.interpolate({
               inputRange: [i - 1, i, i + 1],
-              outputRange: [0.3, 1, 0.3],
+              outputRange: [0.85, 1, 0.85],
               extrapolate: 'clamp',
             });
-            const widthAnim = dotPosition.interpolate({
-              inputRange: [i - 1, i, i + 1],
-              outputRange: [6, 18, 6],
-              extrapolate: 'clamp',
-            });
+            
             return (
-              <Animated.View key={i} style={[styles.dot, { opacity, width: widthAnim }]} />
+              <View key={s.id} style={[styles.slide, { width }]}>
+                <View style={styles.slideContent}>
+                  
+                  {/* Image Section */}
+                  <Animated.View 
+                    style={[
+                      styles.imageSection,
+                      { transform: [{ scale }] }
+                    ]}
+                  >
+                    <View style={styles.imageContainer}>
+                      <LinearGradient 
+                        colors={i === 0 ? gradient.primary : i === 1 ? gradient.rose : gradient.mint} 
+                        style={styles.imageBorder}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <View style={styles.imageInner}>
+                          <Image 
+                            source={{ uri: s.image }} 
+                            style={styles.heroImage} 
+                            resizeMode="cover" 
+                          />
+                          <LinearGradient 
+                            colors={['transparent', 'rgba(0,0,0,0.15)']} 
+                            style={styles.imageGradient} 
+                          />
+                        </View>
+                      </LinearGradient>
+                      
+                      {/* Animated glow rings */}
+                      <Animated.View 
+                        style={[
+                          styles.glowRing,
+                          {
+                            opacity: pulseAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0.15, 0.35],
+                            }),
+                            transform: [{
+                              scale: pulseAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [1, 1.15],
+                              })
+                            }]
+                          }
+                        ]}
+                      />
+                    </View>
+
+                    {/* Stats badges */}
+                    <View style={styles.statsContainer}>
+                      {s.stats.map((stat, idx) => (
+                        <Animated.View 
+                          key={idx}
+                          style={[
+                            styles.statBadge,
+                            {
+                              opacity: sparkleAnim.interpolate({
+                                inputRange: [0, 0.5, 1],
+                                outputRange: idx === 1 ? [0.9, 1, 0.9] : [1, 0.9, 1],
+                              })
+                            }
+                          ]}
+                        >
+                          <Text style={styles.statValue}>{stat.value}</Text>
+                          <Text style={styles.statLabel}>{stat.label}</Text>
+                        </Animated.View>
+                      ))}
+                    </View>
+                  </Animated.View>
+
+                  {/* Content Section */}
+                  <View style={styles.contentSection}>
+                    <View style={styles.textContent}>
+                      <Text style={styles.title}>{s.title}</Text>
+                      <Text style={styles.subtitle}>{s.subtitle}</Text>
+                    </View>
+
+                    {/* Feature highlights */}
+                    <View style={styles.featuresContainer}>
+                      {i === 0 && (
+                        <>
+                          <View style={styles.feature}>
+                            <View style={styles.featureIcon}>
+                              <Zap color={palette.primary} size={16} fill={palette.primary} />
+                            </View>
+                            <Text style={styles.featureText}>Instant AI Analysis</Text>
+                          </View>
+                          <View style={styles.feature}>
+                            <View style={styles.featureIcon}>
+                              <Sparkles color={palette.primary} size={16} fill={palette.primary} />
+                            </View>
+                            <Text style={styles.featureText}>Personalized Plans</Text>
+                          </View>
+                        </>
+                      )}
+                      {i === 1 && (
+                        <>
+                          <View style={styles.feature}>
+                            <View style={styles.featureIcon}>
+                              <Star color={palette.primary} size={16} fill={palette.primary} />
+                            </View>
+                            <Text style={styles.featureText}>Daily Coaching</Text>
+                          </View>
+                          <View style={styles.feature}>
+                            <View style={styles.featureIcon}>
+                              <Sparkles color={palette.primary} size={16} fill={palette.primary} />
+                            </View>
+                            <Text style={styles.featureText}>Smart Tracking</Text>
+                          </View>
+                        </>
+                      )}
+                      {i === 2 && (
+                        <>
+                          <View style={styles.feature}>
+                            <View style={styles.featureIcon}>
+                              <Sparkles color={palette.primary} size={16} fill={palette.primary} />
+                            </View>
+                            <Text style={styles.featureText}>Global Community</Text>
+                          </View>
+                          <View style={styles.feature}>
+                            <View style={styles.featureIcon}>
+                              <Star color={palette.primary} size={16} fill={palette.primary} />
+                            </View>
+                            <Text style={styles.featureText}>Expert Support</Text>
+                          </View>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </View>
             );
           })}
-        </View>
+        </Animated.ScrollView>
 
-        <View style={styles.ctaRow}>
-          <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} accessibilityRole="button" testID="onboarding-skip">
-            <Text style={styles.skipText}>Skip for now</Text>
-          </TouchableOpacity>
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNav}>
+          {/* Pagination */}
+          <View style={styles.pagination}>
+            {slides.map((_, i) => {
+              const opacity = dotPosition.interpolate({
+                inputRange: [i - 1, i, i + 1],
+                outputRange: [0.25, 1, 0.25],
+                extrapolate: 'clamp',
+              });
+              const scaleAnim = dotPosition.interpolate({
+                inputRange: [i - 1, i, i + 1],
+                outputRange: [1, 1.4, 1],
+                extrapolate: 'clamp',
+              });
+              return (
+                <Animated.View 
+                  key={i} 
+                  style={[
+                    styles.dot,
+                    { 
+                      opacity,
+                      transform: [{ scale: scaleAnim }]
+                    }
+                  ]} 
+                />
+              );
+            })}
+          </View>
 
-          <TouchableOpacity onPress={handleNext} style={styles.nextBtn} accessibilityRole="button" testID="onboarding-next">
-            <LinearGradient colors={getGradient(theme).primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.nextGradient, shadow.glow]}>
-              <Heart color={palette.textLight} size={18} fill={palette.textLight} />
-              <Text style={styles.nextText} numberOfLines={1} adjustsFontSizeToFit>{index === slides.length - 1 ? 'Start My Glow Journey ✨' : 'Continue'}</Text>
-              <ChevronRight color={palette.textLight} size={20} strokeWidth={2.5} />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+          {/* CTA Buttons */}
+          <View style={styles.ctaContainer}>
+            <TouchableOpacity 
+              onPress={handleNext} 
+              style={styles.primaryButton}
+              activeOpacity={0.8}
+              accessibilityRole="button" 
+              testID="onboarding-next"
+            >
+              <LinearGradient 
+                colors={gradient.primary} 
+                start={{ x: 0, y: 0 }} 
+                end={{ x: 1, y: 1 }} 
+                style={styles.primaryGradient}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {index === slides.length - 1 ? 'Start Your Journey' : 'Continue'}
+                </Text>
+                {index === slides.length - 1 ? (
+                  <Sparkles color={palette.textLight} size={20} />
+                ) : (
+                  <ChevronRight color={palette.textLight} size={24} strokeWidth={2.5} />
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
 
-        <View style={styles.bottomSection}>
-          <TouchableOpacity style={styles.signinLink} onPress={() => router.replace('/login')}>
+            <TouchableOpacity 
+              onPress={handleSkip} 
+              style={styles.skipButton}
+              activeOpacity={0.7}
+              accessibilityRole="button" 
+              testID="onboarding-skip"
+            >
+              <Text style={styles.skipButtonText}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Sign in link */}
+          <TouchableOpacity 
+            style={styles.signinButton} 
+            onPress={() => router.replace('/login')}
+            activeOpacity={0.7}
+          >
             <Text style={styles.signinText}>
-              Already part of our beautiful community?{' '}
-              <Text style={styles.signinTextBold}>Welcome Back</Text>
+              Already have an account?{' '}
+              <Text style={styles.signinTextBold}>Sign In</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -320,229 +380,216 @@ export default function OnboardingScreen() {
   );
 }
 
-const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.create({
+const createStyles = (palette: ReturnType<typeof getPalette>, height: number) => StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: palette.backgroundStart 
   },
-  gradient: { 
-    ...StyleSheet.absoluteFillObject 
-  },
   slide: { 
-    alignItems: 'center', 
-    paddingTop: 80, 
+    flex: 1,
+  },
+  slideContent: {
+    flex: 1,
+    paddingTop: height * 0.08,
     paddingHorizontal: spacing.xl,
-    flex: 1
+  },
+  
+  // Image Section
+  imageSection: {
+    alignItems: 'center',
+    marginBottom: spacing.xxxl,
   },
   imageContainer: {
     position: 'relative',
-    marginBottom: spacing.xl,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
-  imageGradientBorder: {
-    padding: 8,
+  imageBorder: {
+    padding: 4,
     borderRadius: 140,
-    ...shadow.elevated
   },
-  imageWrapper: {
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+  imageInner: {
+    width: 280,
+    height: 280,
+    borderRadius: 140,
     overflow: 'hidden',
-    position: 'relative'
+    backgroundColor: palette.surface,
   },
   heroImage: { 
     width: '100%', 
     height: '100%' 
   },
-  imageOverlay: {
+  imageGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 60,
-    borderBottomLeftRadius: 110,
-    borderBottomRightRadius: 110
+    height: 100,
   },
-  imageGlow: {
+  glowRing: {
     position: 'absolute',
     width: 320,
     height: 320,
     borderRadius: 160,
-    backgroundColor: palette.overlayGold,
-    zIndex: -1,
-    opacity: 0.2
+    borderWidth: 2,
+    borderColor: palette.primary,
   },
-  contentContainer: {
-    alignItems: 'center',
+  
+  // Stats
+  statsContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  statBadge: {
+    backgroundColor: palette.surface,
     paddingHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    flex: 1
+    paddingVertical: spacing.md,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    minWidth: 90,
+    ...shadow.card,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: palette.primary,
+    marginBottom: 2,
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: palette.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  
+  // Content Section
+  contentSection: {
+    flex: 1,
+  },
+  textContent: {
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '900',
     color: palette.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.md,
-    letterSpacing: -0.8,
-    lineHeight: 38,
-    paddingHorizontal: spacing.sm
+    letterSpacing: -1,
+    lineHeight: 42,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 17,
     color: palette.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 340,
+    lineHeight: 26,
     fontWeight: '500',
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.xs
+    paddingHorizontal: spacing.sm,
   },
-  featureHighlight: {
+  
+  // Features
+  featuresContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  feature: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: palette.overlayLight,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: radii.pill,
     gap: spacing.sm,
-    marginBottom: spacing.sm
+    borderWidth: 1,
+    borderColor: palette.borderLight,
+  },
+  featureIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: palette.overlayGold,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   featureText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: palette.primary,
-    letterSpacing: 0.5
-  },
-  benefitsContainer: {
-    marginTop: spacing.md,
-    gap: spacing.sm,
-    alignItems: 'flex-start'
-  },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs
-  },
-  benefitText: {
     fontSize: 14,
-    color: palette.textSecondary,
-    fontWeight: '600',
-    lineHeight: 20
+    fontWeight: '700',
+    color: palette.textPrimary,
+    letterSpacing: 0.2,
   },
-  bottomSection: {
-    alignItems: 'center',
-    gap: spacing.lg
-  },
-  trustIndicators: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg
-  },
-  trustItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: palette.overlayLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.md
-  },
-  trustText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: palette.primary
+  
+  // Bottom Navigation
+  bottomNav: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.lg,
   },
   pagination: { 
     flexDirection: 'row', 
     gap: spacing.sm, 
-    alignSelf: 'center', 
-    marginTop: spacing.md,
-    marginBottom: spacing.md
+    alignSelf: 'center',
+    marginBottom: spacing.sm,
   },
   dot: {
+    width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: palette.primary,
-    marginHorizontal: 2
   },
-  ctaRow: { 
+  
+  // CTA
+  ctaContainer: {
+    gap: spacing.md,
+  },
+  primaryButton: { 
+    width: '100%',
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+    ...shadow.elevated,
+  },
+  primaryGradient: { 
+    paddingVertical: 20, 
     paddingHorizontal: spacing.xl, 
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-    gap: spacing.md
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: spacing.md, 
+    justifyContent: 'center',
   },
-  skipBtn: { 
-    paddingVertical: spacing.md, 
-    paddingHorizontal: spacing.md,
-    alignSelf: 'flex-start'
+  primaryButtonText: { 
+    color: palette.textLight, 
+    fontWeight: '800', 
+    fontSize: 18,
+    letterSpacing: 0.3,
   },
-  skipText: { 
+  skipButton: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  skipButtonText: { 
     color: palette.textMuted, 
     fontSize: 16, 
     fontWeight: '600' 
   },
-  nextBtn: { 
-    width: '100%'
-  },
-  nextGradient: { 
-    paddingVertical: 18, 
-    paddingHorizontal: spacing.xl, 
-    borderRadius: radii.xl, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: spacing.sm, 
-    justifyContent: 'center',
-    width: '100%'
-  },
-  nextText: { 
-    color: palette.textLight, 
-    fontWeight: '800', 
-    fontSize: 17,
-    letterSpacing: 0.3
-  },
-  signinLink: { 
-    alignSelf: 'center', 
-    marginBottom: spacing.xl,
+  
+  // Sign in
+  signinButton: { 
+    alignSelf: 'center',
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    marginTop: spacing.md
+    paddingHorizontal: spacing.lg,
   },
   signinText: { 
     color: palette.textSecondary,
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 20,
     fontWeight: '500',
-    flexWrap: 'wrap'
   },
   signinTextBold: { 
     color: palette.primary, 
     fontWeight: '700' 
   },
-  
-  // Floating elements
-  floatingSparkle1: {
-    position: 'absolute',
-    top: 150,
-    right: 50,
-    zIndex: 1
-  },
-  floatingSparkle2: {
-    position: 'absolute',
-    top: 220,
-    left: 40,
-    zIndex: 1
-  },
-  floatingSparkle3: {
-    position: 'absolute',
-    top: 300,
-    right: 100,
-    zIndex: 1
-  }
 });
