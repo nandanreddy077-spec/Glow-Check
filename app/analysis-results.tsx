@@ -9,7 +9,7 @@ import {
   Share,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { Stack, router } from 'expo-router';
 import { Sparkles, Award, Crown, Share2, TrendingUp, Heart, Star, Gem } from 'lucide-react-native';
 import { useAnalysis } from '@/contexts/AnalysisContext';
@@ -24,7 +24,7 @@ import TrialUpgradeModal from '@/components/TrialUpgradeModal';
 
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
-  const { canViewResults, incrementScanCount, state } = useSubscription();
+  const { incrementScanCount } = useSubscription();
   const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeGlowScan, incrementGlowScan, showTrialUpgradeModal, setShowTrialUpgradeModal } = useFreemium();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
@@ -33,7 +33,6 @@ export default function AnalysisResultsScreen() {
   const [streak, setStreak] = useState<number>(0);
   const [streakProtected, setStreakProtected] = useState<boolean>(false);
   const scoreAnim = useRef(new Animated.Value(0)).current;
-  const [hasRedirected, setHasRedirected] = useState<boolean>(false);
   
   const palette = getPalette(theme);
   const gradient = getGradient(theme);
@@ -86,20 +85,7 @@ export default function AnalysisResultsScreen() {
     };
   }, [currentResult?.timestamp, scoreAnim, incrementScanCount, incrementGlowScan]);
 
-  // Redirect to plan selection after viewing results (if free user)
-  useEffect(() => {
-    if (!currentResult || hasRedirected) return;
-    
-    if (!isFreeUser) return;
-    
-    // After user has viewed results for 8 seconds, redirect to plan selection
-    const redirectTimer = setTimeout(() => {
-      setHasRedirected(true);
-      router.push('/plan-selection');
-    }, 8000);
-    
-    return () => clearTimeout(redirectTimer);
-  }, [currentResult, hasRedirected, isFreeUser]);
+  // Note: No automatic redirect. User can view blurred results and decide to upgrade
 
   const previousScore = useMemo(() => {
     if (!analysisHistory || analysisHistory.length === 0 || !currentResult) return null as number | null;
@@ -217,6 +203,9 @@ export default function AnalysisResultsScreen() {
     { name: 'Skin Elasticity', score: currentResult.detailedScores.elasticity, color: palette.champagne, icon: TrendingUp },
   ];
 
+  // Check if content should be blurred (free user who has used their scan)
+  const shouldBlurContent = isFreeUser && hasUsedFreeGlowScan;
+
   const resultsContent = (
     <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap} testID="hero-wrap">
@@ -272,6 +261,10 @@ export default function AnalysisResultsScreen() {
             <Sparkles color={palette.primary} size={20} fill={palette.primary} strokeWidth={2.5} />
             <Text style={styles.sectionTitle}>Comprehensive Analysis</Text>
           </View>
+          <BlurredContent
+            shouldBlur={shouldBlurContent}
+            message="Unlock full analysis with your 3-day free trial"
+          >
           <View style={styles.analysisGrid}>
             <View style={styles.analysisRow}>
               <View style={styles.analysisItem}>
@@ -318,12 +311,17 @@ export default function AnalysisResultsScreen() {
               </View>
             </View>
           </View>
+          </BlurredContent>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>📊 Detailed Beauty Scores</Text>
           </View>
+          <BlurredContent
+            shouldBlur={shouldBlurContent}
+            message="Start your 3-day free trial to see detailed scores"
+          >
           <View style={styles.scoresContainer}>
             {detailedScoresArray.map((item, index) => {
               const IconComponent = item.icon;
@@ -345,6 +343,7 @@ export default function AnalysisResultsScreen() {
               );
             })}
           </View>
+          </BlurredContent>
         </View>
 
         <View style={styles.section}>
@@ -353,32 +352,25 @@ export default function AnalysisResultsScreen() {
             <Sparkles color={palette.primary} size={16} fill={palette.primary} strokeWidth={2.5} />
           </View>
           <View style={styles.tipsContainer}>
-            {currentResult.personalizedTips.slice(0, Math.min(8, currentResult.personalizedTips.length)).map((tip, index) => {
-              const shouldBlur = isFreeUser && index >= 4;
-              
-              if (!shouldBlur) {
-                return (
+            {!shouldBlurContent && currentResult.personalizedTips.slice(0, Math.min(4, currentResult.personalizedTips.length)).map((tip, index) => (
+              <View key={index} style={styles.tipItem}>
+                <View style={styles.tipNumber}>
+                  <Text style={styles.tipNumberText}>{index + 1}</Text>
+                </View>
+                <Text style={styles.tipText}>{tip}</Text>
+              </View>
+            ))}
+            
+            {shouldBlurContent && (
+              <BlurredContent 
+                shouldBlur={true}
+                message="Start your 3-day free trial to unlock all personalized beauty tips"
+                testID="blurred-tips"
+              >
+                {currentResult.personalizedTips.map((tip, index) => (
                   <View key={index} style={styles.tipItem}>
                     <View style={styles.tipNumber}>
                       <Text style={styles.tipNumberText}>{index + 1}</Text>
-                    </View>
-                    <Text style={styles.tipText}>{tip}</Text>
-                  </View>
-                );
-              }
-              
-              return null;
-            })}
-            
-            {isFreeUser && currentResult.personalizedTips.length > 4 && (
-              <BlurredContent 
-                message="Start your 3-day free trial to unlock all 8 personalized beauty tips"
-                testID="blurred-tips"
-              >
-                {currentResult.personalizedTips.slice(4, 8).map((tip, index) => (
-                  <View key={index + 4} style={styles.tipItem}>
-                    <View style={styles.tipNumber}>
-                      <Text style={styles.tipNumberText}>{index + 5}</Text>
                     </View>
                     <Text style={styles.tipText}>{tip}</Text>
                   </View>
