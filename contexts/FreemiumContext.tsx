@@ -56,8 +56,8 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   }, [subState.isPremium, subState.hasStartedTrial]);
 
   const isTrialUser = useMemo(() => {
-    return !subState.isPremium && subState.hasStartedTrial;
-  }, [subState.isPremium, subState.hasStartedTrial]);
+    return !subState.isPremium && subState.hasStartedTrial && subState.hasAddedPayment;
+  }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment]);
 
   const isPaidUser = useMemo(() => {
     return subState.isPremium;
@@ -125,53 +125,57 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
 
   const canScanGlow = useMemo(() => {
     if (subState.isPremium) return true;
-    
-    if (subState.hasStartedTrial) {
+
+    const trialActive = subState.hasStartedTrial && subState.hasAddedPayment;
+    if (trialActive) {
       const scansToday = usageTracking.glow_analysis;
       console.log('Trial glow scan check:', { scansToday, limit: TRIAL_DAILY_SCANS, canScan: scansToday < TRIAL_DAILY_SCANS });
       return scansToday < TRIAL_DAILY_SCANS;
     }
-    
+
     const canScan = usageTracking.glow_analysis < FREE_SCANS;
     console.log('Free glow scan check:', { used: usageTracking.glow_analysis, limit: FREE_SCANS, canScan });
     return canScan;
-  }, [subState.isPremium, subState.hasStartedTrial, usageTracking.glow_analysis]);
+  }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment, usageTracking.glow_analysis]);
 
   const canScanStyle = useMemo(() => {
     if (subState.isPremium) return true;
-    
-    if (subState.hasStartedTrial) {
+
+    const trialActive = subState.hasStartedTrial && subState.hasAddedPayment;
+    if (trialActive) {
       const scansToday = usageTracking.style_analysis;
       console.log('Trial style scan check:', { scansToday, limit: TRIAL_DAILY_SCANS, canScan: scansToday < TRIAL_DAILY_SCANS });
       return scansToday < TRIAL_DAILY_SCANS;
     }
-    
+
     const canScan = usageTracking.style_analysis < FREE_SCANS;
     console.log('Free style scan check:', { used: usageTracking.style_analysis, limit: FREE_SCANS, canScan });
     return canScan;
-  }, [subState.isPremium, subState.hasStartedTrial, usageTracking.style_analysis]);
+  }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment, usageTracking.style_analysis]);
 
   const glowScansLeft = useMemo(() => {
     if (subState.isPremium) return Infinity;
-    
-    if (subState.hasStartedTrial) {
+
+    const trialActive = subState.hasStartedTrial && subState.hasAddedPayment;
+    if (trialActive) {
       const scansToday = usageTracking.glow_analysis;
       return Math.max(0, TRIAL_DAILY_SCANS - scansToday);
     }
-    
+
     return Math.max(0, FREE_SCANS - usageTracking.glow_analysis);
-  }, [subState.isPremium, subState.hasStartedTrial, usageTracking.glow_analysis]);
+  }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment, usageTracking.glow_analysis]);
 
   const styleScansLeft = useMemo(() => {
     if (subState.isPremium) return Infinity;
-    
-    if (subState.hasStartedTrial) {
+
+    const trialActive = subState.hasStartedTrial && subState.hasAddedPayment;
+    if (trialActive) {
       const scansToday = usageTracking.style_analysis;
       return Math.max(0, TRIAL_DAILY_SCANS - scansToday);
     }
-    
+
     return Math.max(0, FREE_SCANS - usageTracking.style_analysis);
-  }, [subState.isPremium, subState.hasStartedTrial, usageTracking.style_analysis]);
+  }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment, usageTracking.style_analysis]);
 
   const incrementGlowScan = useCallback(async () => {
     if (!user?.id) return;

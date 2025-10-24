@@ -134,37 +134,39 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
 
   const canScan = useMemo(() => {
     if (state.isPremium) return true;
-    if (state.hasStartedTrial && inTrial) return true;
-    
+    const trialActive = state.hasStartedTrial && inTrial && state.hasAddedPayment;
+    if (trialActive) return true;
+
     const now = new Date();
     const lastReset = state.lastScanResetDate ? new Date(state.lastScanResetDate) : null;
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
-    
+
     if (!lastReset || lastReset < weekStart) {
       return true;
     }
-    
+
     return state.weeklyScansUsed < state.maxWeeklyScans;
-  }, [state.isPremium, state.hasStartedTrial, inTrial, state.weeklyScansUsed, state.maxWeeklyScans, state.lastScanResetDate]);
+  }, [state.isPremium, state.hasStartedTrial, state.hasAddedPayment, inTrial, state.weeklyScansUsed, state.maxWeeklyScans, state.lastScanResetDate]);
 
   const scansLeft = useMemo(() => {
     if (state.isPremium) return Infinity;
-    if (state.hasStartedTrial && inTrial) return Infinity;
-    
+    const trialActive = state.hasStartedTrial && inTrial && state.hasAddedPayment;
+    if (trialActive) return Infinity;
+
     const now = new Date();
     const lastReset = state.lastScanResetDate ? new Date(state.lastScanResetDate) : null;
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
-    
+
     if (!lastReset || lastReset < weekStart) {
       return state.maxWeeklyScans;
     }
-    
+
     return Math.max(0, state.maxWeeklyScans - state.weeklyScansUsed);
-  }, [state.isPremium, state.hasStartedTrial, inTrial, state.maxWeeklyScans, state.weeklyScansUsed, state.lastScanResetDate]);
+  }, [state.isPremium, state.hasStartedTrial, state.hasAddedPayment, inTrial, state.maxWeeklyScans, state.weeklyScansUsed, state.lastScanResetDate]);
 
   const incrementScanCount = useCallback(async () => {
     const now = new Date();
@@ -359,21 +361,23 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
   // Can view results (not blurred)
   const canViewResults = useMemo(() => {
     if (state.isPremium) return true;
-    if (state.hasStartedTrial && inTrial) return true;
-    
+    const trialActive = state.hasStartedTrial && inTrial && state.hasAddedPayment;
+    if (trialActive) return true;
+
     if (state.resultsUnlockedUntil) {
       return new Date(state.resultsUnlockedUntil).getTime() > Date.now();
     }
-    
+
     return false;
-  }, [state.isPremium, state.hasStartedTrial, inTrial, state.resultsUnlockedUntil]);
+  }, [state.isPremium, state.hasStartedTrial, state.hasAddedPayment, inTrial, state.resultsUnlockedUntil]);
 
   // Needs premium (show paywall)
   const needsPremium = useMemo(() => {
     if (state.isPremium) return false;
-    if (state.hasStartedTrial && inTrial) return false;
+    const trialActive = state.hasStartedTrial && inTrial && state.hasAddedPayment;
+    if (trialActive) return false;
     return isTrialExpired || !canScan || !canViewResults;
-  }, [state.isPremium, state.hasStartedTrial, inTrial, isTrialExpired, canScan, canViewResults]);
+  }, [state.isPremium, state.hasStartedTrial, state.hasAddedPayment, inTrial, isTrialExpired, canScan, canViewResults]);
 
   const restorePurchases = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
     try {
