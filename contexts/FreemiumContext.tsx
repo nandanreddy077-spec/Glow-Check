@@ -31,7 +31,8 @@ interface FreemiumContextType {
   isFreeUser: boolean;
   isTrialUser: boolean;
   isPaidUser: boolean;
-  hasUsedFreeScan: boolean;
+  hasUsedFreeGlowScan: boolean;
+  hasUsedFreeStyleScan: boolean;
   glowScansToday: number;
   styleScansToday: number;
   incrementGlowScan: () => Promise<void>;
@@ -67,9 +68,13 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     return !subState.isPremium;
   }, [subState.isPremium]);
 
-  const hasUsedFreeScan = useMemo(() => {
-    return usageTracking.glow_analysis >= 1 || usageTracking.style_analysis >= 1;
-  }, [usageTracking.glow_analysis, usageTracking.style_analysis]);
+  const hasUsedFreeGlowScan = useMemo(() => {
+    return usageTracking.glow_analysis >= 1;
+  }, [usageTracking.glow_analysis]);
+
+  const hasUsedFreeStyleScan = useMemo(() => {
+    return usageTracking.style_analysis >= 1;
+  }, [usageTracking.style_analysis]);
 
   const loadUsage = useCallback(async () => {
     if (!user?.id) return;
@@ -286,7 +291,8 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     isFreeUser,
     isTrialUser,
     isPaidUser,
-    hasUsedFreeScan,
+    hasUsedFreeGlowScan,
+    hasUsedFreeStyleScan,
     glowScansToday,
     styleScansToday,
     incrementGlowScan,
@@ -303,7 +309,8 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     isFreeUser,
     isTrialUser,
     isPaidUser,
-    hasUsedFreeScan,
+    hasUsedFreeGlowScan,
+    hasUsedFreeStyleScan,
     glowScansToday,
     styleScansToday,
     incrementGlowScan,

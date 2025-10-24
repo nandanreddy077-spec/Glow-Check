@@ -25,7 +25,7 @@ import TrialUpgradeModal from '@/components/TrialUpgradeModal';
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
   const { canViewResults, incrementScanCount, state } = useSubscription();
-  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeScan, incrementGlowScan, showTrialUpgradeModal, setShowTrialUpgradeModal } = useFreemium();
+  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeGlowScan, incrementGlowScan, showTrialUpgradeModal, setShowTrialUpgradeModal } = useFreemium();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
   const [badge, setBadge] = useState<string>('');
@@ -40,9 +40,9 @@ export default function AnalysisResultsScreen() {
   const styles = createStyles(palette);
 
   const handleStartPlan = () => {
-    if (isFreeUser && !hasUsedFreeScan) {
+    if (isFreeUser && !hasUsedFreeGlowScan) {
       router.push('/skincare-plan-selection');
-    } else if (isFreeUser && hasUsedFreeScan) {
+    } else if (isFreeUser && hasUsedFreeGlowScan) {
       router.push('/plan-selection');
     } else if (isTrialUser) {
       router.push('/skincare-plan-selection');
