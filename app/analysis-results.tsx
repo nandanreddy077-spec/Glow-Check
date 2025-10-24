@@ -25,7 +25,7 @@ import TrialUpgradeModal from '@/components/TrialUpgradeModal';
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
   const { incrementScanCount } = useSubscription();
-  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeGlowScan, incrementGlowScan, showTrialUpgradeModal, setShowTrialUpgradeModal } = useFreemium();
+  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeGlowScan, glowScansToday, showTrialUpgradeModal, setShowTrialUpgradeModal } = useFreemium();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
   const [badge, setBadge] = useState<string>('');
@@ -62,7 +62,6 @@ export default function AnalysisResultsScreen() {
     if (hasCountedRef.current !== String(currentResult.timestamp)) {
       hasCountedRef.current = String(currentResult.timestamp);
       incrementScanCount();
-      incrementGlowScan();
     }
 
     const s = currentResult.overallScore;
@@ -83,7 +82,7 @@ export default function AnalysisResultsScreen() {
       scoreAnim.removeListener(sub);
       scoreAnim.stopAnimation();
     };
-  }, [currentResult?.timestamp, scoreAnim, incrementScanCount, incrementGlowScan]);
+  }, [currentResult?.timestamp, scoreAnim, incrementScanCount]);
 
   // Note: No automatic redirect. User can view blurred results and decide to upgrade
 
@@ -203,8 +202,11 @@ export default function AnalysisResultsScreen() {
     { name: 'Skin Elasticity', score: currentResult.detailedScores.elasticity, color: palette.champagne, icon: TrendingUp },
   ];
 
-  // Check if content should be blurred (free user who has used their scan)
-  const shouldBlurContent = isFreeUser && hasUsedFreeGlowScan;
+  // Check if content should be blurred (free user on their 2nd+ scan)
+  // When glowScansToday > 1, it means they've completed their first scan
+  // On the second scan (glowScansToday = 2), content should be blurred
+  // Note: The scan is incremented in analysis-loading.tsx before navigating here
+  const shouldBlurContent = isFreeUser && glowScansToday > 1;
 
   const resultsContent = (
     <ScrollView showsVerticalScrollIndicator={false}>
