@@ -24,9 +24,9 @@ const slides: Slide[] = [
     subtitle: 'AI-powered analysis reveals your unique radiance and creates personalized beauty plans',
     image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/wdrokw9xnolfhtc6301rh',
     stats: [
-      { value: '92%', label: 'Accuracy' },
+      { value: 'AI', label: 'Powered' },
       { value: '10s', label: 'Analysis' },
-      { value: '1M+', label: 'Users' },
+      { value: '30+', label: 'Metrics' },
     ],
   },
   {
@@ -46,9 +46,9 @@ const slides: Slide[] = [
     subtitle: 'Connect with a global community celebrating authentic beauty and self-care',
     image: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1080&auto=format&fit=crop',
     stats: [
-      { value: '500K+', label: 'Community' },
-      { value: '4.9', label: 'Rating' },
-      { value: 'Free', label: 'Trial' },
+      { value: 'New', label: 'Community' },
+      { value: '3 Day', label: 'Free Trial' },
+      { value: '24/7', label: 'Access' },
     ],
   },
 ];
