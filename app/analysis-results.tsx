@@ -207,6 +207,9 @@ export default function AnalysisResultsScreen() {
   // Note: The scan is incremented in analysis-loading.tsx before navigating here
   const shouldBlurContent = isFreeUser && glowScansToday > 1;
 
+  // Check if countdown should be shown (free users within 48-hour window)
+  const showCountdown = isFreeUser && resultsUnlockedUntil && glowScansToday === 1;
+
   const resultsContent = (
     <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap} testID="hero-wrap">
@@ -255,11 +258,20 @@ export default function AnalysisResultsScreen() {
               {streakProtected && <Text style={styles.streakProtect}>🛡️ Protected</Text>}
             </View>
 
-            {shouldBlurContent && resultsUnlockedUntil && (
-              <CountdownTimer 
-                expiryTime={resultsUnlockedUntil}
-                style={styles.countdownBanner}
-              />
+            {showCountdown && (
+              <View style={styles.urgencySection}>
+                <CountdownTimer 
+                  expiryTime={resultsUnlockedUntil}
+                  style={styles.countdownBanner}
+                />
+                <TouchableOpacity 
+                  style={styles.saveNowButton}
+                  onPress={() => router.push('/start-trial')}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.saveNowButtonText}>Save Results Forever →</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </LinearGradient>
         </View>
@@ -269,19 +281,26 @@ export default function AnalysisResultsScreen() {
             <Sparkles color={palette.primary} size={20} fill={palette.primary} strokeWidth={2.5} />
             <Text style={styles.sectionTitle}>Comprehensive Analysis</Text>
           </View>
-          {shouldBlurContent && (
+          {!isPaidUser && (
             <View style={styles.trialValueBanner}>
               <View style={styles.trialValueRow}>
                 <Zap color={palette.gold} size={20} strokeWidth={2.5} fill={palette.gold} />
                 <Text style={styles.trialValueText}>
-                  You&apos;ve scanned {glowScansToday} time{glowScansToday > 1 ? 's' : ''} today
+                  {isFreeUser 
+                    ? `🔥 You've used your free scan! Get unlimited analysis with trial.`
+                    : isTrialUser 
+                    ? `🎯 Trial: ${glowScansToday}/2 scans today - Upgrade for unlimited!`
+                    : `✨ Start your free trial for unlimited scans`}
                 </Text>
               </View>
               <TouchableOpacity 
                 style={styles.trialValueButton}
-                onPress={() => router.push('/start-trial')}
+                onPress={() => router.push(isPaidUser ? '/' : isTrialUser ? '/plan-selection' : '/start-trial')}
+                activeOpacity={0.9}
               >
-                <Text style={styles.trialValueButtonText}>Start 3-Day Trial →</Text>
+                <Text style={styles.trialValueButtonText}>
+                  {isTrialUser ? 'Upgrade Now →' : 'Start Free Trial →'}
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -612,17 +631,35 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     fontSize: 14,
     fontWeight: '700',
   },
+  urgencySection: {
+    width: '100%',
+    marginTop: 20,
+    gap: 12,
+  },
   countdownBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF6B6B',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 16,
-    marginTop: 16,
     gap: 8,
+    ...shadow.elevated,
+  },
+  saveNowButton: {
+    backgroundColor: palette.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    alignItems: 'center',
     ...shadow.card,
+  },
+  saveNowButtonText: {
+    color: palette.textLight,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   countdownText: {
     color: '#FFF',
