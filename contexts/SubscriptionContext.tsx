@@ -269,7 +269,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         console.log('Failed to load subscription state', e);
       }
     })();
-  }, [user?.id]);
+  }, [user?.id, syncSubscriptionStatus]);
   
   const processInAppPurchase = useCallback(async (type: 'monthly' | 'yearly'): Promise<{ success: boolean; purchaseToken?: string; originalTransactionId?: string; error?: string }> => {
     try {
