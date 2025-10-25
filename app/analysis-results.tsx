@@ -8,7 +8,6 @@ import {
   Image,
   Share,
   Animated,
-  Platform,
 } from 'react-native';
 
 import { Stack, router } from 'expo-router';
@@ -22,18 +21,18 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
 import BlurredContent from '@/components/BlurredContent';
 import TrialUpgradeModal from '@/components/TrialUpgradeModal';
+import CountdownTimer from '@/components/CountdownTimer';
 
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
   const { incrementScanCount } = useSubscription();
-  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeGlowScan, glowScansToday, showTrialUpgradeModal, setShowTrialUpgradeModal } = useFreemium();
+  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeGlowScan, glowScansToday, showTrialUpgradeModal, setShowTrialUpgradeModal, resultsUnlockedUntil } = useFreemium();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
   const [badge, setBadge] = useState<string>('');
   const [rankPercent, setRankPercent] = useState<number>(0);
   const [streak, setStreak] = useState<number>(0);
   const [streakProtected, setStreakProtected] = useState<boolean>(false);
-  const [timeLeft, setTimeLeft] = useState<string>('');
   const scoreAnim = useRef(new Animated.Value(0)).current;
   
   const palette = getPalette(theme);
@@ -53,31 +52,6 @@ export default function AnalysisResultsScreen() {
       router.push('/plan-selection');
     }
   };
-
-  useEffect(() => {
-    if (!isFreeUser) return;
-
-    const updateTimer = () => {
-      const expiryTime = Date.now() + (48 * 60 * 60 * 1000);
-      const diff = expiryTime - Date.now();
-      
-      if (diff <= 0) {
-        setTimeLeft('Expired');
-        return;
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      setTimeLeft(`${hours}h ${minutes}m`);
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 60000);
-
-    return () => clearInterval(interval);
-  }, [isFreeUser]);
-
-
 
   const hasCountedRef = useRef<string | null>(null);
 
@@ -281,13 +255,11 @@ export default function AnalysisResultsScreen() {
               {streakProtected && <Text style={styles.streakProtect}>🛡️ Protected</Text>}
             </View>
 
-            {shouldBlurContent && timeLeft && (
-              <View style={styles.countdownBanner}>
-                <Clock color="#FFF" size={16} strokeWidth={2.5} />
-                <Text style={styles.countdownText}>
-                  Free results expire in {timeLeft}
-                </Text>
-              </View>
+            {shouldBlurContent && resultsUnlockedUntil && (
+              <CountdownTimer 
+                expiryTime={resultsUnlockedUntil}
+                style={styles.countdownBanner}
+              />
             )}
           </LinearGradient>
         </View>
@@ -302,7 +274,7 @@ export default function AnalysisResultsScreen() {
               <View style={styles.trialValueRow}>
                 <Zap color={palette.gold} size={20} strokeWidth={2.5} fill={palette.gold} />
                 <Text style={styles.trialValueText}>
-                  You've scanned {glowScansToday} time{glowScansToday > 1 ? 's' : ''} today
+                  You&apos;ve scanned {glowScansToday} time{glowScansToday > 1 ? 's' : ''} today
                 </Text>
               </View>
               <TouchableOpacity 

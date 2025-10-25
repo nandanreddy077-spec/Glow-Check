@@ -40,6 +40,7 @@ interface FreemiumContextType {
   refreshUsage: () => Promise<void>;
   showTrialUpgradeModal: boolean;
   setShowTrialUpgradeModal: (show: boolean) => void;
+  resultsUnlockedUntil: string | null;
 }
 
 const FREE_SCANS = 1;
@@ -207,7 +208,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         .upsert({
           id: user.id,
           first_scan_at: trialTracking?.first_scan_at || now,
-          results_unlocked_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          results_unlocked_until: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
           updated_at: now,
         }, {
           onConflict: 'id'
@@ -255,7 +256,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         .upsert({
           id: user.id,
           first_scan_at: trialTracking?.first_scan_at || now,
-          results_unlocked_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          results_unlocked_until: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
           updated_at: now,
         }, {
           onConflict: 'id'
@@ -282,6 +283,10 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     await loadUsage();
   }, [loadUsage]);
 
+  const resultsUnlockedUntil = useMemo(() => {
+    return trialTracking?.results_unlocked_until || null;
+  }, [trialTracking?.results_unlocked_until]);
+
   return useMemo(() => ({
     canScanGlow,
     canScanStyle,
@@ -300,6 +305,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     refreshUsage,
     showTrialUpgradeModal,
     setShowTrialUpgradeModal,
+    resultsUnlockedUntil,
   }), [
     canScanGlow,
     canScanStyle,
@@ -317,5 +323,6 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     incrementStyleScan,
     refreshUsage,
     showTrialUpgradeModal,
+    resultsUnlockedUntil,
   ]);
 });
