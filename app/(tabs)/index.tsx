@@ -11,11 +11,13 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Gem, Wand2, Sun, Moon, Zap, Compass, ArrowRight } from "lucide-react-native";
+import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Gem, Wand2, Sun, Moon, Zap, Compass, ArrowRight, TrendingUp, Package } from "lucide-react-native";
 import { router } from "expo-router";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useProgressTracking } from "@/contexts/ProgressTrackingContext";
+import { useProductTracking } from "@/contexts/ProductTrackingContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import { getPalette, getGradient, shadow, spacing, radii, typography } from "@/constants/theme";
 
@@ -81,6 +83,8 @@ export default function HomeScreen() {
   const { user, isFirstTime, setIsFirstTime } = useUser();
   const { user: authUser } = useAuth();
   const { theme } = useTheme();
+  const { progressPhotos } = useProgressTracking();
+  const { products, alerts } = useProductTracking();
   const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
@@ -276,6 +280,38 @@ export default function HomeScreen() {
             </View>
           </LinearGradient>
         </TouchableOpacity>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Your Trackers</Text>
+            <View style={styles.sectionDivider} />
+          </View>
+          
+          <View style={styles.trackersRow}>
+            <TouchableOpacity onPress={() => router.push('/progress-tracker')} activeOpacity={0.9} style={styles.trackerCard}>
+              <LinearGradient colors={['#F2C2C2', '#E8A87C']} style={[styles.trackerCardInner, shadow.card]}>
+                <TrendingUp color={palette.textLight} size={24} strokeWidth={2.5} />
+                <Text style={styles.trackerTitle}>Progress</Text>
+                <Text style={styles.trackerValue}>{progressPhotos.length}</Text>
+                <Text style={styles.trackerLabel}>photos</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={() => router.push('/product-library')} activeOpacity={0.9} style={styles.trackerCard}>
+              <LinearGradient colors={['#D4F0E8', '#F5D5C2']} style={[styles.trackerCardInner, shadow.card]}>
+                <Package color={palette.textLight} size={24} strokeWidth={2.5} />
+                <Text style={styles.trackerTitle}>Products</Text>
+                <Text style={styles.trackerValue}>{products.length}</Text>
+                <Text style={styles.trackerLabel}>tracked</Text>
+                {alerts.length > 0 && (
+                  <View style={styles.trackerBadge}>
+                    <Text style={styles.trackerBadgeText}>{alerts.length}</Text>
+                  </View>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -753,6 +789,55 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     backgroundColor: palette.divider,
     marginHorizontal: 20,
     borderRadius: 1,
+  },
+  trackersRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 24,
+  },
+  trackerCard: {
+    flex: 1,
+  },
+  trackerCardInner: {
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  trackerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: palette.textLight,
+    marginTop: 12,
+  },
+  trackerValue: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: palette.textLight,
+    marginTop: 8,
+  },
+  trackerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: palette.textLight,
+    opacity: 0.8,
+    marginTop: 4,
+  },
+  trackerBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: '#F44336',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  trackerBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#fff',
   },
   // Floating sparkles
   sparkle1: {
