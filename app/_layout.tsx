@@ -54,6 +54,16 @@ function RootLayoutNav() {
       <Stack.Screen name="style-results" options={{ headerShown: true, headerBackTitle: "Back" }} />
       <Stack.Screen name="subscribe" options={{ headerShown: true, headerBackTitle: "Back" }} />
       <Stack.Screen name="privacy-care" options={{ headerShown: true, headerBackTitle: "Back" }} />
+      <Stack.Screen name="privacy-policy" options={{ headerShown: true, headerBackTitle: "Back" }} />
+      <Stack.Screen name="terms-of-service" options={{ headerShown: true, headerBackTitle: "Back" }} />
+      <Stack.Screen name="unlock-glow" options={{ headerShown: false }} />
+      <Stack.Screen name="plan-selection" options={{ headerShown: true, headerBackTitle: "Back" }} />
+      <Stack.Screen name="start-trial" options={{ headerShown: false }} />
+      <Stack.Screen name="free-scan-limit" options={{ headerShown: false }} />
+      <Stack.Screen name="premium-unlock" options={{ headerShown: true, headerBackTitle: "Back" }} />
+      <Stack.Screen name="progress-tracker" options={{ headerShown: true, headerBackTitle: "Back" }} />
+      <Stack.Screen name="product-library" options={{ headerShown: true, headerBackTitle: "Back" }} />
+      <Stack.Screen name="redeem-promo" options={{ headerShown: true, headerBackTitle: "Back" }} />
     </Stack>
   );
 }
