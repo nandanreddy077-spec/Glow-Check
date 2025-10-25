@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Gem, Wand2, Sun, Moon, Zap, Compass, ArrowRight, TrendingUp, Package, AlertCircle } from "lucide-react-native";
+import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Wand2, Sun, Zap, Compass, ArrowRight, TrendingUp, Package, AlertCircle } from "lucide-react-native";
 import { router } from "expo-router";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -286,28 +286,56 @@ export default function HomeScreen() {
         {recommendations.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Seasonal Alerts</Text>
-              <View style={styles.sectionDivider} />
+              <Compass color={palette.gold} size={20} strokeWidth={2.5} />
+              <Text style={styles.sectionTitle}>Seasonal Guide</Text>
+              <View style={styles.newBadge}>
+                <Sparkles color={palette.textLight} size={10} fill={palette.gold} />
+                <Text style={styles.newBadgeText}>SMART</Text>
+              </View>
             </View>
+            <Text style={styles.sectionSubtitle}>Personalized tips based on current season: {currentSeason.toUpperCase()}</Text>
             {recommendations.slice(0, 2).map((rec) => (
               <TouchableOpacity
                 key={rec.id}
                 onPress={() => dismissRecommendation(rec.id)}
                 activeOpacity={0.9}
-                style={[styles.seasonalAlertCard, shadow.card]}
+                style={[styles.seasonalAlertCard, shadow.elevated]}
               >
-                <View style={styles.seasonalAlertContent}>
-                  <View style={styles.seasonalAlertIcon}>
-                    {rec.category === 'alert' && <AlertCircle color="#FF9800" size={24} strokeWidth={2.5} />}
-                    {rec.category === 'routine' && <Sun color="#F2C2C2" size={24} strokeWidth={2.5} />}
-                    {rec.category === 'product' && <Package color="#D4F0E8" size={24} strokeWidth={2.5} />}
-                    {rec.category === 'lifestyle' && <Heart color={palette.blush} size={24} strokeWidth={2.5} fill={palette.blush} />}
+                <LinearGradient 
+                  colors={rec.priority === 'high' ? ['#FFE5E5', '#FFF0E5'] : ['#F0F9FF', '#F0FFF4']} 
+                  style={styles.seasonalAlertGradient}
+                >
+                  <View style={styles.seasonalAlertContent}>
+                    <View style={[styles.seasonalAlertIcon, { 
+                      backgroundColor: rec.category === 'alert' ? 'rgba(255, 152, 0, 0.2)' : 
+                                      rec.category === 'routine' ? 'rgba(242, 194, 194, 0.3)' :
+                                      rec.category === 'product' ? 'rgba(212, 240, 232, 0.3)' :
+                                      'rgba(248, 113, 113, 0.2)'
+                    }]}>
+                      {rec.category === 'alert' && <AlertCircle color="#FF9800" size={24} strokeWidth={2.5} />}
+                      {rec.category === 'routine' && <Sun color="#F2C2C2" size={24} strokeWidth={2.5} />}
+                      {rec.category === 'product' && <Package color="#D4F0E8" size={24} strokeWidth={2.5} />}
+                      {rec.category === 'lifestyle' && <Heart color={palette.blush} size={24} strokeWidth={2.5} fill={palette.blush} />}
+                    </View>
+                    <View style={styles.seasonalAlertText}>
+                      <View style={styles.seasonalAlertHeader}>
+                        <Text style={styles.seasonalAlertTitle}>{rec.title}</Text>
+                        {rec.priority === 'high' && (
+                          <View style={styles.priorityBadge}>
+                            <Zap color="#FF9800" size={12} fill="#FF9800" />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.seasonalAlertDesc}>{rec.description}</Text>
+                      {rec.actionable && rec.action && (
+                        <View style={styles.seasonalAlertAction}>
+                          <ArrowRight color={palette.gold} size={16} strokeWidth={2.5} />
+                          <Text style={styles.seasonalAlertActionText}>{rec.action}</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                  <View style={styles.seasonalAlertText}>
-                    <Text style={styles.seasonalAlertTitle}>{rec.title}</Text>
-                    <Text style={styles.seasonalAlertDesc}>{rec.description}</Text>
-                  </View>
-                </View>
+                </LinearGradient>
               </TouchableOpacity>
             ))}
           </View>
@@ -315,31 +343,62 @@ export default function HomeScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Your Trackers</Text>
-            <View style={styles.sectionDivider} />
+            <TrendingUp color={palette.gold} size={20} strokeWidth={2.5} />
+            <Text style={styles.sectionTitle}>Your Progress Hub</Text>
+            <View style={styles.newBadge}>
+              <Sparkles color={palette.textLight} size={10} fill={palette.gold} />
+              <Text style={styles.newBadgeText}>NEW</Text>
+            </View>
           </View>
+          <Text style={styles.sectionSubtitle}>Track your glow journey & product routines</Text>
           
           <View style={styles.trackersRow}>
             <TouchableOpacity onPress={() => router.push('/progress-tracker')} activeOpacity={0.9} style={styles.trackerCard}>
-              <LinearGradient colors={['#F2C2C2', '#E8A87C']} style={[styles.trackerCardInner, shadow.card]}>
-                <TrendingUp color={palette.textLight} size={24} strokeWidth={2.5} />
-                <Text style={styles.trackerTitle}>Progress</Text>
+              <LinearGradient colors={['#F2C2C2', '#E8A87C']} style={[styles.trackerCardInner, shadow.elevated]}>
+                <Animated.View style={{
+                  transform: [{
+                    scale: floatingAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.05],
+                    })
+                  }]
+                }}>
+                  <TrendingUp color={palette.textLight} size={28} strokeWidth={2.5} />
+                </Animated.View>
+                <Text style={styles.trackerTitle}>Progress Photos</Text>
                 <Text style={styles.trackerValue}>{progressPhotos.length}</Text>
-                <Text style={styles.trackerLabel}>photos</Text>
+                <Text style={styles.trackerLabel}>snapshots</Text>
+                <View style={styles.trackerCTA}>
+                  <Text style={styles.trackerCTAText}>Track changes</Text>
+                  <ArrowRight color={palette.textLight} size={14} strokeWidth={3} />
+                </View>
               </LinearGradient>
             </TouchableOpacity>
             
             <TouchableOpacity onPress={() => router.push('/product-library')} activeOpacity={0.9} style={styles.trackerCard}>
-              <LinearGradient colors={['#D4F0E8', '#F5D5C2']} style={[styles.trackerCardInner, shadow.card]}>
-                <Package color={palette.textLight} size={24} strokeWidth={2.5} />
-                <Text style={styles.trackerTitle}>Products</Text>
+              <LinearGradient colors={['#D4F0E8', '#F5D5C2']} style={[styles.trackerCardInner, shadow.elevated]}>
+                <Animated.View style={{
+                  transform: [{
+                    rotate: floatingAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '5deg'],
+                    })
+                  }]
+                }}>
+                  <Package color={palette.textLight} size={28} strokeWidth={2.5} />
+                </Animated.View>
+                <Text style={styles.trackerTitle}>Product Shelf</Text>
                 <Text style={styles.trackerValue}>{products.length}</Text>
-                <Text style={styles.trackerLabel}>tracked</Text>
+                <Text style={styles.trackerLabel}>products</Text>
                 {alerts.length > 0 && (
                   <View style={styles.trackerBadge}>
                     <Text style={styles.trackerBadgeText}>{alerts.length}</Text>
                   </View>
                 )}
+                <View style={styles.trackerCTA}>
+                  <Text style={styles.trackerCTAText}>Never expire</Text>
+                  <ArrowRight color={palette.textLight} size={14} strokeWidth={3} />
+                </View>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -368,7 +427,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.actionContent}>
                 <Text style={styles.actionTitle}>Glow Analysis</Text>
-                <Text style={styles.actionSubtitle}>Discover your skin's natural beauty</Text>
+                <Text style={styles.actionSubtitle}>Discover your skin&apos;s natural beauty</Text>
                 <View style={styles.actionBadge}>
                   <Heart color={palette.blush} size={12} fill={palette.blush} />
                   <Text style={[styles.actionBadgeText, { color: palette.blush }]}>Gentle</Text>
@@ -449,7 +508,7 @@ export default function HomeScreen() {
               <Heart color={palette.blush} size={28} fill={palette.blush} />
               <View style={styles.quoteIconGlow} />
             </View>
-            <Text style={styles.quoteText}>"{currentAffirmation.text}"</Text>
+            <Text style={styles.quoteText}>&ldquo;{currentAffirmation.text}&rdquo;</Text>
             <Text style={styles.quoteAuthor}>— {currentAffirmation.author}</Text>
             <View style={styles.quoteDivider} />
           </View>
@@ -666,14 +725,39 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     marginBottom: 40,
   },
   sectionHeader: {
-    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 22,
     fontWeight: "800",
     color: palette.textPrimary,
-    marginBottom: 8,
     letterSpacing: -0.3,
+    flex: 1,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: palette.textSecondary,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  newBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.gold,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 4,
+  },
+  newBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: palette.textLight,
+    letterSpacing: 0.5,
   },
   sectionDivider: {
     height: 2,
@@ -855,21 +939,38 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     opacity: 0.8,
     marginTop: 4,
   },
+  trackerCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 4,
+  },
+  trackerCTAText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: palette.textLight,
+    opacity: 0.9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   trackerBadge: {
     position: 'absolute',
     top: 12,
     right: 12,
     backgroundColor: '#F44336',
     borderRadius: 10,
-    width: 20,
+    minWidth: 20,
     height: 20,
+    paddingHorizontal: 6,
     justifyContent: 'center',
     alignItems: 'center',
+    ...shadow.glow,
   },
   trackerBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '900',
     color: '#fff',
+    letterSpacing: 0.5,
   },
   // Floating sparkles
   sparkle1: {
@@ -910,38 +1011,63 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   seasonalAlertCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: palette.divider,
+    borderRadius: 20,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  seasonalAlertGradient: {
+    padding: 20,
   },
   seasonalAlertContent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 16,
   },
   seasonalAlertIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: palette.surfaceElevated,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
   seasonalAlertText: {
     flex: 1,
   },
+  seasonalAlertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
   seasonalAlertTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
     color: palette.textPrimary,
-    marginBottom: 4,
+    flex: 1,
+  },
+  priorityBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 152, 0, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   seasonalAlertDesc: {
-    fontSize: 14,
+    fontSize: 15,
     color: palette.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  seasonalAlertAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  seasonalAlertActionText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: palette.gold,
+    letterSpacing: 0.3,
   },
 });
