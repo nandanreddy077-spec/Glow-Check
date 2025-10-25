@@ -8,10 +8,11 @@ import {
   Image,
   Share,
   Animated,
+  Platform,
 } from 'react-native';
 
 import { Stack, router } from 'expo-router';
-import { Sparkles, Award, Crown, Share2, TrendingUp, Heart, Star, Gem } from 'lucide-react-native';
+import { Sparkles, Award, Crown, Share2, TrendingUp, Heart, Star, Gem, Clock, Zap } from 'lucide-react-native';
 import { useAnalysis } from '@/contexts/AnalysisContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useFreemium } from '@/contexts/FreemiumContext';
@@ -32,6 +33,7 @@ export default function AnalysisResultsScreen() {
   const [rankPercent, setRankPercent] = useState<number>(0);
   const [streak, setStreak] = useState<number>(0);
   const [streakProtected, setStreakProtected] = useState<boolean>(false);
+  const [timeLeft, setTimeLeft] = useState<string>('');
   const scoreAnim = useRef(new Animated.Value(0)).current;
   
   const palette = getPalette(theme);
@@ -39,10 +41,10 @@ export default function AnalysisResultsScreen() {
   const styles = createStyles(palette);
 
   const handleStartPlan = () => {
-    if (isFreeUser && !hasUsedFreeGlowScan) {
+    if (isFreeUser && hasUsedFreeGlowScan) {
+      router.push('/start-trial');
+    } else if (isFreeUser && !hasUsedFreeGlowScan) {
       router.push('/skincare-plan-selection');
-    } else if (isFreeUser && hasUsedFreeGlowScan) {
-      router.push('/plan-selection');
     } else if (isTrialUser) {
       router.push('/skincare-plan-selection');
     } else if (isPaidUser) {
@@ -51,6 +53,29 @@ export default function AnalysisResultsScreen() {
       router.push('/plan-selection');
     }
   };
+
+  useEffect(() => {
+    if (!isFreeUser) return;
+
+    const updateTimer = () => {
+      const expiryTime = Date.now() + (48 * 60 * 60 * 1000);
+      const diff = expiryTime - Date.now();
+      
+      if (diff <= 0) {
+        setTimeLeft('Expired');
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      setTimeLeft(`${hours}h ${minutes}m`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 60000);
+
+    return () => clearInterval(interval);
+  }, [isFreeUser]);
 
 
 
@@ -255,6 +280,15 @@ export default function AnalysisResultsScreen() {
               <Text style={styles.streakText}>✨ {streak} day streak</Text>
               {streakProtected && <Text style={styles.streakProtect}>🛡️ Protected</Text>}
             </View>
+
+            {shouldBlurContent && timeLeft && (
+              <View style={styles.countdownBanner}>
+                <Clock color="#FFF" size={16} strokeWidth={2.5} />
+                <Text style={styles.countdownText}>
+                  Free results expire in {timeLeft}
+                </Text>
+              </View>
+            )}
           </LinearGradient>
         </View>
 
@@ -263,6 +297,22 @@ export default function AnalysisResultsScreen() {
             <Sparkles color={palette.primary} size={20} fill={palette.primary} strokeWidth={2.5} />
             <Text style={styles.sectionTitle}>Comprehensive Analysis</Text>
           </View>
+          {shouldBlurContent && (
+            <View style={styles.trialValueBanner}>
+              <View style={styles.trialValueRow}>
+                <Zap color={palette.gold} size={20} strokeWidth={2.5} fill={palette.gold} />
+                <Text style={styles.trialValueText}>
+                  You've scanned {glowScansToday} time{glowScansToday > 1 ? 's' : ''} today
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.trialValueButton}
+                onPress={() => router.push('/start-trial')}
+              >
+                <Text style={styles.trialValueButtonText}>Start 3-Day Trial →</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <BlurredContent
             shouldBlur={shouldBlurContent}
             message="Unlock full analysis with your 3-day free trial"
@@ -589,6 +639,59 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     color: palette.success,
     fontSize: 14,
     fontWeight: '700',
+  },
+  countdownBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    marginTop: 16,
+    gap: 8,
+    ...shadow.card,
+  },
+  countdownText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  trialValueBanner: {
+    backgroundColor: palette.overlayGold,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: palette.gold,
+    ...shadow.card,
+  },
+  trialValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  trialValueText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: palette.textPrimary,
+    flex: 1,
+  },
+  trialValueButton: {
+    backgroundColor: palette.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    ...shadow.card,
+  },
+  trialValueButtonText: {
+    color: palette.textLight,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   section: {
     paddingHorizontal: 24,

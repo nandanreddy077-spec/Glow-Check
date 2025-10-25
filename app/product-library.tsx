@@ -60,12 +60,18 @@ export default function ProductLibraryScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const handleAddProduct = () => {
-    if (!state.isPremium && products.length >= 10) {
+    if (!state.isPremium && !state.hasStartedTrial) {
       setShowPaywall(true);
       return;
     }
     setShowAddModal(true);
   };
+
+  React.useEffect(() => {
+    if (!state.isPremium && !state.hasStartedTrial) {
+      setShowPaywall(true);
+    }
+  }, [state.isPremium, state.hasStartedTrial]);
 
   const filteredProducts = selectedCategory === 'all' 
     ? products 
@@ -187,16 +193,47 @@ export default function ProductLibraryScreen() {
       />
 
       {showPaywall && (
-        <View style={styles.paywallContainer}>
-          <PremiumPaywall
-            onStartTrial={async () => {
-              router.push('/start-trial');
-            }}
-            onSubscribe={() => {
-              router.push('/subscribe');
-            }}
-          />
-        </View>
+        <Modal visible={true} transparent animationType="slide">
+          <View style={styles.paywallOverlay}>
+            <View style={styles.paywallContent}>
+              <View style={styles.paywallHeader}>
+                <Text style={styles.paywallTitle}>Product Library</Text>
+                <Text style={styles.paywallSubtitle}>Premium Feature</Text>
+              </View>
+              <Text style={styles.paywallDescription}>
+                Track your skincare products, get expiry alerts, and discover which products work best for your skin.
+              </Text>
+              <View style={styles.paywallFeatures}>
+                <View style={styles.paywallFeature}>
+                  <Text style={styles.paywallFeatureText}>✓ Unlimited product tracking</Text>
+                </View>
+                <View style={styles.paywallFeature}>
+                  <Text style={styles.paywallFeatureText}>✓ Expiry date alerts</Text>
+                </View>
+                <View style={styles.paywallFeature}>
+                  <Text style={styles.paywallFeatureText}>✓ Routine optimization</Text>
+                </View>
+                <View style={styles.paywallFeature}>
+                  <Text style={styles.paywallFeatureText}>✓ Product effectiveness tracking</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.paywallButton}
+                onPress={() => router.push('/start-trial')}
+              >
+                <LinearGradient colors={['#D4F0E8', '#F5D5C2']} style={styles.paywallButtonGradient}>
+                  <Text style={styles.paywallButtonText}>Start 3-Day Free Trial</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.paywallClose}
+                onPress={() => router.back()}
+              >
+                <Text style={styles.paywallCloseText}>Go Back</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       )}
     </View>
   );
@@ -556,13 +593,69 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     justifyContent: 'center',
     alignItems: 'center',
   },
-  paywallContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingVertical: 20,
+  paywallOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  paywallContent: {
+    backgroundColor: palette.surface,
+    borderRadius: 24,
+    padding: 32,
+  },
+  paywallHeader: {
+    marginBottom: 20,
+  },
+  paywallTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: palette.textPrimary,
+    marginBottom: 8,
+  },
+  paywallSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: palette.gold,
+  },
+  paywallDescription: {
+    fontSize: 16,
+    color: palette.textSecondary,
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  paywallFeatures: {
+    marginBottom: 32,
+  },
+  paywallFeature: {
+    marginBottom: 12,
+  },
+  paywallFeatureText: {
+    fontSize: 16,
+    color: palette.textPrimary,
+    fontWeight: '600',
+  },
+  paywallButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  paywallButtonGradient: {
+    paddingVertical: 18,
+    alignItems: 'center',
+  },
+  paywallButtonText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: palette.textLight,
+  },
+  paywallClose: {
+    alignItems: 'center',
+  },
+  paywallCloseText: {
+    fontSize: 16,
+    color: palette.textSecondary,
+    fontWeight: '600',
   },
 });
 

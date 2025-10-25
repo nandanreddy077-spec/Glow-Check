@@ -22,7 +22,11 @@ type NotificationType =
   | 'weekly_progress'
   | 'glow_tip'
   | 'community_engagement'
-  | 'missed_routine';
+  | 'missed_routine'
+  | 'trial_day5_payment'
+  | 'trial_ending_soon'
+  | 'results_expiring'
+  | 'free_scan_used';
 
 interface NotificationTemplate {
   title: string;
@@ -204,6 +208,54 @@ const PREMIUM_NOTIFICATIONS: Record<NotificationType, NotificationTemplate[]> = 
       title: "Don't break your streak! 🔥",
       body: "Quick! You still have time to complete today's routine.",
       data: { screen: "(tabs)/glow-coach" }
+    },
+  ],
+  trial_day5_payment: [
+    {
+      title: "Almost there! 🎯",
+      body: "Add payment to continue your transformation. Your trial ends in 2 days!",
+      data: { screen: "start-trial" }
+    },
+    {
+      title: "Don't lose your progress! 💎",
+      body: "Secure your subscription now. Your personalized plan is waiting!",
+      data: { screen: "start-trial" }
+    },
+  ],
+  trial_ending_soon: [
+    {
+      title: "⏰ Trial ends in 24 hours!",
+      body: "Continue your glow journey. Don't lose access to your personalized plan!",
+      data: { screen: "subscribe" }
+    },
+    {
+      title: "Last chance! ⏳",
+      body: "Your trial expires tomorrow. Keep your transformation going!",
+      data: { screen: "subscribe" }
+    },
+  ],
+  results_expiring: [
+    {
+      title: "Results expire in 24 hours! ⏰",
+      body: "Start your free trial to keep your analysis forever!",
+      data: { screen: "start-trial" }
+    },
+    {
+      title: "Don't lose your glow score! 💫",
+      body: "Your results expire soon. Start trial to unlock full access!",
+      data: { screen: "start-trial" }
+    },
+  ],
+  free_scan_used: [
+    {
+      title: "Loved your results? ✨",
+      body: "Start 3-day FREE trial for unlimited scans + progress tracking!",
+      data: { screen: "start-trial" }
+    },
+    {
+      title: "Want more insights? 🔍",
+      body: "Upgrade to premium for daily scans and personalized recommendations!",
+      data: { screen: "start-trial" }
     },
   ],
 };
@@ -531,6 +583,126 @@ export async function testNotification() {
     console.log('[Notifications] Test notification scheduled');
   } catch (error) {
     console.error('[Notifications] Test notification error:', error);
+  }
+}
+
+export async function sendTrialDay5Notification() {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  const template = getRandomTemplate('trial_day5_payment');
+
+  try {
+    if (Platform.OS === 'web') {
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
+      }
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          data: template.data || {},
+          sound: true,
+        },
+        trigger: null,
+      });
+    }
+  } catch (error) {
+    console.error('[Notifications] Error sending trial day 5 notification:', error);
+  }
+}
+
+export async function sendTrialEndingSoonNotification() {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  const template = getRandomTemplate('trial_ending_soon');
+
+  try {
+    if (Platform.OS === 'web') {
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
+      }
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          data: template.data || {},
+          sound: true,
+        },
+        trigger: null,
+      });
+    }
+  } catch (error) {
+    console.error('[Notifications] Error sending trial ending notification:', error);
+  }
+}
+
+export async function sendResultsExpiringNotification() {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  const template = getRandomTemplate('results_expiring');
+
+  try {
+    if (Platform.OS === 'web') {
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
+      }
+    } else {
+      const trigger: Notifications.TimeIntervalTriggerInput = {
+        type: SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 60 * 60 * 24,
+        repeats: false,
+      };
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          data: template.data || {},
+          sound: true,
+        },
+        trigger,
+      });
+    }
+  } catch (error) {
+    console.error('[Notifications] Error sending results expiring notification:', error);
+  }
+}
+
+export async function sendFreeScanUsedNotification() {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  const template = getRandomTemplate('free_scan_used');
+
+  try {
+    if (Platform.OS === 'web') {
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
+      }
+    } else {
+      const trigger: Notifications.TimeIntervalTriggerInput = {
+        type: SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 60 * 60,
+        repeats: false,
+      };
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          data: template.data || {},
+          sound: true,
+        },
+        trigger,
+      });
+    }
+  } catch (error) {
+    console.error('[Notifications] Error sending free scan used notification:', error);
   }
 }
 
