@@ -206,11 +206,9 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
     if (!user?.id) return;
     
     try {
-      console.log('Syncing subscription status with backend...');
-      
       // Get subscription status from Supabase with timeout
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
       );
       
       const subscriptionPromise = supabase
@@ -222,13 +220,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       ]) as any;
       
       if (error) {
-        console.error('Failed to get subscription status:', error.message || error);
+        // Silently fail and use local state
         return;
       }
       
       if (data && data.length > 0) {
         const subscription = data[0];
-        console.log('Backend subscription status:', subscription);
         
         // Update local state with backend data
         const backendState: Partial<SubscriptionState> = {
@@ -240,13 +237,9 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         
         await setSubscriptionData(backendState);
       }
-    } catch (error: any) {
-      const errorMsg = error?.message || String(error);
-      if (errorMsg.includes('Network request failed') || errorMsg.includes('502') || errorMsg.includes('timeout')) {
-        console.log('Network error syncing subscription. Using local state.');
-      } else {
-        console.error('Failed to get subscription status:', errorMsg);
-      }
+    } catch {
+      // Silently fail - app will use local AsyncStorage state
+      // This is expected when backend sync is not available
     }
   }, [user?.id, setSubscriptionData]);
 
