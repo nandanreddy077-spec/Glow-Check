@@ -11,13 +11,14 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Gem, Wand2, Sun, Moon, Zap, Compass, ArrowRight, TrendingUp, Package } from "lucide-react-native";
+import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Gem, Wand2, Sun, Moon, Zap, Compass, ArrowRight, TrendingUp, Package, AlertCircle } from "lucide-react-native";
 import { router } from "expo-router";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProgressTracking } from "@/contexts/ProgressTrackingContext";
 import { useProductTracking } from "@/contexts/ProductTrackingContext";
+import { useSeasonalAdvisor } from "@/contexts/SeasonalAdvisorContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import { getPalette, getGradient, shadow, spacing, radii, typography } from "@/constants/theme";
 
@@ -85,6 +86,7 @@ export default function HomeScreen() {
   const { theme } = useTheme();
   const { progressPhotos } = useProgressTracking();
   const { products, alerts } = useProductTracking();
+  const { recommendations, currentSeason, dismissRecommendation, getSeasonalTip } = useSeasonalAdvisor();
   const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
@@ -280,6 +282,36 @@ export default function HomeScreen() {
             </View>
           </LinearGradient>
         </TouchableOpacity>
+
+        {recommendations.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Seasonal Alerts</Text>
+              <View style={styles.sectionDivider} />
+            </View>
+            {recommendations.slice(0, 2).map((rec) => (
+              <TouchableOpacity
+                key={rec.id}
+                onPress={() => dismissRecommendation(rec.id)}
+                activeOpacity={0.9}
+                style={[styles.seasonalAlertCard, shadow.card]}
+              >
+                <View style={styles.seasonalAlertContent}>
+                  <View style={styles.seasonalAlertIcon}>
+                    {rec.category === 'alert' && <AlertCircle color="#FF9800" size={24} strokeWidth={2.5} />}
+                    {rec.category === 'routine' && <Sun color="#F2C2C2" size={24} strokeWidth={2.5} />}
+                    {rec.category === 'product' && <Package color="#D4F0E8" size={24} strokeWidth={2.5} />}
+                    {rec.category === 'lifestyle' && <Heart color={palette.blush} size={24} strokeWidth={2.5} fill={palette.blush} />}
+                  </View>
+                  <View style={styles.seasonalAlertText}>
+                    <Text style={styles.seasonalAlertTitle}>{rec.title}</Text>
+                    <Text style={styles.seasonalAlertDesc}>{rec.description}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -876,5 +908,40 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     padding: 8,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  seasonalAlertCard: {
+    backgroundColor: palette.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: palette.divider,
+  },
+  seasonalAlertContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  seasonalAlertIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: palette.surfaceElevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  seasonalAlertText: {
+    flex: 1,
+  },
+  seasonalAlertTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: palette.textPrimary,
+    marginBottom: 4,
+  },
+  seasonalAlertDesc: {
+    fontSize: 14,
+    color: palette.textSecondary,
+    lineHeight: 20,
   },
 });

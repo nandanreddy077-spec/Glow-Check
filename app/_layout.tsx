@@ -16,6 +16,7 @@ import { CommunityProvider } from "@/contexts/CommunityContext";
 import { FreemiumProvider } from "@/contexts/FreemiumContext";
 import { ProgressTrackingProvider } from "@/contexts/ProgressTrackingContext";
 import { ProductTrackingProvider } from "@/contexts/ProductTrackingContext";
+import { SeasonalAdvisorProvider } from "@/contexts/SeasonalAdvisorContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import { initializeNotifications } from "@/lib/notifications";
@@ -95,12 +96,14 @@ export default function RootLayout() {
                           <FreemiumProvider>
                             <ProgressTrackingProvider>
                               <ProductTrackingProvider>
-                                <GestureHandlerRootView style={styles.container}>
-                                  <CommunityProvider>
-                                    <TrialStarter />
-                                    <RootLayoutNav />
-                                  </CommunityProvider>
-                                </GestureHandlerRootView>
+                                <SeasonalAdvisorProvider>
+                                  <GestureHandlerRootView style={styles.container}>
+                                    <CommunityProvider>
+                                      <TrialStarter />
+                                      <RootLayoutNav />
+                                    </CommunityProvider>
+                                  </GestureHandlerRootView>
+                                </SeasonalAdvisorProvider>
                               </ProductTrackingProvider>
                             </ProgressTrackingProvider>
                           </FreemiumProvider>
