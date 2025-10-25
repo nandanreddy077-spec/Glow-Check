@@ -673,6 +673,101 @@ export async function sendResultsExpiringNotification() {
   }
 }
 
+export async function scheduleTrialConversionReminders(resultsUnlockedUntil: string) {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) {
+    console.log('[Notifications] No permission for trial conversion reminders');
+    return;
+  }
+
+  try {
+    const expiryTime = new Date(resultsUnlockedUntil).getTime();
+    const now = Date.now();
+    
+    const sixHoursBeforeExpiry = expiryTime - (6 * 60 * 60 * 1000);
+    const twentyTwoHoursBeforeExpiry = expiryTime - (22 * 60 * 60 * 1000);
+    
+    console.log('[Notifications] Scheduling trial conversion reminders');
+    console.log('Expiry:', new Date(expiryTime));
+    console.log('6hr reminder:', new Date(sixHoursBeforeExpiry));
+    console.log('22hr reminder:', new Date(twentyTwoHoursBeforeExpiry));
+
+    if (Platform.OS === 'web') {
+      if (sixHoursBeforeExpiry > now) {
+        const ms6hr = sixHoursBeforeExpiry - now;
+        setTimeout(() => {
+          if ('Notification' in globalThis && Notification.permission === 'granted') {
+            new Notification('Results expire in 6 hours! ⏰', {
+              body: 'Start your free trial now to keep your analysis forever!',
+            });
+          }
+        }, ms6hr);
+        console.log('[Notifications] 6hr reminder scheduled for', new Date(sixHoursBeforeExpiry));
+      }
+
+      if (twentyTwoHoursBeforeExpiry > now) {
+        const ms22hr = twentyTwoHoursBeforeExpiry - now;
+        setTimeout(() => {
+          if ('Notification' in globalThis && Notification.permission === 'granted') {
+            new Notification('Last chance! Results expire soon! ⏳', {
+              body: 'Only 22 hours left to save your glow score. Start trial now!',
+            });
+          }
+        }, ms22hr);
+        console.log('[Notifications] 22hr reminder scheduled for', new Date(twentyTwoHoursBeforeExpiry));
+      }
+    } else {
+      const notifications: string[] = [];
+
+      if (sixHoursBeforeExpiry > now) {
+        const secondsUntil6hr = Math.floor((sixHoursBeforeExpiry - now) / 1000);
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Results expire in 6 hours! ⏰',
+            body: 'Start your free trial now to keep your analysis forever!',
+            data: { screen: 'start-trial' },
+            sound: true,
+          },
+          trigger: {
+            type: SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: secondsUntil6hr,
+            repeats: false,
+          },
+        });
+        notifications.push(id);
+        console.log('[Notifications] 6hr reminder scheduled with ID:', id);
+      }
+
+      if (twentyTwoHoursBeforeExpiry > now) {
+        const secondsUntil22hr = Math.floor((twentyTwoHoursBeforeExpiry - now) / 1000);
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Last chance! Results expire soon! ⏳',
+            body: 'Only 22 hours left to save your glow score. Start trial now!',
+            data: { screen: 'start-trial' },
+            sound: true,
+            badge: 1,
+          },
+          trigger: {
+            type: SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: secondsUntil22hr,
+            repeats: false,
+          },
+        });
+        notifications.push(id);
+        console.log('[Notifications] 22hr reminder scheduled with ID:', id);
+      }
+
+      if (notifications.length > 0) {
+        await setStorageItem('trial_conversion_notification_ids', JSON.stringify(notifications));
+        console.log(`[Notifications] Scheduled ${notifications.length} trial conversion reminders`);
+      }
+    }
+  } catch (error) {
+    console.error('[Notifications] Error scheduling trial conversion reminders:', error);
+  }
+}
+
 export async function sendFreeScanUsedNotification() {
   const hasPermission = await requestNotificationPermissions();
   if (!hasPermission) return;

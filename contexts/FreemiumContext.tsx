@@ -3,6 +3,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 import { supabase } from '@/lib/supabase';
+import { scheduleTrialConversionReminders } from '@/lib/notifications';
 
 interface TrialTracking {
   id: string;
@@ -203,12 +204,14 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         return;
       }
 
+      const resultsExpiryTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+      
       const { error: trialError } = await supabase
         .from('trial_tracking')
         .upsert({
           id: user.id,
           first_scan_at: trialTracking?.first_scan_at || now,
-          results_unlocked_until: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+          results_unlocked_until: resultsExpiryTime,
           updated_at: now,
         }, {
           onConflict: 'id'
@@ -216,6 +219,9 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
 
       if (trialError) {
         console.error('Error updating trial tracking:', trialError.message || trialError);
+      } else {
+        console.log('[FreemiumContext] Scheduling trial conversion notifications');
+        await scheduleTrialConversionReminders(resultsExpiryTime);
       }
       
       console.log('Glow scan incremented successfully. Reloading usage...');
@@ -251,12 +257,14 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         return;
       }
 
+      const resultsExpiryTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+      
       const { error: trialError } = await supabase
         .from('trial_tracking')
         .upsert({
           id: user.id,
           first_scan_at: trialTracking?.first_scan_at || now,
-          results_unlocked_until: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+          results_unlocked_until: resultsExpiryTime,
           updated_at: now,
         }, {
           onConflict: 'id'
@@ -264,6 +272,9 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
 
       if (trialError) {
         console.error('Error updating trial tracking:', trialError.message || trialError);
+      } else {
+        console.log('[FreemiumContext] Scheduling trial conversion notifications');
+        await scheduleTrialConversionReminders(resultsExpiryTime);
       }
       
       console.log('Style scan incremented successfully. Reloading usage...');

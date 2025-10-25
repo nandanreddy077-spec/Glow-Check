@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Crown, Smartphone, Check, Sparkles, Star, Zap, Shield } from 'lucide-react-native';
+import { Crown, Smartphone, Check, Sparkles, Star, Zap, Shield, Users, TrendingUp } from 'lucide-react-native';
 import { palette, gradient } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
@@ -14,6 +14,17 @@ interface PremiumPaywallProps {
 export default function PremiumPaywall({ onStartTrial, onSubscribe, testID }: PremiumPaywallProps) {
   const { inTrial, daysLeft, hoursLeft, scansLeft, isTrialExpired, canScan } = useSubscription();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [trialsLeft, setTrialsLeft] = useState<number>(7);
+  const [upgradesThisWeek, setUpgradesThisWeek] = useState<number>(12487);
+
+  useEffect(() => {
+    const randomTrialsLeft = Math.floor(Math.random() * 8) + 3;
+    setTrialsLeft(randomTrialsLeft);
+    
+    const baseUpgrades = 12000;
+    const randomUpgrades = Math.floor(Math.random() * 3000) + baseUpgrades;
+    setUpgradesThisWeek(randomUpgrades);
+  }, []);
 
   const headline = useMemo(() => {
     if (isTrialExpired) return 'Trial expired - Upgrade to continue';
@@ -42,6 +53,23 @@ export default function PremiumPaywall({ onStartTrial, onSubscribe, testID }: Pr
           <Text style={styles.headline}>{headline}</Text>
         </View>
         <Text style={styles.sub}>Unlock the full power of your beauty journey</Text>
+        
+        {!inTrial && !isTrialExpired && (
+          <View style={styles.scarcityContainer}>
+            <View style={styles.scarcityBanner}>
+              <TrendingUp color="#FF6B6B" size={16} strokeWidth={2.5} />
+              <Text style={styles.scarcityText}>
+                🔥 Only {trialsLeft} trial spots left today
+              </Text>
+            </View>
+            <View style={styles.socialProofBanner}>
+              <Users color={palette.gold} size={16} strokeWidth={2.5} />
+              <Text style={styles.socialProofText}>
+                {upgradesThisWeek.toLocaleString()} women upgraded this week
+              </Text>
+            </View>
+          </View>
+        )}
         
         <View style={styles.featuresContainer}>
           <View style={styles.featureRow}>
@@ -154,6 +182,41 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   headline: { color: palette.textPrimary, fontSize: 18, fontWeight: '700' },
   sub: { color: palette.textSecondary, marginBottom: 16, lineHeight: 20 },
+  scarcityContainer: { marginBottom: 16, gap: 10 },
+  scarcityBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 107, 107, 0.15)',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 107, 0.3)',
+  },
+  scarcityText: {
+    color: '#FF6B6B',
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
+  },
+  socialProofBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.2)',
+  },
+  socialProofText: {
+    color: palette.gold,
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
   featuresContainer: { marginBottom: 16, gap: 8 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   featureText: { color: palette.textSecondary, fontSize: 14, fontWeight: '500' },
