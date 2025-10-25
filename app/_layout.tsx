@@ -14,6 +14,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CommunityProvider } from "@/contexts/CommunityContext";
 import { FreemiumProvider } from "@/contexts/FreemiumContext";
+import { ProgressTrackingProvider } from "@/contexts/ProgressTrackingContext";
+import { ProductTrackingProvider } from "@/contexts/ProductTrackingContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import { initializeNotifications } from "@/lib/notifications";
@@ -91,12 +93,16 @@ export default function RootLayout() {
                       <StyleProvider>
                         <SubscriptionProvider>
                           <FreemiumProvider>
-                            <GestureHandlerRootView style={styles.container}>
-                              <CommunityProvider>
-                                <TrialStarter />
-                                <RootLayoutNav />
-                              </CommunityProvider>
-                            </GestureHandlerRootView>
+                            <ProgressTrackingProvider>
+                              <ProductTrackingProvider>
+                                <GestureHandlerRootView style={styles.container}>
+                                  <CommunityProvider>
+                                    <TrialStarter />
+                                    <RootLayoutNav />
+                                  </CommunityProvider>
+                                </GestureHandlerRootView>
+                              </ProductTrackingProvider>
+                            </ProgressTrackingProvider>
                           </FreemiumProvider>
                         </SubscriptionProvider>
                       </StyleProvider>
