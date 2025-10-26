@@ -48,6 +48,7 @@ import { router } from 'expo-router';
 import DailyRewardsModal from '@/components/DailyRewardsModal';
 import AnimatedProgressBar from '@/components/AnimatedProgressBar';
 import { useFreemium } from '@/contexts/FreemiumContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import BlurredContent from '@/components/BlurredContent';
 
 interface DailyReward {
@@ -71,6 +72,7 @@ export default function GlowCoachScreen() {
   } = useSkincare();
   const { completeDailyRoutine, hasCompletedToday, hasCompletedForPlanDay } = useGamification();
   const { isFreeUser, isTrialUser, isPaidUser } = useFreemium();
+  const { state: subState, hoursLeft } = useSubscription();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [selectedMood, setSelectedMood] = useState<'great' | 'good' | 'okay' | 'bad' | null>(null);
@@ -146,6 +148,74 @@ export default function GlowCoachScreen() {
   };
 
 
+
+  // Show paywall for free users
+  if (isFreeUser) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient colors={gradient.hero} style={StyleSheet.absoluteFillObject} />
+        <View style={styles.emptyState}>
+          <LinearGradient colors={gradient.shimmer} style={styles.emptyIcon}>
+            <Crown color={palette.primary} size={72} />
+          </LinearGradient>
+          <Text style={styles.paywallTitle}>Unlock Your Beauty Coach</Text>
+          <Text style={styles.paywallSubtitle}>
+            Get personalized daily skincare routines, track your progress, and see real results in just 7 days.
+          </Text>
+          
+          {/* Social Proof */}
+          <View style={styles.socialProofContainer}>
+            <View style={styles.socialProofAvatars}>
+              <Image source={{ uri: 'https://i.pravatar.cc/100?img=1' }} style={[styles.socialAvatar, { zIndex: 4 }]} />
+              <Image source={{ uri: 'https://i.pravatar.cc/100?img=2' }} style={[styles.socialAvatar, { marginLeft: -12, zIndex: 3 }]} />
+              <Image source={{ uri: 'https://i.pravatar.cc/100?img=3' }} style={[styles.socialAvatar, { marginLeft: -12, zIndex: 2 }]} />
+              <Image source={{ uri: 'https://i.pravatar.cc/100?img=4' }} style={[styles.socialAvatar, { marginLeft: -12, zIndex: 1 }]} />
+            </View>
+            <Text style={styles.socialProofText}>
+              <Text style={styles.socialProofNumber}>12,487</Text> women upgraded this week
+            </Text>
+          </View>
+
+          {/* Scarcity Indicator */}
+          <View style={styles.scarcityBadge}>
+            <Sparkles color={palette.gold} size={16} />
+            <Text style={styles.scarcityText}>Only 7 trial spots left today!</Text>
+          </View>
+
+          <View style={styles.benefitsContainer}>
+            <View style={styles.benefitRow}>
+              <CheckCircle color={palette.success} size={20} fill={palette.success} />
+              <Text style={styles.benefitText}>Personalized daily routines</Text>
+            </View>
+            <View style={styles.benefitRow}>
+              <CheckCircle color={palette.success} size={20} fill={palette.success} />
+              <Text style={styles.benefitText}>Progress tracking & rewards</Text>
+            </View>
+            <View style={styles.benefitRow}>
+              <CheckCircle color={palette.success} size={20} fill={palette.success} />
+              <Text style={styles.benefitText}>Unlimited beauty scans</Text>
+            </View>
+            <View style={styles.benefitRow}>
+              <CheckCircle color={palette.success} size={20} fill={palette.success} />
+              <Text style={styles.benefitText}>Expert tips & community</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.upgradeButton}
+            onPress={() => router.push('/start-trial')}
+            activeOpacity={0.9}
+          >
+            <LinearGradient colors={gradient.primary} style={styles.upgradeButtonGradient}>
+              <Crown color={palette.textLight} size={20} />
+              <Text style={styles.upgradeButtonText}>Start 3-Day Free Trial</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          <Text style={styles.trialFinePrint}>Cancel anytime. No commitment.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (activePlans.length === 0) {
     return (
@@ -508,17 +578,31 @@ export default function GlowCoachScreen() {
           </View>
         )}
 
-        {/* Trial Upgrade CTA */}
-        {isTrialUser && (
+        {/* Trial Upgrade CTA with Urgency */}
+        {isTrialUser && hoursLeft > 0 && hoursLeft <= 48 && (
           <View style={styles.trialUpgradeSection}>
             <LinearGradient colors={gradient.warning} style={styles.trialUpgradeCard}>
+              <View style={styles.urgencyBadge}>
+                <Clock color={palette.rose} size={16} />
+                <Text style={styles.urgencyText}>EXPIRES IN {hoursLeft}H</Text>
+              </View>
               <View style={styles.trialUpgradeHeader}>
                 <Crown color={palette.primary} size={24} />
-                <Text style={styles.trialUpgradeTitle}>Upgrade to Premium</Text>
+                <Text style={styles.trialUpgradeTitle}>Don't Lose Your Progress!</Text>
               </View>
               <Text style={styles.trialUpgradeText}>
-                Cancel your trial and upgrade now to unlock all Glow Coach routines and never lose access!
+                Your trial expires soon! Upgrade now to keep your personalized routines, progress tracking, and all premium features forever.
               </Text>
+              <View style={styles.urgencyStats}>
+                <View style={styles.urgencyStat}>
+                  <Text style={styles.urgencyStatNumber}>2,341</Text>
+                  <Text style={styles.urgencyStatLabel}>upgraded today</Text>
+                </View>
+                <View style={styles.urgencyStat}>
+                  <Text style={styles.urgencyStatNumber}>{Math.max(3, 15 - Math.floor(Math.random() * 10))}</Text>
+                  <Text style={styles.urgencyStatLabel}>spots left</Text>
+                </View>
+              </View>
               <TouchableOpacity 
                 style={styles.trialUpgradeButton}
                 onPress={() => router.push('/plan-selection')}
@@ -526,7 +610,7 @@ export default function GlowCoachScreen() {
               >
                 <LinearGradient colors={gradient.primary} style={styles.trialUpgradeButtonGradient}>
                   <Sparkles color={palette.textLight} size={18} />
-                  <Text style={styles.trialUpgradeButtonText}>Cancel Trial & Upgrade Now</Text>
+                  <Text style={styles.trialUpgradeButtonText}>Upgrade Now - Lock In Best Price</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </LinearGradient>
@@ -1541,6 +1625,144 @@ const styles = StyleSheet.create({
   lockSubtext: {
     color: palette.textSecondary,
     fontSize: typography.caption,
+    fontWeight: typography.medium,
+    marginTop: 2,
+  },
+  paywallTitle: {
+    fontSize: 32,
+    fontWeight: typography.black,
+    color: palette.textPrimary,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  paywallSubtitle: {
+    fontSize: typography.body,
+    color: palette.textSecondary,
+    textAlign: 'center',
+    lineHeight: 26,
+    marginBottom: spacing.xxl,
+    fontWeight: typography.regular,
+    paddingHorizontal: spacing.lg,
+  },
+  socialProofContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  socialProofAvatars: {
+    flexDirection: 'row',
+    marginBottom: spacing.sm,
+  },
+  socialAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: palette.backgroundStart,
+  },
+  socialProofText: {
+    fontSize: typography.bodySmall,
+    color: palette.textSecondary,
+    fontWeight: typography.medium,
+  },
+  socialProofNumber: {
+    fontWeight: typography.bold,
+    color: palette.primary,
+  },
+  scarcityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.overlayGold,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    gap: spacing.xs,
+    marginBottom: spacing.xxl,
+    ...shadow.glow,
+  },
+  scarcityText: {
+    fontSize: typography.bodySmall,
+    fontWeight: typography.bold,
+    color: palette.gold,
+    letterSpacing: 0.5,
+  },
+  benefitsContainer: {
+    alignSelf: 'stretch',
+    paddingHorizontal: spacing.xxxxl,
+    marginBottom: spacing.xxl,
+    gap: spacing.md,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  benefitText: {
+    fontSize: typography.body,
+    color: palette.textPrimary,
+    fontWeight: typography.medium,
+  },
+  upgradeButton: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    ...shadow.floating,
+    marginBottom: spacing.md,
+  },
+  upgradeButtonGradient: {
+    flexDirection: 'row',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xxl,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  upgradeButtonText: {
+    color: palette.textLight,
+    fontSize: typography.h6,
+    fontWeight: typography.bold,
+    letterSpacing: 0.2,
+  },
+  trialFinePrint: {
+    fontSize: typography.caption,
+    color: palette.textMuted,
+    textAlign: 'center',
+  },
+  urgencyBadge: {
+    position: 'absolute' as const,
+    top: -12,
+    right: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.rose,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 12,
+    gap: 4,
+    ...shadow.elevated,
+  },
+  urgencyText: {
+    fontSize: 11,
+    fontWeight: typography.extrabold,
+    color: palette.textLight,
+    letterSpacing: 0.8,
+  },
+  urgencyStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  urgencyStat: {
+    alignItems: 'center',
+  },
+  urgencyStatNumber: {
+    fontSize: 28,
+    fontWeight: typography.black,
+    color: palette.primary,
+    letterSpacing: -0.5,
+  },
+  urgencyStatLabel: {
+    fontSize: typography.caption,
+    color: palette.textSecondary,
     fontWeight: typography.medium,
     marginTop: 2,
   },
