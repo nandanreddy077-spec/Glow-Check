@@ -28,13 +28,39 @@ export default function StyleCheckScreen() {
   const gradient = getGradient(theme);
   const styles = createStyles(palette);
   const { needsPremium, isTrialExpired, inTrial } = useSubscription();
-  const { styleScansLeft, styleScansToday, isFreeUser, isTrialUser } = useFreemium();
+  const { styleScansLeft, styleScansToday, isFreeUser, isTrialUser, canScanStyle } = useFreemium();
 
   React.useEffect(() => {
     resetAnalysis();
   }, [resetAnalysis]);
 
   const handleTakePhoto = async () => {
+    if (!canScanStyle) {
+      if (isFreeUser && styleScansLeft <= 0) {
+        Alert.alert(
+          "Free Scan Used",
+          "You've used your free style scan! Start your 7-day trial for unlimited scans.",
+          [
+            { text: "Maybe Later", style: "cancel" },
+            { text: "Start Free Trial", onPress: () => router.push('/start-trial') }
+          ]
+        );
+        return;
+      }
+      
+      if (isTrialUser && styleScansLeft <= 0) {
+        Alert.alert(
+          "Daily Limit Reached",
+          "You've used your 2 style scans today! Come back tomorrow or upgrade to Premium for unlimited scans.",
+          [
+            { text: "OK", style: "cancel" },
+            { text: "Upgrade Now", onPress: () => router.push('/plan-selection') }
+          ]
+        );
+        return;
+      }
+    }
+    
     if (Platform.OS === 'web') {
       Alert.alert('Camera not available', 'Camera not available on web. Please use upload photo instead.');
       return;
@@ -73,6 +99,32 @@ export default function StyleCheckScreen() {
   };
 
   const handleUploadPhoto = async () => {
+    if (!canScanStyle) {
+      if (isFreeUser && styleScansLeft <= 0) {
+        Alert.alert(
+          "Free Scan Used",
+          "You've used your free style scan! Start your 7-day trial for unlimited scans.",
+          [
+            { text: "Maybe Later", style: "cancel" },
+            { text: "Start Free Trial", onPress: () => router.push('/start-trial') }
+          ]
+        );
+        return;
+      }
+      
+      if (isTrialUser && styleScansLeft <= 0) {
+        Alert.alert(
+          "Daily Limit Reached",
+          "You've used your 2 style scans today! Come back tomorrow or upgrade to Premium for unlimited scans.",
+          [
+            { text: "OK", style: "cancel" },
+            { text: "Upgrade Now", onPress: () => router.push('/plan-selection') }
+          ]
+        );
+        return;
+      }
+    }
+    
     setIsLoading(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -138,23 +190,34 @@ export default function StyleCheckScreen() {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.primaryButton, isLoading && styles.disabledButton]}
+            style={[
+              styles.primaryButton, 
+              (isLoading || !canScanStyle) && styles.disabledButton,
+              !canScanStyle && styles.premiumButton
+            ]}
             onPress={handleTakePhoto}
             disabled={isLoading}
           >
             <Camera color={palette.textLight} size={20} strokeWidth={2.5} />
             <Text style={styles.primaryButtonText}>
-              {isLoading ? "Processing..." : "Take Outfit Photo"}
+              {!canScanStyle ? (isFreeUser ? "Start Free Trial" : "Upgrade to Continue") :
+               isLoading ? "Processing..." : "Take Outfit Photo"}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.secondaryButton, isLoading && styles.disabledButton]}
+            style={[
+              styles.secondaryButton, 
+              (isLoading || !canScanStyle) && styles.disabledButton,
+              !canScanStyle && styles.premiumSecondaryButton
+            ]}
             onPress={handleUploadPhoto}
             disabled={isLoading}
           >
-            <Upload color={palette.primary} size={20} strokeWidth={2.5} />
-            <Text style={styles.secondaryButtonText}>Upload from Gallery</Text>
+            <Upload color={!canScanStyle ? palette.gold : palette.primary} size={20} strokeWidth={2.5} />
+            <Text style={[styles.secondaryButtonText, !canScanStyle && styles.premiumSecondaryText]}>
+              {!canScanStyle ? (isFreeUser ? "Start Trial" : "Upgrade") : "Upload from Gallery"}
+            </Text>
           </TouchableOpacity>
         </View>
         {/* Scan Status UI */}
@@ -297,5 +360,15 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  premiumButton: {
+    backgroundColor: palette.gold,
+  },
+  premiumSecondaryButton: {
+    borderColor: palette.gold,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+  },
+  premiumSecondaryText: {
+    color: palette.gold,
   },
 });
