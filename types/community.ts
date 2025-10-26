@@ -1,4 +1,4 @@
-export type ReactionType = 'like' | 'love' | 'sparkle' | 'wow';
+export type ReactionType = 'like' | 'love' | 'sparkle' | 'wow' | 'fire' | 'queen';
 
 export interface AuthorRef {
   id: string;
@@ -10,6 +10,43 @@ export interface Comment {
   id: string;
   text: string;
   author: AuthorRef;
+  createdAt: number;
+  likes: string[];
+}
+
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  duration: number;
+  startDate: number;
+  endDate: number;
+  participants: string[];
+  posts: string[];
+  prize?: string;
+  category: 'skincare' | 'makeup' | 'wellness' | 'transformation';
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export interface ProductReview {
+  id: string;
+  productName: string;
+  brand: string;
+  category: string;
+  rating: number;
+  review: string;
+  beforeAfter?: { before: string; after: string };
+  author: AuthorRef;
+  createdAt: number;
+  helpful: string[];
+}
+
+export interface ExpertTip {
+  id: string;
+  expert: AuthorRef & { verified: boolean; specialty: string };
+  tip: string;
+  category: string;
+  saves: string[];
   createdAt: number;
 }
 
@@ -24,6 +61,13 @@ export interface Post {
   createdAt: number;
   reactions: Partial<Record<ReactionType, string[]>>;
   comments: Comment[];
+  saves: string[];
+  shares: number;
+  type?: 'normal' | 'transformation' | 'tip' | 'review' | 'challenge';
+  transformation?: { before: string; after: string; daysTaken: number };
+  challengeId?: string;
+  isPinned?: boolean;
+  tags?: string[];
 }
 
 export interface Circle {
@@ -37,6 +81,9 @@ export interface Circle {
   isPrivate: boolean;
   tags: string[];
   locationName: string | null;
+  activeChallenges?: string[];
+  topContributors?: { userId: string; postCount: number }[];
+  weeklyTheme?: string;
 }
 
 export interface UserMembership {
@@ -61,4 +108,17 @@ export interface CreatePostInput {
   imageUrl?: string | null;
   locationName?: string | null;
   coords?: { latitude: number; longitude: number } | null;
+  type?: 'normal' | 'transformation' | 'tip' | 'review' | 'challenge';
+  transformation?: { before: string; after: string; daysTaken: number };
+  challengeId?: string;
+  tags?: string[];
+}
+
+export interface CreateChallengeInput {
+  title: string;
+  description: string;
+  duration: number;
+  category: 'skincare' | 'makeup' | 'wellness' | 'transformation';
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  prize?: string;
 }

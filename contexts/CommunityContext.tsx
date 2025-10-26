@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import type { Circle, Comment, CreateCircleInput, CreatePostInput, Post, ReactionType, UserMembership } from '@/types/community';
+import type { Circle, Comment, CreateCircleInput, CreatePostInput, Post, ReactionType, UserMembership, Challenge, CreateChallengeInput } from '@/types/community';
 import { useUser } from '@/contexts/UserContext';
 
 const storage = {
@@ -53,6 +53,7 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
   const [circles, setCircles] = useState<Circle[]>([]);
   const [posts, setPosts] = useState<Record<string, Post[]>>({});
   const [memberships, setMemberships] = useState<UserMembership[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -202,6 +203,12 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
       createdAt: Date.now(),
       reactions: {},
       comments: [],
+      saves: [],
+      shares: 0,
+      type: input.type ?? 'normal',
+      transformation: input.transformation,
+      challengeId: input.challengeId,
+      tags: input.tags ?? [],
     };
     const circlePosts = posts[input.circleId] ?? [];
     const nextPosts = { ...posts, [input.circleId]: [p, ...circlePosts].slice(0, 200) };
@@ -256,6 +263,7 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
       text,
       author,
       createdAt: Date.now(),
+      likes: [],
     };
     const nextPosts = { ...posts };
     nextPosts[circleId] = (nextPosts[circleId] ?? []).map(p => (p.id === postId ? { ...p, comments: [...p.comments, comment] } : p));
@@ -269,7 +277,57 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
   const getUserMembership = useCallback((circleId: string) => {
     const userId = user?.id ?? 'guest';
     return memberships.find(m => m.userId === userId && m.circleId === circleId) ?? null;
-    }, [memberships, user?.id]);
+  }, [memberships, user?.id]);
+
+  const savePost = useCallback(async (circleId: string, postId: string) => {
+    const userId = user?.id ?? 'guest';
+    const nextPosts = { ...posts };
+    const list = nextPosts[circleId] ?? [];
+    const idx = list.findIndex(p => p.id === postId);
+    if (idx === -1) return;
+    const target = list[idx];
+    const saves = target.saves ?? [];
+    const isSaved = saves.includes(userId);
+    nextPosts[circleId][idx] = {
+      ...target,
+      saves: isSaved ? saves.filter(id => id !== userId) : [...saves, userId],
+    };
+    setPosts(nextPosts);
+    await persist({ posts: nextPosts });
+  }, [posts, user?.id, persist]);
+
+  const getTrendingPosts = useCallback(() => {
+    const allPosts = Object.values(posts).flat();
+    return allPosts.sort((a, b) => {
+      const aScore = Object.values(a.reactions).reduce((sum, arr) => sum + (arr?.length ?? 0), 0) * 2 + a.comments.length + (a.saves?.length ?? 0) * 3;
+      const bScore = Object.values(b.reactions).reduce((sum, arr) => sum + (arr?.length ?? 0), 0) * 2 + b.comments.length + (b.saves?.length ?? 0) * 3;
+      return bScore - aScore;
+    }).slice(0, 50);
+  }, [posts]);
+
+  const getTransformations = useCallback(() => {
+    const allPosts = Object.values(posts).flat();
+    return allPosts.filter(p => p.type === 'transformation').sort((a, b) => b.createdAt - a.createdAt);
+  }, [posts]);
+
+  const createChallenge = useCallback(async (input: CreateChallengeInput) => {
+    const challenge: Challenge = {
+      id: generateId('challenge'),
+      title: input.title,
+      description: input.description,
+      duration: input.duration,
+      startDate: Date.now(),
+      endDate: Date.now() + input.duration * 24 * 60 * 60 * 1000,
+      participants: [],
+      posts: [],
+      prize: input.prize,
+      category: input.category,
+      difficulty: input.difficulty,
+    };
+    const nextChallenges = [challenge, ...challenges];
+    setChallenges(nextChallenges);
+    return challenge;
+  }, [challenges]);
 
   return useMemo(() => ({
     isLoading,
@@ -277,30 +335,40 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     circles,
     posts,
     memberships,
+    challenges,
     createCircle,
     joinCircle,
     leaveCircle,
     createPost,
     reactToPost,
     addComment,
+    savePost,
     getCircleById,
     getPostsForCircle,
     getUserMembership,
+    getTrendingPosts,
+    getTransformations,
+    createChallenge,
   }), [
     isLoading,
     error,
     circles,
     posts,
     memberships,
+    challenges,
     createCircle,
     joinCircle,
     leaveCircle,
     createPost,
     reactToPost,
     addComment,
+    savePost,
     getCircleById,
     getPostsForCircle,
     getUserMembership,
+    getTrendingPosts,
+    getTransformations,
+    createChallenge,
   ]);
 });
 
@@ -345,13 +413,41 @@ function createDefaultPosts(cs: Circle[]): Record<string, Post[]> {
         name: 'Isabella Rose',
         avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
       },
-      caption: 'Feeling absolutely radiant today! ✨',
-      imageUrl: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800',
-      locationName: 'Beverly Hills',
+      caption: 'My 30-day glow journey! Consistent routine + hydration = results 💕',
+      imageUrl: null,
+      locationName: null,
       coords: null,
       createdAt: Date.now() - 1000 * 60 * 60 * 2,
-      reactions: { like: ['u1', 'u2', 'u3'] },
+      reactions: { love: ['u1', 'u2', 'u3'], fire: ['u4', 'u5'] },
       comments: [],
+      saves: ['u1'],
+      shares: 5,
+      type: 'transformation',
+      transformation: {
+        before: 'https://images.unsplash.com/photo-1616683693094-2c4a49cf8b97?w=400',
+        after: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+        daysTaken: 30,
+      },
+      isPinned: true,
+    },
+    {
+      id: generateId('post'),
+      circleId: 'global',
+      author: {
+        id: 'emma',
+        name: 'Emma Chen',
+        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+      },
+      caption: 'Morning skincare tip: Always apply products from thinnest to thickest consistency! 🌸',
+      imageUrl: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=800',
+      locationName: null,
+      coords: null,
+      createdAt: Date.now() - 1000 * 60 * 60 * 5,
+      reactions: { love: ['u1', 'u2'], sparkle: ['u3'] },
+      comments: [],
+      saves: ['u2', 'u3'],
+      shares: 2,
+      type: 'tip',
     },
   ];
   return byCircle;
