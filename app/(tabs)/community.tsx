@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Animated, Dimensions, TextInput, Platform, Modal, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Sparkles, Heart, MessageCircle, Share2, PlusCircle, MapPin, ImagePlus, Send, X, ThumbsUp, Star, Bookmark, Flame, Crown, TrendingUp, Award, Users, Calendar, Zap, Filter } from "lucide-react-native";
+import { Sparkles, Heart, MessageCircle, Share2, PlusCircle, MapPin, ImagePlus, Send, X, ThumbsUp, Star, Bookmark, Flame, Crown, TrendingUp, Award, Users, Calendar, Zap, Filter, type LucideIcon } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getPalette, shadow, spacing, radii } from "@/constants/theme";
 import { useCommunity } from "@/contexts/CommunityContext";
+import { useUser } from "@/contexts/UserContext";
 import type { Post, ReactionType } from "@/types/community";
 import * as ImagePicker from 'expo-image-picker';
 import * as ExpoLocation from 'expo-location';
@@ -19,6 +20,7 @@ export default function CommunityScreen() {
   const palette = getPalette(theme);
   const styles = useMemo(() => createStyles(palette), [palette]);
   const insets = useSafeAreaInsets();
+  const { user } = useUser();
 
   const [viewMode, setViewMode] = useState<ViewMode>('feed');
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
@@ -29,12 +31,15 @@ export default function CommunityScreen() {
     circles,
     posts,
     isLoading,
+    challenges,
     createCircle,
     joinCircle,
+    joinChallenge,
     createPost,
     reactToPost,
     addComment,
     savePost,
+    sharePost,
     getPostsForCircle,
     getUserMembership,
     getTrendingPosts,
@@ -353,47 +358,88 @@ export default function CommunityScreen() {
 
         {viewMode === 'challenges' ? (
           <View style={styles.challengesSection}>
-            <View style={styles.challengeCard}>
-              <View style={styles.challengeHeader}>
-                <Flame size={24} color="#FF4500" />
-                <Text style={styles.challengeTitle}>7-Day Glow Challenge</Text>
-              </View>
-              <Text style={styles.challengeDesc}>Daily skincare routine + photo tracking</Text>
-              <View style={styles.challengeStats}>
-                <View style={styles.challengeStat}>
-                  <Users size={16} color={palette.textSecondary} />
-                  <Text style={styles.challengeStatText}>2,341 joined</Text>
+            {[
+              {
+                id: 'challenge_glow_7day',
+                icon: Flame,
+                color: '#FF4500',
+                title: '7-Day Glow Challenge',
+                description: 'Daily skincare routine + photo tracking. Share your journey!',
+                participants: 2341,
+                daysLeft: 5,
+                prize: null,
+              },
+              {
+                id: 'challenge_no_makeup',
+                icon: Crown,
+                color: '#9370DB',
+                title: 'No-Makeup Week',
+                description: 'Embrace natural beauty & share your glow with the community',
+                participants: 892,
+                daysLeft: null,
+                prize: 'Win $100 gift card',
+              },
+              {
+                id: 'challenge_hydration',
+                icon: Sparkles,
+                color: '#00CED1',
+                title: 'Hydration Hero',
+                description: '30 days of proper hydration. Track your water intake daily!',
+                participants: 1567,
+                daysLeft: 12,
+                prize: null,
+              },
+              {
+                id: 'challenge_transformation',
+                icon: TrendingUp,
+                color: '#FFD700',
+                title: '90-Day Transformation',
+                description: 'Complete skincare transformation. Document your progress!',
+                participants: 445,
+                daysLeft: 67,
+                prize: 'Featured on homepage',
+              },
+            ].map((challenge) => {
+              const Icon = challenge.icon;
+              const userJoined = challenges.some(c => c.id === challenge.id && c.participants.includes(user?.id ?? 'guest'));
+              
+              return (
+                <View key={challenge.id} style={[styles.challengeCard, shadow.card]}>
+                  <View style={styles.challengeHeader}>
+                    <Icon size={24} color={challenge.color} />
+                    <Text style={styles.challengeTitle}>{challenge.title}</Text>
+                  </View>
+                  <Text style={styles.challengeDesc}>{challenge.description}</Text>
+                  <View style={styles.challengeStats}>
+                    <View style={styles.challengeStat}>
+                      <Users size={16} color={palette.textSecondary} />
+                      <Text style={styles.challengeStatText}>{challenge.participants.toLocaleString()} joined</Text>
+                    </View>
+                    {challenge.daysLeft && (
+                      <View style={styles.challengeStat}>
+                        <Calendar size={16} color={palette.textSecondary} />
+                        <Text style={styles.challengeStatText}>{challenge.daysLeft} days left</Text>
+                      </View>
+                    )}
+                    {challenge.prize && (
+                      <View style={styles.challengeStat}>
+                        <Award size={16} color={palette.gold} />
+                        <Text style={[styles.challengeStatText, { color: palette.gold }]}>{challenge.prize}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <TouchableOpacity 
+                    style={[styles.challengeBtn, userJoined && styles.challengeBtnJoined]} 
+                    onPress={() => joinChallenge(challenge.id)}
+                    testID={`join-challenge-${challenge.id}`}
+                  >
+                    <Text style={[styles.challengeBtnText, userJoined && styles.challengeBtnTextJoined]}>
+                      {userJoined ? '✓ Joined' : 'Join Challenge'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.challengeStat}>
-                  <Calendar size={16} color={palette.textSecondary} />
-                  <Text style={styles.challengeStatText}>5 days left</Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.challengeBtn}>
-                <Text style={styles.challengeBtnText}>Join Challenge</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.challengeCard}>
-              <View style={styles.challengeHeader}>
-                <Crown size={24} color="#9370DB" />
-                <Text style={styles.challengeTitle}>No-Makeup Week</Text>
-              </View>
-              <Text style={styles.challengeDesc}>Embrace natural beauty & share your glow</Text>
-              <View style={styles.challengeStats}>
-                <View style={styles.challengeStat}>
-                  <Users size={16} color={palette.textSecondary} />
-                  <Text style={styles.challengeStatText}>892 joined</Text>
-                </View>
-                <View style={styles.challengeStat}>
-                  <Award size={16} color={palette.textSecondary} />
-                  <Text style={styles.challengeStatText}>Win $100 gift card</Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.challengeBtn}>
-                <Text style={styles.challengeBtnText}>Join Challenge</Text>
-              </TouchableOpacity>
-            </View>
+              );
+            })}
           </View>
         ) : (
           <View style={styles.feedWrap}>
@@ -487,7 +533,7 @@ export default function CommunityScreen() {
                       <TouchableOpacity style={styles.actionIcon} onPress={() => openComments(post.id)} testID={`open-comments-${post.id}`}>
                         <MessageCircle color={palette.textPrimary} size={22} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.actionIcon} onPress={() => {}}>
+                      <TouchableOpacity style={styles.actionIcon} onPress={() => sharePost(post)} testID={`share-${post.id}`}>
                         <Share2 color={palette.textPrimary} size={22} />
                       </TouchableOpacity>
                     </View>
@@ -746,7 +792,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   commentCount: { fontSize: 13, color: palette.textSecondary, fontWeight: '600' as const, marginLeft: 'auto' as const },
 
   challengesSection: { paddingHorizontal: spacing.lg, gap: spacing.lg },
-  challengeCard: { backgroundColor: palette.surface, borderRadius: radii.lg, padding: spacing.lg, borderWidth: 1, borderColor: palette.divider },
+  challengeCard: { backgroundColor: palette.surface, borderRadius: radii.lg, padding: spacing.lg, borderWidth: 1, borderColor: palette.divider, marginBottom: spacing.md },
   challengeHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   challengeTitle: { fontSize: 18, fontWeight: '800' as const, color: palette.textPrimary },
   challengeDesc: { fontSize: 14, color: palette.textSecondary, marginBottom: spacing.md, lineHeight: 20 },
@@ -754,7 +800,9 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   challengeStat: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   challengeStatText: { fontSize: 12, color: palette.textSecondary, fontWeight: '600' as const },
   challengeBtn: { backgroundColor: palette.primary, borderRadius: radii.md, paddingVertical: spacing.sm, alignItems: 'center' },
+  challengeBtnJoined: { backgroundColor: palette.overlayLight, borderWidth: 2, borderColor: palette.primary },
   challengeBtnText: { color: palette.textLight, fontWeight: '800' as const, fontSize: 14 },
+  challengeBtnTextJoined: { color: palette.primary },
 
   composerCard: { backgroundColor: palette.surface, padding: spacing.md, borderRadius: radii.lg, borderWidth: 1, borderColor: palette.divider, width: '100%' },
   postTypeSelector: { flexDirection: 'row', gap: 8, marginBottom: spacing.md },

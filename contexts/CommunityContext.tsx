@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, Share as RNShare } from 'react-native';
 import type { Circle, Comment, CreateCircleInput, CreatePostInput, Post, ReactionType, UserMembership, Challenge, CreateChallengeInput } from '@/types/community';
 import { useUser } from '@/contexts/UserContext';
+import { supabase } from '@/lib/supabase';
 
 const storage = {
   async getItem(key: string): Promise<string | null> {
@@ -310,6 +311,44 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     return allPosts.filter(p => p.type === 'transformation').sort((a, b) => b.createdAt - a.createdAt);
   }, [posts]);
 
+  const sharePost = useCallback(async (post: Post) => {
+    try {
+      const message = `Check out this post on Glow Circle!\n\n"${post.caption}"\n\nJoin me on Glow Circle to discover beauty tips and transformations!`;
+      
+      await RNShare.share({
+        message,
+        title: 'Glow Circle Post',
+      });
+
+      const nextPosts = { ...posts };
+      const list = nextPosts[post.circleId] ?? [];
+      const idx = list.findIndex(p => p.id === post.id);
+      if (idx !== -1) {
+        nextPosts[post.circleId][idx] = {
+          ...list[idx],
+          shares: (list[idx].shares ?? 0) + 1,
+        };
+        setPosts(nextPosts);
+        await persist({ posts: nextPosts });
+      }
+    } catch (e: any) {
+      if (e?.message !== 'User did not share') {
+        console.error('Share post failed', e);
+      }
+    }
+  }, [posts, persist]);
+
+  const joinChallenge = useCallback(async (challengeId: string) => {
+    const userId = user?.id ?? 'guest';
+    const nextChallenges = challenges.map(c => {
+      if (c.id === challengeId && !c.participants.includes(userId)) {
+        return { ...c, participants: [...c.participants, userId] };
+      }
+      return c;
+    });
+    setChallenges(nextChallenges);
+  }, [challenges, user?.id]);
+
   const createChallenge = useCallback(async (input: CreateChallengeInput) => {
     const challenge: Challenge = {
       id: generateId('challenge'),
@@ -343,6 +382,8 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     reactToPost,
     addComment,
     savePost,
+    sharePost,
+    joinChallenge,
     getCircleById,
     getPostsForCircle,
     getUserMembership,
@@ -363,6 +404,8 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     reactToPost,
     addComment,
     savePost,
+    sharePost,
+    joinChallenge,
     getCircleById,
     getPostsForCircle,
     getUserMembership,
@@ -380,22 +423,46 @@ function createDefaultCircles(): Circle[] {
       description: 'Share your glow with everyone',
       coverImage: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200',
       creatorId: 'system',
-      memberCount: 2400,
+      memberCount: 12487,
       createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30,
       isPrivate: false,
       tags: ['inspiration', 'daily'],
       locationName: null,
     },
     {
-      id: 'city-style',
-      name: 'City Style',
-      description: 'Urban routines and tips',
-      coverImage: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=1200',
+      id: 'transformations',
+      name: 'Glow Transformations',
+      description: 'Share your before & after journey',
+      coverImage: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1200',
       creatorId: 'system',
-      memberCount: 847,
+      memberCount: 8234,
+      createdAt: Date.now() - 1000 * 60 * 60 * 24 * 25,
+      isPrivate: false,
+      tags: ['transformation', 'results'],
+      locationName: null,
+    },
+    {
+      id: 'skincare-tips',
+      name: 'Skincare Tips',
+      description: 'Daily skincare routines & product reviews',
+      coverImage: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=1200',
+      creatorId: 'system',
+      memberCount: 5891,
       createdAt: Date.now() - 1000 * 60 * 60 * 24 * 20,
       isPrivate: false,
-      tags: ['style', 'routine'],
+      tags: ['skincare', 'tips'],
+      locationName: null,
+    },
+    {
+      id: 'makeup-looks',
+      name: 'Makeup Looks',
+      description: 'Inspiring makeup tutorials and tips',
+      coverImage: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=1200',
+      creatorId: 'system',
+      memberCount: 4123,
+      createdAt: Date.now() - 1000 * 60 * 60 * 24 * 15,
+      isPrivate: false,
+      tags: ['makeup', 'tutorial'],
       locationName: null,
     },
   ];
@@ -404,6 +471,7 @@ function createDefaultCircles(): Circle[] {
 function createDefaultPosts(cs: Circle[]): Record<string, Post[]> {
   const byCircle: Record<string, Post[]> = {};
   cs.forEach(c => (byCircle[c.id] = []));
+  
   byCircle['global'] = [
     {
       id: generateId('post'),
@@ -415,13 +483,28 @@ function createDefaultPosts(cs: Circle[]): Record<string, Post[]> {
       },
       caption: 'My 30-day glow journey! Consistent routine + hydration = results 💕',
       imageUrl: null,
-      locationName: null,
+      locationName: 'Los Angeles, CA',
       coords: null,
       createdAt: Date.now() - 1000 * 60 * 60 * 2,
-      reactions: { love: ['u1', 'u2', 'u3'], fire: ['u4', 'u5'] },
-      comments: [],
-      saves: ['u1'],
-      shares: 5,
+      reactions: { love: ['u1', 'u2', 'u3', 'u8'], fire: ['u4', 'u5'], queen: ['u6', 'u7'] },
+      comments: [
+        {
+          id: 'c1',
+          text: 'Wow! Your skin is glowing! What products did you use?',
+          author: { id: 'u1', name: 'Sophie Lee', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face' },
+          createdAt: Date.now() - 1000 * 60 * 30,
+          likes: ['u2', 'u3'],
+        },
+        {
+          id: 'c2',
+          text: 'This is so inspiring! Starting my journey today 💪',
+          author: { id: 'u2', name: 'Maya Johnson', avatar: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&h=150&fit=crop&crop=face' },
+          createdAt: Date.now() - 1000 * 60 * 15,
+          likes: ['u1'],
+        },
+      ],
+      saves: ['u1', 'u4', 'u7'],
+      shares: 23,
       type: 'transformation',
       transformation: {
         before: 'https://images.unsplash.com/photo-1616683693094-2c4a49cf8b97?w=400',
@@ -438,17 +521,86 @@ function createDefaultPosts(cs: Circle[]): Record<string, Post[]> {
         name: 'Emma Chen',
         avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
       },
-      caption: 'Morning skincare tip: Always apply products from thinnest to thickest consistency! 🌸',
+      caption: 'Morning skincare tip: Always apply products from thinnest to thickest consistency! Game changer for absorption 🌸✨',
       imageUrl: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=800',
-      locationName: null,
+      locationName: 'San Francisco, CA',
       coords: null,
       createdAt: Date.now() - 1000 * 60 * 60 * 5,
-      reactions: { love: ['u1', 'u2'], sparkle: ['u3'] },
+      reactions: { love: ['u1', 'u2', 'u5'], sparkle: ['u3', 'u6', 'u7', 'u8'] },
       comments: [],
-      saves: ['u2', 'u3'],
-      shares: 2,
+      saves: ['u2', 'u3', 'u8'],
+      shares: 12,
       type: 'tip',
     },
+    {
+      id: generateId('post'),
+      circleId: 'global',
+      author: {
+        id: 'jade',
+        name: 'Jade Williams',
+        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+      },
+      caption: 'Sunday self-care ritual 🛁✨ Face mask + cucumber water + good music = pure bliss',
+      imageUrl: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800',
+      locationName: 'New York, NY',
+      coords: null,
+      createdAt: Date.now() - 1000 * 60 * 60 * 12,
+      reactions: { love: ['u2', 'u4'], queen: ['u5'] },
+      comments: [],
+      saves: ['u4'],
+      shares: 7,
+      type: 'normal',
+    },
   ];
+
+  byCircle['transformations'] = [
+    {
+      id: generateId('post'),
+      circleId: 'transformations',
+      author: {
+        id: 'maria',
+        name: 'Maria Garcia',
+        avatar: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face',
+      },
+      caption: '90 days of consistency! Started with just cleanser and moisturizer, added actives slowly 🌟',
+      imageUrl: null,
+      locationName: 'Miami, FL',
+      coords: null,
+      createdAt: Date.now() - 1000 * 60 * 60 * 8,
+      reactions: { fire: ['u1', 'u2', 'u3', 'u4', 'u5'], love: ['u6', 'u7'], wow: ['u8'] },
+      comments: [],
+      saves: ['u1', 'u2', 'u5'],
+      shares: 31,
+      type: 'transformation',
+      transformation: {
+        before: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=400',
+        after: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400',
+        daysTaken: 90,
+      },
+    },
+  ];
+
+  byCircle['skincare-tips'] = [
+    {
+      id: generateId('post'),
+      circleId: 'skincare-tips',
+      author: {
+        id: 'lily',
+        name: 'Lily Anderson',
+        avatar: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=150&h=150&fit=crop&crop=face',
+      },
+      caption: 'Best vitamin C serums I\'ve tried! Swipe for mini reviews 📝 #skincare #reviews',
+      imageUrl: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=800',
+      locationName: null,
+      coords: null,
+      createdAt: Date.now() - 1000 * 60 * 60 * 18,
+      reactions: { sparkle: ['u1', 'u2', 'u3'], love: ['u4', 'u5'] },
+      comments: [],
+      saves: ['u1', 'u3', 'u6', 'u7', 'u8'],
+      shares: 18,
+      type: 'review',
+    },
+  ];
+
   return byCircle;
 }
