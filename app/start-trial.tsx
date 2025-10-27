@@ -53,13 +53,13 @@ export default function StartTrialScreen() {
       console.log('Purchase result:', result);
       
       if (result.success) {
-        console.log('Payment method added successfully - activating 3-day trial');
-        await startLocalTrial(3);
+        console.log('Payment method added successfully - activating 7-day trial');
+        await startLocalTrial(7);
         await setSubscriptionData({ hasAddedPayment: true });
         
         Alert.alert(
           '🎉 Welcome to Your Free Trial!', 
-          'Your 3-day free trial is now active! Enjoy unlimited scans and all premium features. You won\'t be charged until the trial ends.',
+          'Your 7-day free trial is now active! Enjoy unlimited scans and all premium features. You won\'t be charged until the trial ends.',
           [{ 
             text: 'Start Your Glow Journey ✨', 
             style: 'default', 
@@ -153,7 +153,7 @@ export default function StartTrialScreen() {
               Unlock Your Full Glow Potential
             </Text>
             <Text style={styles.heroSubtitle}>
-              Start your 3-day free trial • Cancel anytime
+              Start your 7-day free trial • Cancel anytime
             </Text>
           </View>
 
@@ -273,11 +273,11 @@ export default function StartTrialScreen() {
               style={styles.continueGradient}
             >
               <Text style={[styles.continueText, { color: state.isPremium ? '#666666' : '#FFFFFF' }]}>
-                {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Start 3-Day Free Trial'}
+                {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Start 7-Day Free Trial'}
               </Text>
               {!state.isPremium && !isProcessing && (
                 <Text style={styles.continuePrice}>
-                  Free for 3 days, then {selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}
+                  Free for 7 days, then {selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}
                 </Text>
               )}
             </LinearGradient>
@@ -294,7 +294,7 @@ export default function StartTrialScreen() {
             </View>
             <View style={styles.guaranteeItem}>
               <Clock color="#FF8E53" size={16} strokeWidth={2.5} />
-              <Text style={styles.guaranteeText}>No charge for 3 days</Text>
+              <Text style={styles.guaranteeText}>No charge for 7 days</Text>
             </View>
           </View>
 
@@ -304,19 +304,19 @@ export default function StartTrialScreen() {
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>1</Text>
               </View>
-              <Text style={styles.stepText}>Add payment method to unlock 3-day free trial</Text>
+              <Text style={styles.stepText}>Add payment method to unlock 7-day free trial</Text>
             </View>
             <View style={styles.trialStep}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
-              <Text style={styles.stepText}>Enjoy unlimited scans & full access for 3 days - free</Text>
+              <Text style={styles.stepText}>Enjoy unlimited scans & full access for 7 days - free</Text>
             </View>
             <View style={styles.trialStep}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
-              <Text style={styles.stepText}>Cancel anytime before day 3 - no charge if you cancel</Text>
+              <Text style={styles.stepText}>Cancel anytime before day 7 - no charge if you cancel</Text>
             </View>
           </View>
 

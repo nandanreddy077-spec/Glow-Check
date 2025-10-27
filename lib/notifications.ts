@@ -249,7 +249,7 @@ const PREMIUM_NOTIFICATIONS: Record<NotificationType, NotificationTemplate[]> = 
   free_scan_used: [
     {
       title: "Loved your results? ✨",
-      body: "Start 3-day FREE trial for unlimited scans + progress tracking!",
+      body: "Start 7-day FREE trial for unlimited scans + progress tracking!",
       data: { screen: "start-trial" }
     },
     {

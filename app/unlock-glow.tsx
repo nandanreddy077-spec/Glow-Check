@@ -21,8 +21,8 @@ export default function UnlockGlowScreen() {
   }, []);
 
   const trialDaysLeft = state.trialStartedAt 
-    ? Math.max(0, 3 - Math.floor((Date.now() - Number(new Date(state.trialStartedAt))) / (1000 * 60 * 60 * 24)))
-    : 3;
+    ? Math.max(0, 7 - Math.floor((Date.now() - Number(new Date(state.trialStartedAt))) / (1000 * 60 * 60 * 24)))
+    : 7;
 
   return (
     <View style={styles.container}>
@@ -61,7 +61,7 @@ export default function UnlockGlowScreen() {
               Start Your Beauty Journey
             </Text>
             <Text style={styles.heroSubtitle}>
-              3-day free trial, then choose your perfect plan
+              7-day free trial, then choose your perfect plan
             </Text>
           </View>
 

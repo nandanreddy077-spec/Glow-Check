@@ -374,7 +374,7 @@ export default function GlowAnalysisScreen() {
               <Text style={styles.trialStatusText}>
                 {isTrialExpired ? '⏰ Trial Expired - Upgrade to Continue' :
                  inTrial ? `🎯 Trial Active - ${scansLeft} scan left` :
-                 '✨ Add payment to start your 3-day free trial'}
+                 '✨ Add payment to start your 7-day free trial'}
               </Text>
             </View>
           )}

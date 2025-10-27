@@ -35,21 +35,21 @@ export const GOOGLE_PLAY_CONFIG = {
 } as const;
 
 // Pricing Configuration
-// NOTE: 3-day free trial is configured in App Store Connect as an Introductory Offer
+// NOTE: 7-day free trial is configured in App Store Connect as an Introductory Offer
 // Users MUST select a plan to access the trial (no free tier trial without payment)
 export const PRICING = {
   MONTHLY: {
     price: 8.99,
     currency: 'USD',
     period: 'P1M', // ISO 8601 duration format
-    trialPeriod: 'P3D', // 3 days free trial (via App Store introductory offer)
+    trialPeriod: 'P7D', // 7 days free trial (via App Store introductory offer)
     displayPrice: '$8.99',
   },
   YEARLY: {
     price: 99.00,
     currency: 'USD',
     period: 'P1Y', // ISO 8601 duration format
-    trialPeriod: 'P3D', // 3 days free trial (via App Store introductory offer)
+    trialPeriod: 'P7D', // 7 days free trial (via App Store introductory offer)
     displayPrice: '$99',
   },
 } as const;
@@ -543,7 +543,7 @@ export const formatPrice = (price: number, currency: string = 'USD'): string => 
 
 export const getTrialEndDate = (startDate: Date = new Date()): Date => {
   const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + 3); // 3 days trial
+  endDate.setDate(endDate.getDate() + 7); // 7 days trial
   return endDate;
 };
 

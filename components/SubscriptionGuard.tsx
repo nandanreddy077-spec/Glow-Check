@@ -84,10 +84,10 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
 
   const handleStartTrial = useCallback(async () => {
     try {
-      await startLocalTrial(3);
+      await startLocalTrial(7);
       Alert.alert(
         '🌟 Trial Started!', 
-        'Your 3-day free trial has started! You can now scan and view results for 3 days.',
+        'Your 7-day free trial has started! You can now scan and view results for 7 days.',
         [{ text: 'Start Glowing ✨', style: 'default' }]
       );
     } catch {

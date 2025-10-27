@@ -35,7 +35,7 @@ export default function PremiumPaywall({ onStartTrial, onSubscribe, testID }: Pr
         return `Trial ending — ${hoursLeft} hour${hoursLeft === 1 ? '' : 's'} left`;
       }
     }
-    return 'Start your 3-day free trial';
+    return 'Start your 7-day free trial';
   }, [inTrial, daysLeft, hoursLeft, isTrialExpired]);
 
   const scanStatus = useMemo(() => {
@@ -100,7 +100,7 @@ export default function PremiumPaywall({ onStartTrial, onSubscribe, testID }: Pr
         {!inTrial && !isTrialExpired && (
           <TouchableOpacity accessibilityRole="button" style={styles.cta} onPress={onStartTrial} testID="start-trial">
             <LinearGradient colors={[palette.gold, palette.blush]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaGradient}>
-              <Text style={styles.ctaText}>Start 3-day free trial</Text>
+              <Text style={styles.ctaText}>Start 7-day free trial</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -167,9 +167,9 @@ export default function PremiumPaywall({ onStartTrial, onSubscribe, testID }: Pr
         </TouchableOpacity>
 
         <Text style={styles.legal}>
-          {!inTrial && !isTrialExpired ? '3-day free trial, then ' : ''}
+          {!inTrial && !isTrialExpired ? '7-day free trial, then ' : ''}
           {selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'}. Cancel anytime.
-          {!inTrial && !isTrialExpired ? ' No charge within the first 3 days.' : ''}
+          {!inTrial && !isTrialExpired ? ' No charge within the first 7 days.' : ''}
         </Text>
       </LinearGradient>
     </View>
