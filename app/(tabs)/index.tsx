@@ -19,7 +19,10 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useProgressTracking } from "@/contexts/ProgressTrackingContext";
 import { useProductTracking } from "@/contexts/ProductTrackingContext";
 import { useSeasonalAdvisor } from "@/contexts/SeasonalAdvisorContext";
+import { useDailyRoutine } from "@/contexts/DailyRoutineContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
+import StreakCounter from "@/components/StreakCounter";
+import DailyTipCard from "@/components/DailyTipCard";
 import { getPalette, getGradient, shadow, spacing, radii, typography } from "@/constants/theme";
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -87,6 +90,7 @@ export default function HomeScreen() {
   const { progressPhotos } = useProgressTracking();
   const { products, alerts } = useProductTracking();
   const { recommendations, currentSeason, dismissRecommendation, getSeasonalTip } = useSeasonalAdvisor();
+  const { streakData, todaysTip, morningRoutine, eveningRoutine, hasCompletedBothRoutines, completeRoutine } = useDailyRoutine();
   const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
@@ -252,6 +256,18 @@ export default function HomeScreen() {
             <View style={styles.avatarGlow} />
           </TouchableOpacity>
         </View>
+
+        <StreakCounter 
+          currentStreak={streakData.currentStreak} 
+          longestStreak={streakData.longestStreak} 
+        />
+
+        {todaysTip && (
+          <DailyTipCard 
+            tip={todaysTip} 
+            onUpgrade={todaysTip.isPremium ? () => router.push('/start-trial') : undefined}
+          />
+        )}
 
         <TouchableOpacity onPress={handleGlowAnalysis} activeOpacity={0.95} style={styles.mainCtaContainer}>
           <LinearGradient
