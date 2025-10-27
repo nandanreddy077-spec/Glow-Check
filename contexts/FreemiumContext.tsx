@@ -204,7 +204,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         return;
       }
 
-      const resultsExpiryTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+      const resultsExpiryTime = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
       
       const { error: trialError } = await supabase
         .from('trial_tracking')
@@ -257,7 +257,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
         return;
       }
 
-      const resultsExpiryTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+      const resultsExpiryTime = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
       
       const { error: trialError } = await supabase
         .from('trial_tracking')

@@ -7,7 +7,7 @@ import { ArrowLeft, Lock, Zap, TrendingUp, Star, Crown, Clock, CheckCircle } fro
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
 export default function FreeScanLimitScreen() {
-  const { state, processInAppPurchase, startLocalTrial, setSubscriptionData } = useSubscription();
+  const { processInAppPurchase, startLocalTrial, setSubscriptionData } = useSubscription();
   const insets = useSafeAreaInsets();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -93,7 +93,7 @@ export default function FreeScanLimitScreen() {
               <Lock color="#FFFFFF" size={40} strokeWidth={2} />
             </LinearGradient>
             <Text style={styles.heroTitle}>
-              You've Used Your Free Scan
+              You&apos;ve Used Your Free Scan
             </Text>
             <Text style={styles.heroSubtitle}>
               Unlock unlimited scans and premium features with a 7-day free trial
@@ -115,7 +115,7 @@ export default function FreeScanLimitScreen() {
                 </View>
                 <View style={styles.limitFeature}>
                   <Clock color="#FF9800" size={16} strokeWidth={2.5} />
-                  <Text style={styles.limitFeatureText}>Results visible for 24 hours</Text>
+                  <Text style={styles.limitFeatureText}>Results visible for 72 hours</Text>
                 </View>
                 <View style={styles.limitFeature}>
                   <Lock color="#999999" size={16} strokeWidth={2.5} />
@@ -123,7 +123,7 @@ export default function FreeScanLimitScreen() {
                 </View>
               </View>
               <Text style={styles.resetText}>
-                Your free scan resets every Sunday
+                Your next free scan available in 4 days
               </Text>
             </View>
           </View>
