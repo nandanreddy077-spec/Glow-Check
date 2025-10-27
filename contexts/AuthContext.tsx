@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
 }
@@ -249,6 +250,36 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     }
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      if (!process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+        return { error: { message: 'Supabase is not configured. Please set up your Supabase credentials.' } };
+      }
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'exp://localhost:8081',
+        },
+      });
+
+      if (error) {
+        console.error('Google sign in error:', error);
+        return { error };
+      }
+
+      console.log('Google sign in initiated');
+      return { error: null };
+    } catch (error: any) {
+      console.error('Google sign in exception:', error);
+      return { error };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const resetPassword = useCallback(async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
@@ -270,7 +301,8 @@ export const [AuthProvider, useAuth] = createContextHook<AuthContextType>(() => 
     loading,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     resetPassword,
-  }), [user, session, loading, signUp, signIn, signOut, resetPassword]);
+  }), [user, session, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword]);
 });

@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
-import { Eye, EyeOff, Mail, Lock, User, Heart, Sparkles, Star, ArrowLeft } from 'lucide-react-native';
+import { Eye, EyeOff, Mail, Lock, User, Heart, Sparkles, Star, ArrowLeft, Chrome } from 'lucide-react-native';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 
 export default function SignupScreen() {
@@ -27,10 +27,11 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const { theme } = useTheme();
   
   const palette = getPalette(theme);
@@ -117,6 +118,20 @@ export default function SignupScreen() {
 
   const navigateBack = () => {
     router.back();
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    const { error } = await signInWithGoogle();
+    setIsGoogleLoading(false);
+
+    if (error) {
+      console.log('Google sign in error:', error);
+      Alert.alert(
+        'Google Sign In',
+        'Google Sign-In is not configured yet. Please contact support or use email registration.'
+      );
+    }
   };
 
   const styles = createStyles(palette);
@@ -357,6 +372,24 @@ export default function SignupScreen() {
                 </LinearGradient>
               </TouchableOpacity>
 
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.divider} />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.googleButton, isGoogleLoading && styles.googleButtonDisabled]}
+                onPress={handleGoogleSignIn}
+                disabled={isGoogleLoading}
+                testID="google-signup-button"
+              >
+                <Chrome color={palette.textPrimary} size={20} />
+                <Text style={styles.googleButtonText}>
+                  {isGoogleLoading ? 'Connecting...' : 'Continue with Google'}
+                </Text>
+              </TouchableOpacity>
+
               <View style={styles.loginContainer}>
                 <Text style={styles.loginText}>Already part of our beautiful community? </Text>
                 <TouchableOpacity onPress={navigateToLogin} testID="login-link">
@@ -579,5 +612,45 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     top: 220,
     right: 80,
     zIndex: 1,
+  },
+  
+  // Divider
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: palette.borderLight,
+  },
+  dividerText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: spacing.md,
+  },
+  
+  // Google button
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.surface,
+    borderWidth: 2,
+    borderColor: palette.border,
+    borderRadius: radii.lg,
+    height: 60,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  googleButtonDisabled: {
+    opacity: 0.6,
+  },
+  googleButtonText: {
+    color: palette.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
