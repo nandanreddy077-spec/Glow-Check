@@ -246,7 +246,7 @@ export default function SubscribeScreen() {
             Start Your Glow Journey
           </Text>
           <Text style={[styles.heroText, { color: palette.textSecondary }]}>
-            Try free for 3 days • Choose your plan below
+            Try free for 7 days • Choose your plan below
           </Text>
         </View>
 
@@ -303,7 +303,7 @@ export default function SubscribeScreen() {
               </Text>
               {!state.isPremium && (
                 <Text style={[styles.statusText, { color: palette.textSecondary }]}>
-                  {state.scanCount}/3 scans used • {state.trialStartedAt ? `${3 - Math.floor((Date.now() - Number(state.trialStartedAt)) / (1000 * 60 * 60 * 24))} days left` : '3 days left'}
+                  {state.scanCount}/14 scans used • {state.trialStartedAt ? `${7 - Math.floor((Date.now() - Number(state.trialStartedAt)) / (1000 * 60 * 60 * 24))} days left` : '7 days left'}
                 </Text>
               )}
             </View>
@@ -396,7 +396,7 @@ export default function SubscribeScreen() {
             style={styles.subscribeGradient}
           >
             <Text style={[styles.subscribeText, { color: state.isPremium ? palette.textMuted : palette.textPrimary }]}>
-              {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Start 3-Day Free Trial'}
+              {state.isPremium ? 'Already Premium' : isProcessing ? 'Processing...' : 'Start 7-Day Free Trial'}
             </Text>
             {!state.isPremium && !isProcessing && (
               <Text style={[styles.subscribePrice, { color: palette.textSecondary }]}>
@@ -443,7 +443,7 @@ export default function SubscribeScreen() {
         {/* Legal Text */}
         <Text style={[styles.legalText, { color: palette.textMuted }]}>
           By continuing, you agree to our Terms of Service and Privacy Policy.
-          {!state.isPremium ? ' Start your 3-day free trial by selecting a plan. No charge until trial ends. Cancel anytime before trial expires to avoid charges.' : ''}
+          {!state.isPremium ? ' Start your 7-day free trial by selecting a plan. No charge until trial ends. Cancel anytime before trial expires to avoid charges.' : ''}
           {Platform.OS !== 'web' ? ' Subscription managed via App Store/Play Store.' : ''}
         </Text>
         </Animated.View>
