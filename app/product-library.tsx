@@ -219,10 +219,13 @@ export default function ProductLibraryScreen() {
               </View>
               <TouchableOpacity 
                 style={styles.paywallButton}
-                onPress={() => router.push('/start-trial')}
+                onPress={() => {
+                  setShowPaywall(false);
+                  router.push('/start-trial');
+                }}
               >
                 <LinearGradient colors={['#D4F0E8', '#F5D5C2']} style={styles.paywallButtonGradient}>
-                  <Text style={styles.paywallButtonText}>Start 3-Day Free Trial</Text>
+                  <Text style={styles.paywallButtonText}>Start 7-Day Free Trial</Text>
                 </LinearGradient>
               </TouchableOpacity>
               <TouchableOpacity 

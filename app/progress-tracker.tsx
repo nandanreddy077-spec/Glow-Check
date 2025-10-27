@@ -500,10 +500,13 @@ export default function ProgressTrackerScreen() {
               </View>
               <TouchableOpacity 
                 style={styles.paywallButton}
-                onPress={() => router.push('/start-trial')}
+                onPress={() => {
+                  setShowPaywall(false);
+                  router.push('/start-trial');
+                }}
               >
                 <LinearGradient colors={['#F2C2C2', '#E8A87C']} style={styles.paywallButtonGradient}>
-                  <Text style={styles.paywallButtonText}>Start 3-Day Free Trial</Text>
+                  <Text style={styles.paywallButtonText}>Start 7-Day Free Trial</Text>
                 </LinearGradient>
               </TouchableOpacity>
               <TouchableOpacity 
