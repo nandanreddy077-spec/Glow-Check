@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useCallback, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { router, usePathname } from 'expo-router';
-import PremiumPaywall from './PremiumPaywall';
 import { getPalette } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -17,10 +16,9 @@ interface Props {
 export default function SubscriptionGuard({ children, requiresPremium = false, showPaywall = true, accessMode = 'scan' }: Props) {
   const { theme } = useTheme();
   const palette = getPalette(theme);
-  const { state, canScan, inTrial, isTrialExpired, startLocalTrial, processInAppPurchase } = useSubscription();
+  const { state, canScan, inTrial, isTrialExpired } = useSubscription();
   const { loading } = useAuth();
   const pathname = usePathname();
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // Routes that are always accessible
   const publicRoutes = [
@@ -74,62 +72,19 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
     return !hasAccess && !isPublicRoute && showPaywall;
   }, [hasAccess, isPublicRoute, showPaywall]);
 
+  // Navigate to free-scan-limit if access denied and paywall is disabled
   useEffect(() => {
     if (!loading && !hasAccess && !isPublicRoute && !showPaywall) {
       router.replace('/free-scan-limit');
     }
   }, [hasAccess, loading, pathname, isPublicRoute, showPaywall]);
-
-
-
-  const handleStartTrial = useCallback(async () => {
-    try {
-      await startLocalTrial(7);
-      Alert.alert(
-        '🌟 Trial Started!', 
-        'Your 7-day free trial has started! You can now scan and view results for 7 days.',
-        [{ text: 'Start Glowing ✨', style: 'default' }]
-      );
-    } catch {
-      Alert.alert('Error', 'Could not start trial. Please try again.');
+  
+  // Navigate to start-trial if paywall is enabled and access denied
+  useEffect(() => {
+    if (!loading && shouldShowPaywall) {
+      router.push('/start-trial');
     }
-  }, [startLocalTrial]);
-
-  const handleSubscribe = useCallback(async (type: 'monthly' | 'yearly') => {
-    if (isProcessing) return;
-    
-    if (Platform.OS === 'web') {
-      Alert.alert(
-        'In-App Purchase Required',
-        'Please use the mobile app to subscribe. In-app purchases are not available on web.',
-        [{ text: 'OK', style: 'default' }]
-      );
-      return;
-    }
-    
-    setIsProcessing(true);
-    try {
-      const result = await processInAppPurchase(type);
-      if (result.success) {
-        Alert.alert(
-          '🎉 Welcome to Premium!', 
-          `Your ${type} subscription is now active. Enjoy unlimited access to all premium features!`,
-          [{ text: 'Start Your Journey ✨', style: 'default' }]
-        );
-      } else {
-        Alert.alert(
-          'Purchase Failed', 
-          'We couldn\'t process your purchase. Please try again.',
-          [{ text: 'Try Again', style: 'default' }]
-        );
-      }
-    } catch (err) {
-      console.error('Subscription error:', err);
-      Alert.alert('Error', 'Something went wrong. Please try again later.');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [isProcessing, processInAppPurchase]);
+  }, [shouldShowPaywall, loading]);
 
   if (loading) {
     return (
@@ -139,19 +94,7 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
     );
   }
 
-  // Show paywall inline if access is denied and paywall is enabled
-  if (shouldShowPaywall) {
-    return (
-      <View style={[styles.paywallContainer, { backgroundColor: palette.backgroundStart }]}>
-        <PremiumPaywall 
-          onStartTrial={handleStartTrial}
-          onSubscribe={handleSubscribe}
-        />
-      </View>
-    );
-  }
-
-  // Redirect to subscribe page if access denied and paywall disabled
+  // Return null while redirecting
   if (!hasAccess && !isPublicRoute) {
     return null;
   }
@@ -164,10 +107,5 @@ const styles = StyleSheet.create({
     flex: 1, 
     alignItems: 'center', 
     justifyContent: 'center' 
-  },
-  paywallContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
   },
 });

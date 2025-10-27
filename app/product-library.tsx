@@ -221,7 +221,7 @@ export default function ProductLibraryScreen() {
                 style={styles.paywallButton}
                 onPress={() => {
                   setShowPaywall(false);
-                  router.push('/start-trial');
+                  setTimeout(() => router.push('/start-trial'), 100);
                 }}
               >
                 <LinearGradient colors={['#D4F0E8', '#F5D5C2']} style={styles.paywallButtonGradient}>

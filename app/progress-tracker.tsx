@@ -502,7 +502,7 @@ export default function ProgressTrackerScreen() {
                 style={styles.paywallButton}
                 onPress={() => {
                   setShowPaywall(false);
-                  router.push('/start-trial');
+                  setTimeout(() => router.push('/start-trial'), 100);
                 }}
               >
                 <LinearGradient colors={['#F2C2C2', '#E8A87C']} style={styles.paywallButtonGradient}>
