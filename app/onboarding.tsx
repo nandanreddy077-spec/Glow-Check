@@ -47,7 +47,7 @@ const slides: Slide[] = [
     image: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1080&auto=format&fit=crop',
     stats: [
       { value: 'New', label: 'Community' },
-      { value: '3 Day', label: 'Free Trial' },
+      { value: '7 Day', label: 'Free Trial' },
       { value: '24/7', label: 'Access' },
     ],
   },

@@ -306,7 +306,7 @@ export default function AnalysisResultsScreen() {
           )}
           <BlurredContent
             shouldBlur={shouldBlurContent}
-            message="Unlock full analysis with your 3-day free trial"
+            message="Unlock full analysis with your 7-day free trial"
           >
           <View style={styles.analysisGrid}>
             <View style={styles.analysisRow}>
@@ -363,7 +363,7 @@ export default function AnalysisResultsScreen() {
           </View>
           <BlurredContent
             shouldBlur={shouldBlurContent}
-            message="Start your 3-day free trial to see detailed scores"
+            message="Start your 7-day free trial to see detailed scores"
           >
           <View style={styles.scoresContainer}>
             {detailedScoresArray.map((item, index) => {
@@ -407,7 +407,7 @@ export default function AnalysisResultsScreen() {
             {shouldBlurContent && (
               <BlurredContent 
                 shouldBlur={true}
-                message="Start your 3-day free trial to unlock all personalized beauty tips"
+                message="Start your 7-day free trial to unlock all personalized beauty tips"
                 testID="blurred-tips"
               >
                 {currentResult.personalizedTips.map((tip, index) => (

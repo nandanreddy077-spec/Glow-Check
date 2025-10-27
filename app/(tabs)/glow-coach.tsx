@@ -208,7 +208,7 @@ export default function GlowCoachScreen() {
           >
             <LinearGradient colors={gradient.primary} style={styles.upgradeButtonGradient}>
               <Crown color={palette.textLight} size={20} />
-              <Text style={styles.upgradeButtonText}>Start 3-Day Free Trial</Text>
+              <Text style={styles.upgradeButtonText}>Start 7-Day Free Trial</Text>
             </LinearGradient>
           </TouchableOpacity>
           <Text style={styles.trialFinePrint}>Cancel anytime. No commitment.</Text>

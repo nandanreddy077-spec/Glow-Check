@@ -246,7 +246,7 @@ export default function StyleResultsScreen() {
         <View style={styles.section}>
           <BlurredContent
             shouldBlur={isFreeUser && hasUsedFreeStyleScan}
-            message="Unlock full analysis with your 3-day free trial"
+            message="Unlock full analysis with your 7-day free trial"
           >
           <LinearGradient colors={gradient.lavender} style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
