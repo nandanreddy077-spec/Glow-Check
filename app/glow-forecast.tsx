@@ -21,6 +21,7 @@ export default function GlowForecastScreen() {
     setSelectedTimeframe,
     generateForecast,
     isGenerating,
+    error,
   } = useGlowForecast();
   const { canAccessGlowForecast } = useFreemium();
   const { theme } = useTheme();
@@ -39,7 +40,11 @@ export default function GlowForecastScreen() {
       router.push("/premium-unlock");
       return;
     }
-    generateForecast(selectedTimeframe);
+    try {
+      generateForecast(selectedTimeframe);
+    } catch (err) {
+      console.error("Error generating forecast:", err);
+    }
   };
 
   if (!canAccessGlowForecast) {
@@ -145,6 +150,15 @@ export default function GlowForecastScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {error && (
+            <View style={[styles.errorCard, shadow.card]}>
+              <Text style={styles.errorTitle}>⚠️ Error</Text>
+              <Text style={styles.errorText}>
+                {error instanceof Error ? error.message : "Failed to load forecast. Please make sure the database is set up correctly."}
+              </Text>
+            </View>
+          )}
 
           {!forecast || forecast.timeframe !== selectedTimeframe ? (
             <View style={styles.generateContainer}>
@@ -736,5 +750,24 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     fontSize: 17,
     fontWeight: "700" as const,
     color: "#FFF",
+  },
+  errorCard: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: "#991B1B",
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#7F1D1D",
+    lineHeight: 20,
   },
 });

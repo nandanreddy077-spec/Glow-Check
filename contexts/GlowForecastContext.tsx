@@ -70,7 +70,8 @@ export const [GlowForecastContext, useGlowForecast] = createContextHook(() => {
         .single();
 
       if (error && error.code !== "PGRST116") {
-        console.error("Error fetching forecast:", error);
+        console.error("Error fetching forecast:", error.message || error);
+        throw new Error(error.message || "Failed to fetch forecast");
       }
 
       return data as GlowForecast | null;
@@ -224,7 +225,10 @@ Be optimistic but realistic. Focus on achievable improvements.`;
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error saving forecast:", error.message || error);
+        throw new Error(error.message || "Failed to save forecast");
+      }
 
       console.log("💾 Forecast saved to database");
 
@@ -273,7 +277,10 @@ Be optimistic but realistic. Focus on achievable improvements.`;
         .update({ milestones: updatedMilestones })
         .eq("id", forecastQuery.data.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating milestone:", error.message || error);
+        throw new Error(error.message || "Failed to update milestone");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["glowForecast", user?.id] });
