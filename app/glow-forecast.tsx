@@ -4,26 +4,28 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Platform,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Sparkles, TrendingUp, Calendar, Target, Zap, Lock } from "lucide-react-native";
 import { useGlowForecast } from "@/contexts/GlowForecastContext";
 import { useFreemium } from "@/contexts/FreemiumContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { getPalette, shadow } from "@/constants/theme";
 import type { TimeframeType } from "@/types/forecast";
 
 export default function GlowForecastScreen() {
   const {
     forecast,
-    isLoading,
     selectedTimeframe,
     setSelectedTimeframe,
     generateForecast,
     isGenerating,
-    history,
   } = useGlowForecast();
   const { canAccessGlowForecast } = useFreemium();
+  const { theme } = useTheme();
+  const palette = getPalette(theme);
+  const styles = createStyles(palette);
 
   const timeframes: { value: TimeframeType; label: string }[] = [
     { value: "1week", label: "1 Week" },
@@ -43,14 +45,22 @@ export default function GlowForecastScreen() {
   if (!canAccessGlowForecast) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: "Glow Forecast", headerShown: true }} />
+        <Stack.Screen 
+          options={{ 
+            title: "Glow Forecast", 
+            headerShown: true,
+            headerStyle: { backgroundColor: palette.surface },
+            headerTintColor: palette.textPrimary,
+            headerShadowVisible: false,
+          }} 
+        />
         <LinearGradient
-          colors={["#FFD6E8", "#E0C3FC", "#C7CEEA"]}
+          colors={[palette.backgroundStart, palette.backgroundEnd]}
           style={styles.lockedContainer}
         >
-          <View style={styles.lockedContent}>
+          <View style={[styles.lockedContent, shadow.elevated]}>
             <View style={styles.lockIconContainer}>
-              <Lock size={64} color="#9333EA" />
+              <Lock size={64} color={palette.gold} strokeWidth={2} />
             </View>
             <Text style={styles.lockedTitle}>Unlock Your Future Glow</Text>
             <Text style={styles.lockedDescription}>
@@ -59,23 +69,24 @@ export default function GlowForecastScreen() {
             </Text>
 
             <View style={styles.featureList}>
-              <FeatureItem text="Personalized glow predictions" />
-              <FeatureItem text="Weekly milestone tracking" />
-              <FeatureItem text="AI-analyzed progress insights" />
-              <FeatureItem text="Beauty goal achievements" />
+              <FeatureItem text="Personalized glow predictions" palette={palette} />
+              <FeatureItem text="Weekly milestone tracking" palette={palette} />
+              <FeatureItem text="AI-analyzed progress insights" palette={palette} />
+              <FeatureItem text="Beauty goal achievements" palette={palette} />
             </View>
 
             <TouchableOpacity
               style={styles.unlockButton}
               onPress={() => router.push("/premium-unlock")}
+              activeOpacity={0.9}
             >
               <LinearGradient
-                colors={["#9333EA", "#C026D3"]}
+                colors={["#F2C2C2", "#E8A87C"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.unlockGradient}
               >
-                <Sparkles size={20} color="#FFF" />
+                <Sparkles size={20} color="#FFF" strokeWidth={2.5} />
                 <Text style={styles.unlockButtonText}>Unlock Premium</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -91,17 +102,19 @@ export default function GlowForecastScreen() {
         options={{
           title: "Glow Forecast",
           headerShown: true,
-          headerStyle: { backgroundColor: "#FAFAFA" },
+          headerStyle: { backgroundColor: palette.surface },
+          headerTintColor: palette.textPrimary,
+          headerShadowVisible: false,
         }}
       />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <LinearGradient
-          colors={["#FFD6E8", "#E0C3FC", "#C7CEEA"]}
+          colors={["#F2C2C2", "#E8A87C"]}
           style={styles.headerGradient}
         >
           <View style={styles.headerContent}>
-            <Sparkles size={32} color="#9333EA" />
+            <Sparkles size={32} color={palette.textLight} strokeWidth={2.5} fill={palette.textLight} />
             <Text style={styles.headerTitle}>Your Future Glow</Text>
             <Text style={styles.headerSubtitle}>
               AI-powered predictions based on your progress
@@ -119,6 +132,7 @@ export default function GlowForecastScreen() {
                   selectedTimeframe === tf.value && styles.timeframeButtonActive,
                 ]}
                 onPress={() => setSelectedTimeframe(tf.value)}
+                activeOpacity={0.8}
               >
                 <Text
                   style={[
@@ -134,8 +148,8 @@ export default function GlowForecastScreen() {
 
           {!forecast || forecast.timeframe !== selectedTimeframe ? (
             <View style={styles.generateContainer}>
-              <View style={styles.generateCard}>
-                <TrendingUp size={48} color="#9333EA" />
+              <View style={[styles.generateCard, shadow.card]}>
+                <TrendingUp size={48} color={palette.gold} strokeWidth={2.5} />
                 <Text style={styles.generateTitle}>Generate Your Forecast</Text>
                 <Text style={styles.generateDescription}>
                   See how you&apos;ll glow in the future based on your current routine and progress
@@ -145,14 +159,15 @@ export default function GlowForecastScreen() {
                   style={styles.generateButton}
                   onPress={handleGenerate}
                   disabled={isGenerating}
+                  activeOpacity={0.9}
                 >
                   <LinearGradient
-                    colors={["#9333EA", "#C026D3"]}
+                    colors={["#F2C2C2", "#E8A87C"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.generateGradient}
                   >
-                    <Sparkles size={20} color="#FFF" />
+                    <Sparkles size={20} color="#FFF" strokeWidth={2.5} />
                     <Text style={styles.generateButtonText}>
                       {isGenerating ? "Generating..." : "Generate Forecast"}
                     </Text>
@@ -162,9 +177,9 @@ export default function GlowForecastScreen() {
             </View>
           ) : (
             <>
-              <View style={styles.scoreCard}>
+              <View style={[styles.scoreCard, shadow.elevated]}>
                 <LinearGradient
-                  colors={["#9333EA", "#C026D3"]}
+                  colors={["#F2C2C2", "#E8A87C"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.scoreGradient}
@@ -174,7 +189,7 @@ export default function GlowForecastScreen() {
                     {forecast.overallGlowScore.predicted}
                   </Text>
                   <View style={styles.scoreChange}>
-                    <TrendingUp size={16} color="#FFF" />
+                    <TrendingUp size={16} color="#FFF" strokeWidth={2.5} />
                     <Text style={styles.scoreChangeText}>
                       +{forecast.overallGlowScore.change} points
                     </Text>
@@ -187,13 +202,13 @@ export default function GlowForecastScreen() {
 
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Target size={24} color="#9333EA" />
+                  <Target size={24} color={palette.gold} strokeWidth={2.5} />
                   <Text style={styles.sectionTitle}>Key Metrics</Text>
                 </View>
 
                 <View style={styles.metricsGrid}>
                   {forecast.metrics.map((metric, index) => (
-                    <View key={index} style={styles.metricCard}>
+                    <View key={index} style={[styles.metricCard, shadow.card]}>
                       <Text style={styles.metricName}>{metric.name}</Text>
                       <View style={styles.metricScores}>
                         <Text style={styles.metricCurrent}>{metric.currentScore}</Text>
@@ -226,12 +241,12 @@ export default function GlowForecastScreen() {
 
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Calendar size={24} color="#9333EA" />
+                  <Calendar size={24} color={palette.gold} strokeWidth={2.5} />
                   <Text style={styles.sectionTitle}>Milestones</Text>
                 </View>
 
                 {forecast.milestones.map((milestone) => (
-                  <View key={milestone.id} style={styles.milestoneCard}>
+                  <View key={milestone.id} style={[styles.milestoneCard, shadow.card]}>
                     <View style={styles.milestoneHeader}>
                       <View
                         style={[
@@ -267,12 +282,12 @@ export default function GlowForecastScreen() {
 
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Zap size={24} color="#9333EA" />
+                  <Zap size={24} color={palette.gold} strokeWidth={2.5} />
                   <Text style={styles.sectionTitle}>Personalized Insights</Text>
                 </View>
 
                 {forecast.insights.map((insight) => (
-                  <View key={insight.id} style={styles.insightCard}>
+                  <View key={insight.id} style={[styles.insightCard, shadow.card]}>
                     <View
                       style={[
                         styles.insightBadge,
@@ -295,8 +310,9 @@ export default function GlowForecastScreen() {
                 style={styles.regenerateButton}
                 onPress={handleGenerate}
                 disabled={isGenerating}
+                activeOpacity={0.9}
               >
-                <Sparkles size={18} color="#9333EA" />
+                <Sparkles size={18} color={palette.gold} strokeWidth={2.5} />
                 <Text style={styles.regenerateText}>
                   {isGenerating ? "Generating..." : "Regenerate Forecast"}
                 </Text>
@@ -311,22 +327,25 @@ export default function GlowForecastScreen() {
   );
 }
 
-function FeatureItem({ text }: { text: string }) {
+function FeatureItem({ text, palette }: { text: string; palette: ReturnType<typeof getPalette> }) {
   return (
-    <View style={styles.featureItem}>
-      <View style={styles.featureDot} />
-      <Text style={styles.featureText}>{text}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: palette.gold }} />
+      <Text style={{ fontSize: 15, color: palette.textPrimary, fontWeight: '500' as const }}>{text}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: palette.backgroundStart,
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   headerGradient: {
     paddingTop: 20,
@@ -338,15 +357,18 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: "700" as const,
-    color: "#1F2937",
+    fontWeight: "800" as const,
+    color: palette.textLight,
     marginTop: 12,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: palette.textLight,
     marginTop: 6,
     textAlign: "center",
+    opacity: 0.9,
+    fontWeight: "500" as const,
   },
   content: {
     paddingHorizontal: 20,
@@ -354,21 +376,13 @@ const styles = StyleSheet.create({
   },
   timeframeSelector: {
     flexDirection: "row",
-    backgroundColor: "#FFF",
+    backgroundColor: palette.surface,
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: palette.border,
+    ...shadow.card,
   },
   timeframeButton: {
     flex: 1,
@@ -377,48 +391,42 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   timeframeButtonActive: {
-    backgroundColor: "#9333EA",
+    backgroundColor: palette.gold,
   },
   timeframeText: {
     fontSize: 13,
     fontWeight: "600" as const,
-    color: "#6B7280",
+    color: palette.textSecondary,
   },
   timeframeTextActive: {
-    color: "#FFF",
+    color: palette.textLight,
+    fontWeight: "700" as const,
   },
   generateContainer: {
     marginTop: 40,
   },
   generateCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
+    backgroundColor: palette.surface,
+    borderRadius: 20,
     padding: 30,
     alignItems: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   generateTitle: {
     fontSize: 22,
-    fontWeight: "700" as const,
-    color: "#1F2937",
+    fontWeight: "800" as const,
+    color: palette.textPrimary,
     marginTop: 16,
+    letterSpacing: -0.3,
   },
   generateDescription: {
     fontSize: 15,
-    color: "#6B7280",
+    color: palette.textSecondary,
     textAlign: "center",
     marginTop: 8,
     lineHeight: 22,
+    fontWeight: "500" as const,
   },
   generateButton: {
     marginTop: 24,
@@ -441,17 +449,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     borderRadius: 20,
     overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
   },
   scoreGradient: {
     padding: 30,
@@ -499,33 +496,26 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "700" as const,
-    color: "#1F2937",
+    fontWeight: "800" as const,
+    color: palette.textPrimary,
+    letterSpacing: -0.3,
   },
   metricsGrid: {
     gap: 12,
   },
   metricCard: {
-    backgroundColor: "#FFF",
+    backgroundColor: palette.surface,
     borderRadius: 12,
     padding: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   metricName: {
     fontSize: 15,
-    fontWeight: "600" as const,
-    color: "#1F2937",
+    fontWeight: "700" as const,
+    color: palette.textPrimary,
     marginBottom: 8,
+    letterSpacing: 0.2,
   },
   metricScores: {
     flexDirection: "row",
@@ -536,16 +526,16 @@ const styles = StyleSheet.create({
   metricCurrent: {
     fontSize: 20,
     fontWeight: "700" as const,
-    color: "#6B7280",
+    color: palette.textSecondary,
   },
   metricArrow: {
     fontSize: 18,
-    color: "#9CA3AF",
+    color: palette.textMuted,
   },
   metricPredicted: {
     fontSize: 20,
-    fontWeight: "700" as const,
-    color: "#9333EA",
+    fontWeight: "800" as const,
+    color: palette.gold,
   },
   metricProgress: {
     height: 6,
@@ -563,21 +553,12 @@ const styles = StyleSheet.create({
     color: "#10B981",
   },
   milestoneCard: {
-    backgroundColor: "#FFF",
+    backgroundColor: palette.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   milestoneHeader: {
     flexDirection: "row",
@@ -588,13 +569,13 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#D1D5DB",
+    borderColor: palette.divider,
     alignItems: "center",
     justifyContent: "center",
   },
   milestoneCheckboxActive: {
-    backgroundColor: "#10B981",
-    borderColor: "#10B981",
+    backgroundColor: palette.success,
+    borderColor: palette.success,
   },
   checkmark: {
     color: "#FFF",
@@ -606,43 +587,37 @@ const styles = StyleSheet.create({
   },
   milestoneTitle: {
     fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#1F2937",
+    fontWeight: "700" as const,
+    color: palette.textPrimary,
     marginBottom: 4,
+    letterSpacing: 0.2,
   },
   milestoneTitleAchieved: {
     textDecorationLine: "line-through",
-    color: "#9CA3AF",
+    color: palette.textMuted,
   },
   milestoneDescription: {
     fontSize: 14,
-    color: "#6B7280",
+    color: palette.textSecondary,
     lineHeight: 20,
     marginBottom: 6,
+    fontWeight: "500" as const,
   },
   milestoneDate: {
     fontSize: 12,
-    fontWeight: "600" as const,
-    color: "#9333EA",
+    fontWeight: "700" as const,
+    color: palette.gold,
+    letterSpacing: 0.3,
   },
   insightCard: {
-    backgroundColor: "#FFF",
+    backgroundColor: palette.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: "#9333EA",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderLeftColor: palette.gold,
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   insightBadge: {
     alignSelf: "flex-start",
@@ -668,14 +643,16 @@ const styles = StyleSheet.create({
   },
   insightCategory: {
     fontSize: 13,
-    fontWeight: "600" as const,
-    color: "#9333EA",
+    fontWeight: "700" as const,
+    color: palette.gold,
     marginBottom: 6,
+    letterSpacing: 0.5,
   },
   insightText: {
     fontSize: 14,
-    color: "#374151",
+    color: palette.textPrimary,
     lineHeight: 20,
+    fontWeight: "500" as const,
   },
   regenerateButton: {
     flexDirection: "row",
@@ -683,16 +660,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     paddingVertical: 14,
-    backgroundColor: "#FFF",
+    backgroundColor: palette.surface,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#9333EA",
+    borderColor: palette.gold,
     marginTop: 12,
   },
   regenerateText: {
     fontSize: 15,
-    fontWeight: "600" as const,
-    color: "#9333EA",
+    fontWeight: "700" as const,
+    color: palette.gold,
+    letterSpacing: 0.3,
   },
   bottomPadding: {
     height: 40,
@@ -703,30 +681,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   lockedContent: {
-    backgroundColor: "#FFF",
+    backgroundColor: palette.surface,
     borderRadius: 24,
     padding: 32,
     marginHorizontal: 20,
     alignItems: "center",
     maxWidth: 400,
     width: "100%",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   lockIconContainer: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#F3E8FF",
+    backgroundColor: palette.overlayGold,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 24,
@@ -734,37 +703,23 @@ const styles = StyleSheet.create({
   lockedTitle: {
     fontSize: 26,
     fontWeight: "800" as const,
-    color: "#1F2937",
+    color: palette.textPrimary,
     textAlign: "center",
     marginBottom: 12,
+    letterSpacing: -0.5,
   },
   lockedDescription: {
     fontSize: 15,
-    color: "#6B7280",
+    color: palette.textSecondary,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 24,
+    fontWeight: "500" as const,
   },
   featureList: {
     width: "100%",
     gap: 14,
     marginBottom: 28,
-  },
-  featureItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  featureDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#9333EA",
-  },
-  featureText: {
-    fontSize: 15,
-    color: "#374151",
-    fontWeight: "500" as const,
   },
   unlockButton: {
     width: "100%",
