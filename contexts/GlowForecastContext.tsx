@@ -290,10 +290,10 @@ Be optimistic but realistic. Focus on achievable improvements.`;
   return {
     forecast: forecastQuery.data,
     isLoading: forecastQuery.isLoading,
-    error: forecastQuery.error,
+    error: forecastQuery.error || generateForecastMutation.error,
     selectedTimeframe,
     setSelectedTimeframe,
-    generateForecast: generateForecastMutation.mutate,
+    generateForecast: generateForecastMutation.mutateAsync,
     isGenerating: generateForecastMutation.isPending,
     history: historyQuery.data || [],
     achieveMilestone: achieveMilestoneMutation.mutate,

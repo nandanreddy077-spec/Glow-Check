@@ -35,7 +35,7 @@ export default function GlowForecastScreen() {
     { value: "3months", label: "3 Months" },
   ];
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     console.log("🔘 Generate button pressed");
     console.log("Can access:", canAccessGlowForecast);
     console.log("Selected timeframe:", selectedTimeframe);
@@ -46,8 +46,13 @@ export default function GlowForecastScreen() {
       return;
     }
     
-    console.log("✅ Calling generateForecast...");
-    generateForecast(selectedTimeframe);
+    try {
+      console.log("✅ Calling generateForecast...");
+      await generateForecast(selectedTimeframe);
+      console.log("✅ Forecast generated successfully!");
+    } catch (err) {
+      console.error("❌ Error generating forecast:", err);
+    }
   };
 
   if (!canAccessGlowForecast) {
