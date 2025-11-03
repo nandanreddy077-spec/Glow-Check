@@ -168,23 +168,23 @@ export function getConversionCopy(
   if (isFreeUser && scansUsed === 0) {
     return {
       heading: '🎁 Your Personal Glow Journey Awaits',
-      subheading: 'Unlock unlimited AI-powered beauty analysis',
-      cta: 'Start 3-Day Free Trial',
+      subheading: 'Join 50,000+ women discovering their unique beauty',
+      cta: 'Start 7-Day Free Trial',
       urgency: 'Only 7 trial spots left today!'
     };
   } else if (isFreeUser && scansUsed >= 1) {
     return {
       heading: '✨ Ready to Transform Your Glow?',
-      subheading: 'Join 47,283 women tracking their beauty journey',
-      cta: 'Unlock Full Analysis',
-      urgency: 'Don\'t lose your results! They expire in 48 hours'
+      subheading: 'Join 50,000+ women tracking their beauty journey',
+      cta: 'Unlock Unlimited Access',
+      urgency: 'Don\'t lose your results! They expire in 72 hours'
     };
   } else if (isTrialUser) {
     return {
-      heading: '💎 Upgrade to Keep Your Glow Forever',
-      subheading: 'Don\'t lose your progress and insights',
-      cta: 'Continue Unlimited Access',
-      urgency: 'Your trial ends soon - Keep all your data!'
+      heading: '💎 Keep Your Transformation Going',
+      subheading: 'Don\'t lose your progress, photos, and insights',
+      cta: 'Upgrade to Premium',
+      urgency: 'Your trial ends soon - Save your progress!'
     };
   }
 
@@ -201,39 +201,39 @@ export function getConversionCopy(
  */
 export const premiumFeatures = [
   {
-    icon: '✨',
-    title: 'Unlimited AI Analysis',
-    description: 'Scan as many times as you want, track your progress'
-  },
-  {
     icon: '📸',
-    title: 'Progress Photo Timeline',
-    description: 'Visual journey of your transformation with before/after'
+    title: 'Unlimited AI Analysis',
+    description: 'Daily scans + track your glow score over time'
   },
   {
-    icon: '💬',
-    title: 'Personal Beauty Coach',
-    description: 'AI-powered daily tips personalized just for you'
+    icon: '✨',
+    title: 'Progress Photo Timeline',
+    description: 'See your transformation with before/after tracking'
+  },
+  {
+    icon: '🧠',
+    title: 'Personal Beauty AI Coach',
+    description: 'Get daily personalized tips and advice'
   },
   {
     icon: '👗',
-    title: 'Style Guide & Recommendations',
-    description: 'Discover your aesthetic with AI outfit suggestions'
+    title: 'Style Guide & Outfit AI',
+    description: 'Discover your aesthetic + AI outfit suggestions'
   },
   {
-    icon: '🎯',
-    title: 'Product Tracking & Alerts',
-    description: 'Never waste products - track expiry and effectiveness'
+    icon: '🔮',
+    title: 'Glow Forecast',
+    description: 'Predict your skin changes and prep ahead'
   },
   {
-    icon: '🌸',
-    title: 'Circle Community Access',
-    description: 'Share your journey with 47k+ supportive women'
+    icon: '💕',
+    title: 'Supportive Community',
+    description: 'Join 50k+ women on their beauty journey'
   },
   {
-    icon: '🌦️',
-    title: 'Seasonal Skin Advisor',
-    description: 'Weather-based skincare tips and product recommendations'
+    icon: '📊',
+    title: 'Progress Tracking',
+    description: 'Track products, routines, and results'
   }
 ];
 

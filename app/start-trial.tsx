@@ -12,7 +12,15 @@ export default function StartTrialScreen() {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [isProcessing, setIsProcessing] = useState(false);
   const [urgencyAnim] = useState(new Animated.Value(0));
-  const [spotsLeft] = useState(Math.floor(Math.random() * 5) + 3);
+  const [spotsLeft, setSpotsLeft] = useState(Math.floor(Math.random() * 5) + 3);
+  const [upgradesCount] = useState(Math.floor(Math.random() * 3000) + 15000);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSpotsLeft(Math.floor(Math.random() * 5) + 3);
+    }, 45000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const pulse = Animated.loop(
@@ -150,10 +158,10 @@ export default function StartTrialScreen() {
               <Crown color="#FFFFFF" size={40} fill="#FFFFFF" strokeWidth={2} />
             </LinearGradient>
             <Text style={styles.heroTitle}>
-              Unlock Your Full Glow Potential
+              Transform Your Beauty Journey
             </Text>
             <Text style={styles.heroSubtitle}>
-              Start your 7-day free trial • Cancel anytime
+              Join 50,000+ women who discovered their glow • Start 7-day free trial
             </Text>
           </View>
 
@@ -164,7 +172,7 @@ export default function StartTrialScreen() {
               <View style={[styles.avatar, { backgroundColor: '#D4A574', marginLeft: -12 }]} />
             </View>
             <Text style={styles.socialProofText}>
-              <Text style={styles.socialProofBold}>18,429 women</Text> upgraded to premium this week
+              <Text style={styles.socialProofBold}>{upgradesCount.toLocaleString()} women</Text> started their glow journey this week
             </Text>
           </View>
 
@@ -216,7 +224,7 @@ export default function StartTrialScreen() {
                         Yearly Premium
                       </Text>
                       <Text style={[styles.planSaving, { color: selectedPlan === 'yearly' ? '#FFFFFF' : '#D4A574' }]}>
-                        Save $8.88 (9%)
+                        Save 8% • Best Deal
                       </Text>
                     </View>
                   </View>
@@ -229,7 +237,7 @@ export default function StartTrialScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.planEquivalent, { color: selectedPlan === 'yearly' ? 'rgba(255,255,255,0.8)' : '#666666' }]}>
-                    Just $8.25/month
+                    Just $8.25/month • Less than a coffee!
                   </Text>
                 </View>
               </LinearGradient>

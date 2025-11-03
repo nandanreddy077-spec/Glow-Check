@@ -45,9 +45,17 @@ export default function ConversionPaywallModal({
   const gradient = getGradient(theme);
   const [scaleAnim] = useState(new Animated.Value(0.95));
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [trialspotsLeft] = useState(getTrialSpotsLeft());
-  const [upgradesThisWeek] = useState(getUpgradesThisWeek());
+  const [trialSpotsLeft, setTrialSpotsLeft] = useState(getTrialSpotsLeft());
+  const [upgradesThisWeek, setUpgradesThisWeek] = useState(getUpgradesThisWeek());
   const [testimonial] = useState(getRandomTestimonial());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTrialSpotsLeft(getTrialSpotsLeft());
+      setUpgradesThisWeek(getUpgradesThisWeek());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
   const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly');
 
   const conversionCopy = getConversionCopy(isFreeUser, isTrialUser, scansUsed);
@@ -204,10 +212,10 @@ export default function ConversionPaywallModal({
                         </View>
                       </View>
                       <View style={styles.pricingRow}>
-                        <Text style={styles.pricingAmount}>$4.99</Text>
+                        <Text style={styles.pricingAmount}>$8.25</Text>
                         <Text style={styles.pricingPeriod}>/month</Text>
                       </View>
-                      <Text style={styles.pricingSubtext}>$59.88/year • Just $0.16/day</Text>
+                      <Text style={styles.pricingSubtext}>$99/year • Just $0.27/day</Text>
                     </View>
                   </TouchableOpacity>
 
@@ -252,7 +260,7 @@ export default function ConversionPaywallModal({
               <View style={styles.socialProofSection}>
                 <View style={styles.socialProofItem}>
                   <Zap color={palette.gold} size={20} fill={palette.gold} strokeWidth={2.5} />
-                  <Text style={styles.socialProofText}>{trialspotsLeft} trial spots left today</Text>
+                  <Text style={styles.socialProofText}>{trialSpotsLeft} trial spots left today</Text>
                 </View>
                 <View style={styles.socialProofItem}>
                   <Heart color={palette.blush} size={20} fill={palette.blush} strokeWidth={2.5} />
