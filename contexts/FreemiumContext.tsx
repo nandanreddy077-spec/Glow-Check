@@ -42,6 +42,7 @@ interface FreemiumContextType {
   showTrialUpgradeModal: boolean;
   setShowTrialUpgradeModal: (show: boolean) => void;
   resultsUnlockedUntil: string | null;
+  canAccessGlowForecast: boolean;
 }
 
 const FREE_SCANS = 1;
@@ -298,6 +299,10 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     return trialTracking?.results_unlocked_until || null;
   }, [trialTracking?.results_unlocked_until]);
 
+  const canAccessGlowForecast = useMemo(() => {
+    return subState.isPremium || (subState.hasStartedTrial && subState.hasAddedPayment);
+  }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment]);
+
   return useMemo(() => ({
     canScanGlow,
     canScanStyle,
@@ -317,6 +322,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     showTrialUpgradeModal,
     setShowTrialUpgradeModal,
     resultsUnlockedUntil,
+    canAccessGlowForecast,
   }), [
     canScanGlow,
     canScanStyle,
@@ -335,5 +341,6 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
     refreshUsage,
     showTrialUpgradeModal,
     resultsUnlockedUntil,
+    canAccessGlowForecast,
   ]);
 });

@@ -375,8 +375,8 @@ export default function HomeScreen() {
               </LinearGradient>
             </TouchableOpacity>
             
-            <TouchableOpacity onPress={() => router.push('/product-library')} activeOpacity={0.9} style={styles.trackerCard}>
-              <LinearGradient colors={['#D4F0E8', '#F5D5C2']} style={[styles.trackerCardInner, shadow.elevated]}>
+            <TouchableOpacity onPress={() => router.push('/glow-forecast')} activeOpacity={0.9} style={styles.trackerCard}>
+              <LinearGradient colors={['#FFD6E8', '#E0C3FC']} style={[styles.trackerCardInner, shadow.elevated]}>
                 <Animated.View style={{
                   transform: [{
                     rotate: floatingAnim.interpolate({
@@ -385,18 +385,13 @@ export default function HomeScreen() {
                     })
                   }]
                 }}>
-                  <Package color={palette.textLight} size={28} strokeWidth={2.5} />
+                  <Sparkles color={palette.textLight} size={28} strokeWidth={2.5} />
                 </Animated.View>
-                <Text style={styles.trackerTitle}>Product Shelf</Text>
-                <Text style={styles.trackerValue}>{products.length}</Text>
-                <Text style={styles.trackerLabel}>products</Text>
-                {alerts.length > 0 && (
-                  <View style={styles.trackerBadge}>
-                    <Text style={styles.trackerBadgeText}>{alerts.length}</Text>
-                  </View>
-                )}
+                <Text style={styles.trackerTitle}>Glow Forecast</Text>
+                <Text style={styles.trackerValue}>🔮</Text>
+                <Text style={styles.trackerLabel}>AI predictions</Text>
                 <View style={styles.trackerCTA}>
-                  <Text style={styles.trackerCTAText}>Never expire</Text>
+                  <Text style={styles.trackerCTAText}>See your future</Text>
                   <ArrowRight color={palette.textLight} size={14} strokeWidth={3} />
                 </View>
               </LinearGradient>

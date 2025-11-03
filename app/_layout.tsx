@@ -17,6 +17,7 @@ import { FreemiumProvider } from "@/contexts/FreemiumContext";
 import { ProgressTrackingProvider } from "@/contexts/ProgressTrackingContext";
 import { ProductTrackingProvider } from "@/contexts/ProductTrackingContext";
 import { SeasonalAdvisorProvider } from "@/contexts/SeasonalAdvisorContext";
+import { GlowForecastContext } from "@/contexts/GlowForecastContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import { initializeNotifications } from "@/lib/notifications";
@@ -55,6 +56,10 @@ function RootLayoutNav() {
       <Stack.Screen name="style-results" options={{ headerShown: true, headerBackTitle: "Back" }} />
       <Stack.Screen name="subscribe" options={{ headerShown: true, headerBackTitle: "Back" }} />
       <Stack.Screen name="privacy-care" options={{ headerShown: true, headerBackTitle: "Back" }} />
+      <Stack.Screen name="glow-forecast" options={{ headerShown: false }} />
+      <Stack.Screen name="progress-tracker" options={{ headerShown: false }} />
+      <Stack.Screen name="product-library" options={{ headerShown: false }} />
+      <Stack.Screen name="premium-unlock" options={{ headerShown: true, headerBackTitle: "Back" }} />
     </Stack>
   );
 }
@@ -97,12 +102,14 @@ export default function RootLayout() {
                             <ProgressTrackingProvider>
                               <ProductTrackingProvider>
                                 <SeasonalAdvisorProvider>
-                                  <GestureHandlerRootView style={styles.container}>
-                                    <CommunityProvider>
-                                      <TrialStarter />
-                                      <RootLayoutNav />
-                                    </CommunityProvider>
-                                  </GestureHandlerRootView>
+                                  <GlowForecastContext>
+                                    <GestureHandlerRootView style={styles.container}>
+                                      <CommunityProvider>
+                                        <TrialStarter />
+                                        <RootLayoutNav />
+                                      </CommunityProvider>
+                                    </GestureHandlerRootView>
+                                  </GlowForecastContext>
                                 </SeasonalAdvisorProvider>
                               </ProductTrackingProvider>
                             </ProgressTrackingProvider>
