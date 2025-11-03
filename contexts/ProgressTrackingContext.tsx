@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { ProgressPhoto, ProgressComparison, WeeklyInsight, SkinJournalEntry } from '@/types/progress';
 import { Platform } from 'react-native';
+import { generateObject } from '@rork/toolkit-sdk';
+import { z } from 'zod';
 
 const storage = {
   async getItem(key: string): Promise<string | null> {
@@ -53,6 +55,11 @@ interface ProgressTrackingContextType {
   };
   deleteProgressPhoto: (id: string) => Promise<void>;
   deleteJournalEntry: (id: string) => Promise<void>;
+  analyzePhotoWithAI: (photoUri: string, previousPhotoUri?: string) => Promise<{
+    skinCondition: { hydration: number; texture: number; brightness: number; acne: number };
+    concerns: string[];
+    improvements: string[];
+  }>;
 }
 
 const STORAGE_KEYS = {
@@ -92,11 +99,67 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
     }
   };
 
+  const analyzePhotoWithAI = useCallback(async (photoUri: string, previousPhotoUri?: string): Promise<{
+    skinCondition: { hydration: number; texture: number; brightness: number; acne: number };
+    concerns: string[];
+    improvements: string[];
+  }> => {
+    try {
+      const schema = z.object({
+        skinCondition: z.object({
+          hydration: z.number().min(0).max(100),
+          texture: z.number().min(0).max(100),
+          brightness: z.number().min(0).max(100),
+          acne: z.number().min(0).max(100),
+        }),
+        concerns: z.array(z.string()),
+        improvements: z.array(z.string()),
+      });
+
+      const messages = previousPhotoUri ? [
+        {
+          role: 'user' as const,
+          content: [
+            { type: 'text' as const, text: 'Analyze these two photos to track skin improvements. First photo is older, second is recent. Provide: 1) Detailed skin condition scores (0-100 for hydration, texture, brightness, acne where higher=better except acne). 2) Current concerns to address. 3) Specific improvements noticed between photos.' },
+            { type: 'image' as const, image: previousPhotoUri },
+            { type: 'image' as const, image: photoUri },
+          ],
+        },
+      ] : [
+        {
+          role: 'user' as const,
+          content: [
+            { type: 'text' as const, text: 'Analyze this facial photo for skin health. Provide: 1) Detailed skin condition scores (0-100 for hydration, texture, brightness, acne where higher=better except acne). 2) Specific concerns to address. 3) Empty improvements array for now.' },
+            { type: 'image' as const, image: photoUri },
+          ],
+        },
+      ];
+
+      const result = await generateObject({ messages, schema });
+      return result;
+    } catch (error) {
+      console.error('AI photo analysis error:', error);
+      return {
+        skinCondition: { hydration: 50, texture: 50, brightness: 50, acne: 50 },
+        concerns: [],
+        improvements: [],
+      };
+    }
+  }, []);
+
   const addProgressPhoto = useCallback(async (photo: Omit<ProgressPhoto, 'id'>) => {
     try {
+      const previousPhoto = progressPhotos[0];
+      const aiAnalysis = await analyzePhotoWithAI(
+        photo.uri,
+        previousPhoto?.uri
+      );
+
       const newPhoto: ProgressPhoto = {
         ...photo,
         id: `photo_${Date.now()}`,
+        skinCondition: aiAnalysis.skinCondition,
+        concerns: aiAnalysis.concerns,
       };
 
       const updated = [newPhoto, ...progressPhotos].slice(0, 50);
@@ -104,8 +167,15 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
       await storage.setItem(STORAGE_KEYS.PHOTOS, JSON.stringify(updated));
     } catch (error) {
       console.error('Error adding progress photo:', error);
+      const newPhoto: ProgressPhoto = {
+        ...photo,
+        id: `photo_${Date.now()}`,
+      };
+      const updated = [newPhoto, ...progressPhotos].slice(0, 50);
+      setProgressPhotos(updated);
+      await storage.setItem(STORAGE_KEYS.PHOTOS, JSON.stringify(updated));
     }
-  }, [progressPhotos]);
+  }, [progressPhotos, analyzePhotoWithAI]);
 
   const addJournalEntry = useCallback(async (entry: Omit<SkinJournalEntry, 'id'>) => {
     try {
@@ -257,49 +327,69 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
         return null;
       }
 
-      const highlights: string[] = [];
-      const concerns: string[] = [];
-      const recommendations: string[] = [];
-
       const stats = getJournalStats();
-      if (stats.averageWater < 6) {
-        concerns.push('Low hydration intake this week');
-        recommendations.push('Try to drink at least 8 glasses of water daily');
-      }
-      if (stats.averageSleep < 7) {
-        concerns.push('Insufficient sleep affecting skin recovery');
-        recommendations.push('Aim for 7-8 hours of sleep for optimal skin health');
-      }
-      if (stats.moodDistribution.great && stats.moodDistribution.great > 3) {
-        highlights.push('Great mood consistency this week!');
-      }
-
       const comparison = getProgressComparison(7);
-      if (comparison && comparison.overallTrend === 'improving') {
-        highlights.push('Visible improvement in skin condition');
-      }
 
-      if (weekPhotos.length > 0) {
-        highlights.push(`${weekPhotos.length} progress photos captured`);
-      }
+      const contextData = {
+        weekPhotosCount: weekPhotos.length,
+        weekJournalCount: weekJournal.length,
+        averageSleep: stats.averageSleep.toFixed(1),
+        averageWater: stats.averageWater.toFixed(0),
+        averageStress: stats.averageStress.toFixed(1),
+        moodDistribution: stats.moodDistribution,
+        skinTrend: comparison?.overallTrend || 'stable',
+        improvements: comparison?.improvements || [],
+        recentNotes: weekJournal.map(e => e.notes).filter(Boolean).slice(0, 3),
+      };
+
+      const prompt = `You are an expert skincare coach analyzing a week of progress data. Generate highly personalized, motivating insights.
+
+Data:
+- Photos taken: ${contextData.weekPhotosCount}
+- Journal entries: ${contextData.weekJournalCount}/7
+- Sleep average: ${contextData.averageSleep}h
+- Water average: ${contextData.averageWater} glasses/day
+- Stress average: ${contextData.averageStress}/5
+- Mood: ${JSON.stringify(contextData.moodDistribution)}
+- Skin trend: ${contextData.skinTrend}
+- Improvements: ${JSON.stringify(contextData.improvements)}
+- Recent journal notes: ${JSON.stringify(contextData.recentNotes)}
+
+Provide:
+1. A warm, personalized summary (2-3 sentences) acknowledging their effort
+2. 3-5 specific highlights (achievements, improvements noticed)
+3. 1-3 concerns (if any lifestyle factors need attention)
+4. 3-5 actionable recommendations (specific to their data)
+
+Make it personal, specific to their data, and motivating. Use their name if in notes, reference specific habits.`;
+
+      const schema = z.object({
+        summary: z.string(),
+        highlights: z.array(z.string()).min(3).max(5),
+        concerns: z.array(z.string()).max(3),
+        recommendations: z.array(z.string()).min(3).max(5),
+      });
+
+      const aiResult = await generateObject({
+        messages: [{ role: 'user', content: prompt }],
+        schema,
+      });
 
       const completionRate = weekJournal.length / 7;
-      if (completionRate > 0.8) {
-        highlights.push('Excellent journaling consistency!');
-      }
+      const progressScore = comparison 
+        ? (comparison.overallTrend === 'improving' ? 85 : comparison.overallTrend === 'declining' ? 45 : 65)
+        : Math.min(30 + (completionRate * 40) + (weekPhotos.length * 5), 100);
 
       const insight: WeeklyInsight = {
         id: `insight_${Date.now()}`,
         week: Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)),
         startDate: weekStart,
         endDate: weekEnd,
-        summary: highlights.length > 0 
-          ? `This week showed positive progress with ${highlights.length} key highlights` 
-          : 'Continue your routine for better results',
-        highlights,
-        concerns,
-        recommendations,
-        progressScore: comparison ? (comparison.overallTrend === 'improving' ? 85 : 60) : 70,
+        summary: aiResult.summary,
+        highlights: aiResult.highlights,
+        concerns: aiResult.concerns,
+        recommendations: aiResult.recommendations,
+        progressScore,
         photosCount: weekPhotos.length,
         routineCompletionRate: completionRate * 100,
       };
@@ -328,6 +418,7 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
     getJournalStats,
     deleteProgressPhoto,
     deleteJournalEntry,
+    analyzePhotoWithAI,
   }), [
     progressPhotos,
     journalEntries,
@@ -341,5 +432,6 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
     getJournalStats,
     deleteProgressPhoto,
     deleteJournalEntry,
+    analyzePhotoWithAI,
   ]);
 });

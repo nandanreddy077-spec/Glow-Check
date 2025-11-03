@@ -345,46 +345,140 @@ export default function ProgressTrackerScreen() {
     );
   };
 
+  const [isGeneratingInsight, setIsGeneratingInsight] = useState<boolean>(false);
+
+  const handleGenerateInsight = async () => {
+    setIsGeneratingInsight(true);
+    try {
+      await generateWeeklyInsight();
+    } catch (error) {
+      console.error('Failed to generate insight:', error);
+    } finally {
+      setIsGeneratingInsight(false);
+    }
+  };
+
   const renderInsightsTab = () => {
     return (
       <View style={styles.tabContent}>
         {weekInsight ? (
-          <View style={[styles.insightCard, shadow.card]}>
-            <View style={styles.insightHeader}>
-              <Sparkles color={palette.gold} size={24} strokeWidth={2} fill={palette.gold} />
-              <Text style={styles.insightTitle}>This Week's Insights</Text>
+          <View style={styles.insightsContainer}>
+            <View style={[styles.insightCard, shadow.card]}>
+              <View style={styles.insightHeader}>
+                <View style={styles.insightHeaderLeft}>
+                  <Sparkles color={palette.gold} size={24} strokeWidth={2} fill={palette.gold} />
+                  <Text style={styles.insightTitle}>Your Week's Glow Story</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={handleGenerateInsight}
+                  disabled={isGeneratingInsight}
+                  style={styles.refreshButton}
+                >
+                  <Sparkles color={palette.blush} size={20} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.progressScoreContainer}>
+                <Text style={styles.progressScoreLabel}>Progress Score</Text>
+                <Text style={styles.progressScoreValue}>{weekInsight.progressScore}/100</Text>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${weekInsight.progressScore}%` }
+                    ]}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.insightSummary}>{weekInsight.summary}</Text>
+
+              {weekInsight.highlights.length > 0 && (
+                <View style={styles.insightSection}>
+                  <View style={styles.insightSectionHeader}>
+                    <TrendingUp color="#4CAF50" size={18} strokeWidth={2.5} />
+                    <Text style={[styles.insightSectionTitle, { color: '#4CAF50' }]}>Wins This Week</Text>
+                  </View>
+                  {weekInsight.highlights.map((highlight, index) => (
+                    <View key={index} style={styles.insightBulletContainer}>
+                      <View style={styles.insightBulletDot} />
+                      <Text style={styles.insightBullet}>{highlight}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {weekInsight.concerns.length > 0 && (
+                <View style={styles.insightSection}>
+                  <View style={styles.insightSectionHeader}>
+                    <Zap color="#FF9800" size={18} strokeWidth={2.5} />
+                    <Text style={[styles.insightSectionTitle, { color: '#FF9800' }]}>Focus Areas</Text>
+                  </View>
+                  {weekInsight.concerns.map((concern, index) => (
+                    <View key={index} style={styles.insightBulletContainer}>
+                      <View style={[styles.insightBulletDot, { backgroundColor: '#FF9800' }]} />
+                      <Text style={styles.insightBullet}>{concern}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {weekInsight.recommendations.length > 0 && (
+                <View style={styles.insightSection}>
+                  <View style={styles.insightSectionHeader}>
+                    <Sparkles color={palette.gold} size={18} strokeWidth={2.5} />
+                    <Text style={[styles.insightSectionTitle, { color: palette.gold }]}>Personalized Tips</Text>
+                  </View>
+                  {weekInsight.recommendations.map((rec, index) => (
+                    <View key={index} style={styles.insightBulletContainer}>
+                      <View style={[styles.insightBulletDot, { backgroundColor: palette.gold }]} />
+                      <Text style={styles.insightBullet}>{rec}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
-            <Text style={styles.insightSummary}>{weekInsight.summary}</Text>
 
-            {weekInsight.highlights.length > 0 && (
-              <View style={styles.insightSection}>
-                <Text style={styles.insightSectionTitle}>Highlights</Text>
-                {weekInsight.highlights.map((highlight, index) => (
-                  <Text key={index} style={styles.insightBullet}>
-                    • {highlight}
-                  </Text>
-                ))}
+            <View style={[styles.statsCard, shadow.card, { marginTop: 16 }]}>
+              <Text style={styles.statsTitle}>Weekly Activity</Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statBox}>
+                  <Camera color={palette.blush} size={20} strokeWidth={2} />
+                  <Text style={styles.statBoxValue}>{weekInsight.photosCount}</Text>
+                  <Text style={styles.statBoxLabel}>Photos</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <BookOpen color={palette.gold} size={20} strokeWidth={2} />
+                  <Text style={styles.statBoxValue}>{Math.round(weekInsight.routineCompletionRate)}%</Text>
+                  <Text style={styles.statBoxLabel}>Completion</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <TrendingUp color="#4CAF50" size={20} strokeWidth={2} />
+                  <Text style={styles.statBoxValue}>{weekInsight.week}</Text>
+                  <Text style={styles.statBoxLabel}>Week #</Text>
+                </View>
               </View>
-            )}
-
-            {weekInsight.recommendations.length > 0 && (
-              <View style={styles.insightSection}>
-                <Text style={styles.insightSectionTitle}>Recommendations</Text>
-                {weekInsight.recommendations.map((rec, index) => (
-                  <Text key={index} style={styles.insightBullet}>
-                    • {rec}
-                  </Text>
-                ))}
-              </View>
-            )}
+            </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
             <Sparkles color={palette.textSecondary} size={64} strokeWidth={1.5} />
-            <Text style={styles.emptyTitle}>No Insights Yet</Text>
+            <Text style={styles.emptyTitle}>Start Your Glow Journey</Text>
             <Text style={styles.emptyText}>
-              Add more progress photos and journal entries to get personalized insights
+              Take progress photos and journal daily to unlock AI-powered insights that track your transformation
             </Text>
+            <TouchableOpacity 
+              onPress={handleGenerateInsight}
+              disabled={isGeneratingInsight || (progressPhotos.length === 0 && journalEntries.length === 0)}
+              style={[styles.emptyButton, (progressPhotos.length === 0 && journalEntries.length === 0) && { opacity: 0.5 }]}
+            >
+              <LinearGradient colors={['#E8D5F0', '#D4A574']} style={styles.emptyButtonGradient}>
+                <Sparkles color={palette.textLight} size={20} strokeWidth={2.5} />
+                <Text style={styles.emptyButtonText}>
+                  {isGeneratingInsight ? 'Generating...' : 'Generate Insights'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -941,16 +1035,58 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     borderRadius: 20,
     padding: 20,
   },
+  insightsContainer: {
+    gap: 0,
+  },
   insightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  insightHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-    marginBottom: 16,
   },
   insightTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: palette.textPrimary,
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: palette.surfaceElevated,
+  },
+  progressScoreContainer: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: palette.surfaceElevated,
+  },
+  progressScoreLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: palette.textSecondary,
+    marginBottom: 8,
+  },
+  progressScoreValue: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: palette.textPrimary,
+    marginBottom: 12,
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: palette.divider,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: palette.gold,
   },
   insightSummary: {
     fontSize: 16,
@@ -961,17 +1097,52 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   insightSection: {
     marginBottom: 20,
   },
+  insightSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
   insightSectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
-    color: palette.gold,
-    marginBottom: 8,
+  },
+  insightBulletContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  insightBulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4CAF50',
+    marginTop: 6,
   },
   insightBullet: {
-    fontSize: 14,
+    flex: 1,
+    fontSize: 15,
+    color: palette.textPrimary,
+    lineHeight: 22,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statBox: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  statBoxValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: palette.textPrimary,
+  },
+  statBoxLabel: {
+    fontSize: 12,
+    fontWeight: '600',
     color: palette.textSecondary,
-    lineHeight: 20,
-    marginBottom: 4,
   },
   fabContainer: {
     position: 'absolute',
