@@ -36,15 +36,18 @@ export default function GlowForecastScreen() {
   ];
 
   const handleGenerate = () => {
+    console.log("🔘 Generate button pressed");
+    console.log("Can access:", canAccessGlowForecast);
+    console.log("Selected timeframe:", selectedTimeframe);
+    
     if (!canAccessGlowForecast) {
+      console.log("❌ No access, redirecting to premium");
       router.push("/premium-unlock");
       return;
     }
-    try {
-      generateForecast(selectedTimeframe);
-    } catch (err) {
-      console.error("Error generating forecast:", err);
-    }
+    
+    console.log("✅ Calling generateForecast...");
+    generateForecast(selectedTimeframe);
   };
 
   if (!canAccessGlowForecast) {
