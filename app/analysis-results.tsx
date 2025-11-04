@@ -132,9 +132,9 @@ export default function AnalysisResultsScreen() {
       '\n\n📊 Analysis Confidence: 95%+' : '';
     
     return {
-      message: `${scoreEmoji} Just got my Glow Score: ${result.overallScore}/100!\n\n🏆 Achievement: ${badgeText}\n${result.rating}${improvementText}${confidenceText}\n\n✨ Ready to discover your glow? Try GlowCheck AI!`,
+      message: `${scoreEmoji} Just got my Glow Score: ${result.overallScore}/100!\n\n🏆 Achievement: ${badgeText}\n${result.rating}${improvementText}${confidenceText}\n\n✨ Ready to discover your glow? Try Lumyn!`,
       title: `My Glow Score: ${result.overallScore}/100 ${scoreEmoji}`,
-      url: 'https://glowcheck.ai' // Replace with actual app URL
+      url: 'https://lumyn.app' // Replace with actual app URL
     };
   };
 

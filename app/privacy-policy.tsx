@@ -23,12 +23,12 @@ export default function PrivacyPolicyScreen() {
         contentContainerStyle={styles.content}
         testID="privacy-policy-scroll"
       >
-        <Text style={styles.title}>GlowCheck Privacy Policy</Text>
+        <Text style={styles.title}>Lumyn Privacy Policy</Text>
         <Text style={styles.lastUpdated}>Last updated: September 2025</Text>
 
         <View style={styles.section}>
           <Text style={styles.paragraph}>
-            This Privacy Policy explains how GlowCheck ("we", "us", "our") collects, uses, discloses, and protects personal information when you use the GlowCheck mobile and web applications ("App"). We act as the data controller for personal data where we determine the purposes and means of processing. If you have questions or requests, contact: anixagency7@gmail.com.
+            This Privacy Policy explains how Lumyn ("we", "us", "our") collects, uses, discloses, and protects personal information when you use the Lumyn mobile and web applications ("App"). We act as the data controller for personal data where we determine the purposes and means of processing. If you have questions or requests, contact: anixagency7@gmail.com.
           </Text>
         </View>
 

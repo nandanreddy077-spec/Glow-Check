@@ -141,8 +141,8 @@ export default function ProfileScreen() {
   };
 
   const handleHelpSupport = useCallback(async () => {
-    const subject = encodeURIComponent("Help & Support - GlowCheck");
-    const body = encodeURIComponent("Hi GlowCheck Team,\n\nI need help with...");
+    const subject = encodeURIComponent("Help & Support - Lumyn");
+    const body = encodeURIComponent("Hi Lumyn Team,\n\nI need help with...");
     const url = `mailto:anixagency7@gmail.com?subject=${subject}&body=${body}`;
     try {
       const canOpen = await Linking.canOpenURL(url);
@@ -216,7 +216,7 @@ export default function ProfileScreen() {
   }, [authUser?.user_metadata, user?.name]);
 
   const displayEmail = useMemo(() => {
-    return authUser?.email ?? user?.email ?? 'hello@glowcheck.com';
+    return authUser?.email ?? user?.email ?? 'hello@lumyn.com';
   }, [authUser?.email, user?.email]);
 
   const recentActivities = useMemo(() => {

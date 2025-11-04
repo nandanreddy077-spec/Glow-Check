@@ -23,19 +23,19 @@ export default function TermsOfServiceScreen() {
         contentContainerStyle={styles.content}
         testID="tos-scroll"
       >
-        <Text style={styles.title}>GlowCheck Terms of Service</Text>
+        <Text style={styles.title}>Lumyn Terms of Service</Text>
         <Text style={styles.lastUpdated}>Last updated: September 2025</Text>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>1. Acceptance of Terms</Text>
           <Text style={styles.paragraph}>
-            By downloading, installing, or using the GlowCheck application (the "App"), you agree to be bound by these Terms of Service (the "Terms"). If you do not agree to the Terms, you must not use the App.
+            By downloading, installing, or using the Lumyn application (the "App"), you agree to be bound by these Terms of Service (the "Terms"). If you do not agree to the Terms, you must not use the App.
           </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>2. Description of Service</Text>
-          <Text style={styles.paragraph}>GlowCheck provides:</Text>
+          <Text style={styles.paragraph}>Lumyn provides:</Text>
           <Text style={styles.bulletPoint}>• AI-powered skin and style analysis</Text>
           <Text style={styles.bulletPoint}>• Personalized skincare routines and coaching</Text>
           <Text style={styles.bulletPoint}>• Progress tracking, challenges, and rewards</Text>
