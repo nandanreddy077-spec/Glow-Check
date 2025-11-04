@@ -163,7 +163,11 @@ export default function GlowForecastScreen() {
             <View style={[styles.errorCard, shadow.card]}>
               <Text style={styles.errorTitle}>⚠️ Error</Text>
               <Text style={styles.errorText}>
-                {error instanceof Error ? error.message : "Failed to load forecast. Please make sure the database is set up correctly."}
+                {error instanceof Error 
+                  ? error.message 
+                  : typeof error === 'object' && error !== null
+                  ? JSON.stringify(error, null, 2)
+                  : "Failed to load forecast. Please make sure the database is set up correctly."}
               </Text>
             </View>
           )}

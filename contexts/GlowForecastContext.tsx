@@ -60,6 +60,8 @@ export const [GlowForecastContext, useGlowForecast] = createContextHook(() => {
     queryFn: async () => {
       if (!user?.id) return null;
 
+      console.log("🔍 Fetching forecast for:", { userId: user.id, timeframe: selectedTimeframe });
+
       const { data, error } = await supabase
         .from("glow_forecasts")
         .select("*")
@@ -67,13 +69,14 @@ export const [GlowForecastContext, useGlowForecast] = createContextHook(() => {
         .eq("timeframe", selectedTimeframe)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== "PGRST116") {
-        console.error("Error fetching forecast:", error.message || error);
-        throw new Error(error.message || "Failed to fetch forecast");
+      if (error) {
+        console.error("❌ Error fetching forecast:", error);
+        throw new Error(error.message || "Failed to fetch forecast. Please check database setup.");
       }
 
+      console.log("✅ Forecast fetched:", data ? "Found" : "Not found");
       return data as GlowForecast | null;
     },
     enabled: !!user?.id,
@@ -122,8 +125,13 @@ export const [GlowForecastContext, useGlowForecast] = createContextHook(() => {
       const progressPhotos = progressPhotosQuery.data || [];
       const analyses = analysesQuery.data || [];
 
+      console.log("📊 Data check:", { progressPhotos: progressPhotos.length, analyses: analyses.length });
+
       if (progressPhotos.length === 0 && analyses.length === 0) {
-        throw new Error("Need at least one analysis or progress photo");
+        throw new Error(
+          "You need at least one Glow Analysis or Progress Photo to generate a forecast. " +
+          "Please complete a Glow Analysis first!"
+        );
       }
 
       const currentScore = analyses[0]?.overall_score || 70;
@@ -226,8 +234,9 @@ Be optimistic but realistic. Focus on achievable improvements.`;
         .single();
 
       if (error) {
-        console.error("Error saving forecast:", error.message || error);
-        throw new Error(error.message || "Failed to save forecast");
+        console.error("❌ Error saving forecast:", error);
+        const errorMessage = error.message || "Failed to save forecast to database";
+        throw new Error(errorMessage);
       }
 
       console.log("💾 Forecast saved to database");
@@ -278,7 +287,7 @@ Be optimistic but realistic. Focus on achievable improvements.`;
         .eq("id", forecastQuery.data.id);
 
       if (error) {
-        console.error("Error updating milestone:", error.message || error);
+        console.error("❌ Error updating milestone:", error);
         throw new Error(error.message || "Failed to update milestone");
       }
     },
