@@ -508,34 +508,32 @@ export async function sendStreakNotification(streakDays: number) {
   }
 }
 
-export async function sendMissedRoutineNotification() {
+export async function sendMissedRoutineNotification(routineType: 'morning' | 'evening' = 'morning') {
   const hasPermission = await requestNotificationPermissions();
   if (!hasPermission) return;
 
   const template = getRandomTemplate('missed_routine');
+  const customTitle = routineType === 'morning' 
+    ? template.title
+    : template.title.replace('morning', 'evening').replace('Coffee break', 'Evening wind-down');
 
   try {
     if (Platform.OS === 'web') {
       if ('Notification' in globalThis && Notification.permission === 'granted') {
-        new Notification(template.title, { body: template.body });
+        new Notification(customTitle, { body: template.body });
       }
     } else {
-      const trigger: Notifications.TimeIntervalTriggerInput = {
-        type: SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 60 * 60 * 2,
-        repeats: false,
-      };
-
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: template.title,
+          title: customTitle,
           body: template.body,
-          data: template.data || {},
+          data: { ...template.data, routineType },
           sound: true,
         },
-        trigger,
+        trigger: null,
       });
     }
+    console.log(`[Notifications] Sent ${routineType} missed routine notification immediately`);
   } catch (error) {
     console.error('[Notifications] Error sending missed routine notification:', error);
   }

@@ -60,24 +60,40 @@ export const [NotificationProvider, useNotifications] = createContextHook<Notifi
       return;
     }
 
-    console.log('[NotificationContext] User detected, initializing notifications');
-    updateNotificationSchedule();
-  }, [user, updateNotificationSchedule]);
+    const initializeOnce = async () => {
+      const lastInit = await AsyncStorage.getItem('last_notification_init');
+      const now = Date.now();
+      
+      if (!lastInit || now - parseInt(lastInit) > 24 * 60 * 60 * 1000) {
+        console.log('[NotificationContext] First init or 24h passed, initializing notifications');
+        await updateNotificationSchedule();
+        await AsyncStorage.setItem('last_notification_init', now.toString());
+      } else {
+        console.log('[NotificationContext] Already initialized in last 24h, skipping');
+      }
+    };
+
+    initializeOnce();
+  }, [user]);
 
   useEffect(() => {
     if (!user || !isInitialized) return;
 
-    console.log('[NotificationContext] User context changed, updating notifications');
-    updateNotificationSchedule();
+    const handleContextChange = async () => {
+      const lastUpdate = await AsyncStorage.getItem('last_notification_update');
+      const now = Date.now();
+      
+      if (!lastUpdate || now - parseInt(lastUpdate) > 12 * 60 * 60 * 1000) {
+        console.log('[NotificationContext] User context changed significantly, updating notifications');
+        await updateNotificationSchedule();
+        await AsyncStorage.setItem('last_notification_update', now.toString());
+      }
+    };
+
+    handleContextChange();
   }, [
-    user,
-    isInitialized,
-    updateNotificationSchedule,
     subState.isPremium,
     subState.hasStartedTrial,
-    subState.hasAddedPayment,
-    freemium.hasUsedFreeGlowScan,
-    freemium.hasUsedFreeStyleScan,
   ]);
 
   const triggerStreakNotification = useCallback(async (streakDays: number) => {
@@ -94,23 +110,33 @@ export const [NotificationProvider, useNotifications] = createContextHook<Notifi
     if (!user) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
       const currentHour = new Date().getHours();
+      const dateKey = new Date().toDateString();
       
-      const morningRoutineDone = await AsyncStorage.getItem(`routine_morning_${new Date().toDateString()}`);
-      const eveningRoutineDone = await AsyncStorage.getItem(`routine_evening_${new Date().toDateString()}`);
-      const lastMissedNotification = await AsyncStorage.getItem('last_missed_routine_notification');
+      const morningRoutineDone = await AsyncStorage.getItem(`routine_morning_${dateKey}`);
+      const eveningRoutineDone = await AsyncStorage.getItem(`routine_evening_${dateKey}`);
+      const lastMorningNotif = await AsyncStorage.getItem('last_morning_missed_notif');
+      const lastEveningNotif = await AsyncStorage.getItem('last_evening_missed_notif');
       
       const shouldSendMorningReminder = currentHour >= 11 && currentHour < 14 && !morningRoutineDone;
       const shouldSendEveningReminder = currentHour >= 22 && currentHour < 23 && !eveningRoutineDone;
       
-      const canSendNotification = !lastMissedNotification || 
-        (new Date().getTime() - new Date(lastMissedNotification).getTime()) > 4 * 60 * 60 * 1000;
+      const canSendMorningNotif = !lastMorningNotif || 
+        (new Date().getTime() - new Date(lastMorningNotif).getTime()) > 24 * 60 * 60 * 1000;
       
-      if (canSendNotification && (shouldSendMorningReminder || shouldSendEveningReminder)) {
-        console.log('[NotificationContext] Sending missed routine notification');
-        await sendMissedRoutineNotification();
-        await AsyncStorage.setItem('last_missed_routine_notification', new Date().toISOString());
+      const canSendEveningNotif = !lastEveningNotif || 
+        (new Date().getTime() - new Date(lastEveningNotif).getTime()) > 24 * 60 * 60 * 1000;
+      
+      if (shouldSendMorningReminder && canSendMorningNotif) {
+        console.log('[NotificationContext] Sending morning missed routine notification');
+        await sendMissedRoutineNotification('morning');
+        await AsyncStorage.setItem('last_morning_missed_notif', new Date().toISOString());
+      }
+      
+      if (shouldSendEveningReminder && canSendEveningNotif) {
+        console.log('[NotificationContext] Sending evening missed routine notification');
+        await sendMissedRoutineNotification('evening');
+        await AsyncStorage.setItem('last_evening_missed_notif', new Date().toISOString());
       }
     } catch (error) {
       console.error('[NotificationContext] Error checking missed routine:', error);
