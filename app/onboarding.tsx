@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useUser } from '@/contexts/UserContext';
 import { ChevronRight, Sparkles, Star, Zap } from 'lucide-react-native';
+import Logo from '@/components/Logo';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { startDailyNotifications } from '@/lib/notifications';
@@ -20,7 +21,7 @@ interface Slide {
 const slides: Slide[] = [
   {
     id: '1',
-    title: 'Your Beauty Intelligence',
+    title: 'Welcome to Lumyn',
     subtitle: 'AI-powered analysis reveals your unique radiance and creates personalized beauty plans',
     image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/wdrokw9xnolfhtc6301rh',
     stats: [

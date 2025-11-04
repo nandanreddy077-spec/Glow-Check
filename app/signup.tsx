@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
 import { Eye, EyeOff, Mail, Lock, User, Heart, Sparkles, Star, ArrowLeft } from 'lucide-react-native';
+import Logo from '@/components/Logo';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 
 export default function SignupScreen() {
@@ -204,11 +205,11 @@ export default function SignupScreen() {
                 }
               ]}
             >
+              <Logo size={100} style={{ marginBottom: 24 }} />
               <View style={styles.titleContainer}>
-                <Heart color={palette.primary} size={32} fill={palette.blush} />
-                <Text style={styles.title}>Begin Your Glow Journey</Text>
+                <Text style={styles.title}>Join Lumyn</Text>
               </View>
-              <Text style={styles.subtitle}>Join our beautiful community and discover your radiant self</Text>
+              <Text style={styles.subtitle}>Begin your radiant beauty journey</Text>
               
               <View style={styles.welcomeBadge}>
                 <Sparkles color={palette.primary} size={16} fill={palette.blush} />

@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
 import { Eye, EyeOff, Mail, Lock, Heart, Sparkles, Star, Wifi } from 'lucide-react-native';
+import Logo from '@/components/Logo';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 import { testSupabaseConnection } from '@/lib/supabase';
 
@@ -205,11 +206,11 @@ export default function LoginScreen() {
                 }
               ]}
             >
+              <Logo size={100} style={{ marginBottom: 24 }} />
               <View style={styles.titleContainer}>
-                <Heart color={palette.primary} size={32} fill={palette.blush} />
-                <Text style={styles.title}>Welcome Back, Beautiful</Text>
+                <Text style={styles.title}>Welcome to Lumyn</Text>
               </View>
-              <Text style={styles.subtitle}>Continue your radiant journey with us</Text>
+              <Text style={styles.subtitle}>Continue your radiant journey</Text>
               
               <View style={styles.welcomeBadge}>
                 <Sparkles color={palette.primary} size={16} fill={palette.blush} />
