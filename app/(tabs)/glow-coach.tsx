@@ -43,8 +43,11 @@ import {
 const { width } = Dimensions.get('window');
 import { useSkincare } from '@/contexts/SkincareContext';
 import { useGamification } from '@/contexts/GamificationContext';
+import { useNotifications } from '@/contexts/NotificationContext';
+import { markRoutineDone } from '@/lib/notifications';
 import { SkincareStep, WeeklyPlan, SkincarePlan } from '@/types/skincare';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DailyRewardsModal from '@/components/DailyRewardsModal';
 import AnimatedProgressBar from '@/components/AnimatedProgressBar';
 import { useFreemium } from '@/contexts/FreemiumContext';
@@ -73,6 +76,7 @@ export default function GlowCoachScreen() {
   const { completeDailyRoutine, hasCompletedToday, hasCompletedForPlanDay } = useGamification();
   const { isFreeUser, isTrialUser, isPaidUser } = useFreemium();
   const { state: subState, hoursLeft } = useSubscription();
+  const { triggerStreakNotification } = useNotifications();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [selectedMood, setSelectedMood] = useState<'great' | 'good' | 'okay' | 'bad' | null>(null);
@@ -287,6 +291,22 @@ export default function GlowCoachScreen() {
     await updatePlanProgress(currentPlan.id, {
       completedSteps: updatedSteps
     });
+
+    if (!isCompleted) {
+      const allMorningSteps = todaySteps.morning.map(s => s.id);
+      const allEveningSteps = todaySteps.evening.map(s => s.id);
+      const morningComplete = allMorningSteps.every(id => updatedSteps.includes(id) || id === stepId);
+      const eveningComplete = allEveningSteps.every(id => updatedSteps.includes(id) || id === stepId);
+      
+      if (morningComplete && allMorningSteps.length > 0) {
+        await markRoutineDone('morning');
+        console.log('Morning routine marked as done');
+      }
+      if (eveningComplete && allEveningSteps.length > 0) {
+        await markRoutineDone('evening');
+        console.log('Evening routine marked as done');
+      }
+    }
   };
 
   const handleAddNote = async () => {
@@ -353,10 +373,27 @@ export default function GlowCoachScreen() {
       
       console.log('✨ All steps completed, proceeding with daily routine completion...');
       
+      const currentStreak = await (async () => {
+        try {
+          const completions = await AsyncStorage.getItem('gamification_daily_completions');
+          if (completions) {
+            const parsed = JSON.parse(completions);
+            return Array.isArray(parsed) ? parsed.length : 0;
+          }
+        } catch (e) {
+          console.error('Error getting streak:', e);
+        }
+        return 0;
+      })();
+      
       // Complete the daily routine and get rewards
       console.log('🎁 Calling completeDailyRoutine...');
       const rewards = await completeDailyRoutine(currentPlan.id, currentPlan.progress.currentDay);
       console.log('🎉 Rewards received:', rewards);
+
+      if (currentStreak >= 3) {
+        await triggerStreakNotification(currentStreak + 1);
+      }
       
       // Update plan progress - advance to next day ONLY if not at the end
       console.log('📈 Updating plan progress...');

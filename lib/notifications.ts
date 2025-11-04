@@ -37,23 +37,33 @@ interface NotificationTemplate {
 const PREMIUM_NOTIFICATIONS: Record<NotificationType, NotificationTemplate[]> = {
   morning_motivation: [
     {
+      title: "Your skin missed you last night 😴",
+      body: "But it's ready to forgive. Let's glow up together this morning!",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Bestie, your skincare is waiting ☕️",
+      body: "Coffee first or glow first? (Hint: Both!) 3 mins to radiance.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
       title: "Good morning, gorgeous! ☀️",
-      body: "Your skin is waiting for its daily dose of love. Ready to glow?",
+      body: "1,247 women just did their routine. You're next, right? 😉",
       data: { screen: "(tabs)/glow-coach" }
     },
     {
-      title: "Rise & Shine, beauty! ✨",
-      body: "3 minutes. That's all it takes to transform your skin today.",
+      title: "Remember that glow you wanted? 🌟",
+      body: "It starts with 5 mins today. Future you is already thankful.",
       data: { screen: "(tabs)/glow-coach" }
     },
     {
-      title: "Morning glow time! 🌅",
-      body: "Your future skin will thank you for what you do in the next 5 minutes.",
+      title: "Plot twist: You woke up flawless 💁‍♀️",
+      body: "Kidding! But you will be after this 4-min routine. Let's go!",
       data: { screen: "(tabs)/glow-coach" }
     },
     {
-      title: "Psst... Your skin is calling! 💆‍♀️",
-      body: "Start your day with self-care. Your morning routine is ready.",
+      title: "Your mirror is calling... 🪞",
+      body: "Time to show your skin some serious love. It deserves it!",
       data: { screen: "(tabs)/glow-coach" }
     },
   ],
@@ -105,45 +115,55 @@ const PREMIUM_NOTIFICATIONS: Record<NotificationType, NotificationTemplate[]> = 
   ],
   evening_wind_down: [
     {
-      title: "Wind down with self-care 🌙",
-      body: "Your evening routine is the secret to waking up beautiful. Ready?",
+      title: "Netflix can wait. Your skin can't! 🌙",
+      body: "5 mins now = tomorrow's compliments. Worth it?",
       data: { screen: "(tabs)/glow-coach" }
     },
     {
-      title: "Time for your beauty sleep prep! 😴",
-      body: "5 minutes now = glowing skin tomorrow. Your routine awaits.",
+      title: "Before you scroll to sleep... 📱",
+      body: "Give your skin the TLC it needs. Your pillowcase will thank you!",
       data: { screen: "(tabs)/glow-coach" }
     },
     {
-      title: "Before bed beauty ritual! ✨",
-      body: "Never skip your evening routine. Your skin repairs itself while you sleep.",
+      title: "Psst... beauty sleep starts now 😴✨",
+      body: "But first, the 5-min evening ritual that changes everything.",
       data: { screen: "(tabs)/glow-coach" }
     },
     {
-      title: "End your day beautifully! 🌟",
-      body: "Your nighttime routine is ready. Let's prep that glow for tomorrow.",
+      title: "Today's makeup: Off. Tonight's glow: On 💫",
+      body: "Time to let your skin breathe and repair. You've got this!",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Dear skin, we're sorry for the day 🌙",
+      body: "But we're about to make it all better. Evening glow time!",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "The secret to waking up flawless? 🤫",
+      body: "This 6-min evening routine. Shall we?",
       data: { screen: "(tabs)/glow-coach" }
     },
   ],
   consistency_streak: [
     {
-      title: "🔥 3-day streak! You're on fire!",
-      body: "Your skin is noticing the difference. Keep up the amazing work!",
+      title: "3 days in! You're literally glowing 🔥",
+      body: "Your skin cells are throwing a party. Keep it going!",
       data: { screen: "(tabs)/profile" }
     },
     {
-      title: "🎉 7 days strong! Incredible!",
-      body: "Results are just around the corner. Your dedication is inspiring!",
+      title: "WEEK ONE COMPLETE! 🎉🎉🎉",
+      body: "You just lapped everyone still thinking about starting. Legend!",
       data: { screen: "(tabs)/profile" }
     },
     {
-      title: "⭐ 14-day glow streak! Legend!",
-      body: "This is when magic happens. Your skin is transforming!",
+      title: "14 days?! Who even are you? 😱👑",
+      body: "This is where skin transformation goes from 'meh' to 'WOW!'",
       data: { screen: "(tabs)/profile" }
     },
     {
-      title: "💎 30-day milestone! Unstoppable!",
-      body: "You're a skincare queen! Check out your amazing progress.",
+      title: "30 DAYS! You're basically a superhero 💎",
+      body: "Only 3% make it this far. Your skin is unrecognizable (in a good way!)",
       data: { screen: "(tabs)/profile" }
     },
   ],
@@ -161,23 +181,33 @@ const PREMIUM_NOTIFICATIONS: Record<NotificationType, NotificationTemplate[]> = 
   ],
   glow_tip: [
     {
-      title: "💡 Pro tip from dermatologists:",
-      body: "Apply products from thinnest to thickest consistency for best absorption!",
+      title: "Spill the tea ☕: Dermatologist secret",
+      body: "Thin to thick product order = 3x better absorption. Mind. Blown. 🤯",
       data: { screen: "(tabs)/index" }
     },
     {
-      title: "✨ Beauty secret unlocked:",
-      body: "Pat, don't rub! Gentle patting helps products absorb better.",
+      title: "Your grandma was right about this 👵✨",
+      body: "Pat, don't rub! Her skin looked amazing for a reason.",
       data: { screen: "(tabs)/index" }
     },
     {
-      title: "🎯 Expert advice:",
-      body: "Wait 60 seconds between each product for maximum effectiveness!",
+      title: "Plot twist: You're doing it wrong 😱",
+      body: "Wait 60 secs between products for 2x effectiveness. Who knew?!",
       data: { screen: "(tabs)/index" }
     },
     {
-      title: "💆‍♀️ Skincare hack:",
-      body: "Massage in upward motions to boost circulation and reduce puffiness!",
+      title: "This one trick costs $0 💰",
+      body: "Upward massage motions = natural facelift. You're welcome!",
+      data: { screen: "(tabs)/index" }
+    },
+    {
+      title: "Why didn't anyone tell us this sooner?! 🤦‍♀️",
+      body: "Damp skin absorbs products 10x better. Game changer!",
+      data: { screen: "(tabs)/index" }
+    },
+    {
+      title: "Rich auntie energy unlocked 💅",
+      body: "Silk pillowcase = less wrinkles. Invest in your sleep!",
       data: { screen: "(tabs)/index" }
     },
   ],
@@ -200,13 +230,28 @@ const PREMIUM_NOTIFICATIONS: Record<NotificationType, NotificationTemplate[]> = 
   ],
   missed_routine: [
     {
-      title: "We missed you today! 💔",
-      body: "Your skin routine is still here waiting. It's never too late to glow!",
+      title: "Your skincare routine is ghosting you 👻",
+      body: "But unlike your ex, it'll take you back. 2 hours left!",
       data: { screen: "(tabs)/glow-coach" }
     },
     {
-      title: "Don't break your streak! 🔥",
-      body: "Quick! You still have time to complete today's routine.",
+      title: "Houston, we have a problem 🚨",
+      body: "Your 7-day streak is in danger! Quick 5-min save?",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Plot twist: Your skin is judging you 😏",
+      body: "JK! But seriously, you've got 3 hours to keep that streak alive.",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "This is awkward... 😬",
+      body: "Your morning routine is still waiting. Coffee break glow-up?",
+      data: { screen: "(tabs)/glow-coach" }
+    },
+    {
+      title: "Breaking: Local woman too busy to glow 📰",
+      body: "But wait! She has 90 mins to prove them wrong. That's you!",
       data: { screen: "(tabs)/glow-coach" }
     },
   ],

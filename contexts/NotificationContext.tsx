@@ -3,13 +3,15 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 import { useFreemium } from './FreemiumContext';
-import { initializeNotifications, sendStreakNotification, sendFreeScanUsedNotification } from '@/lib/notifications';
+import { initializeNotifications, sendStreakNotification, sendFreeScanUsedNotification, sendMissedRoutineNotification } from '@/lib/notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface NotificationContextType {
   isInitialized: boolean;
   updateNotificationSchedule: () => Promise<void>;
   triggerStreakNotification: (streakDays: number) => Promise<void>;
   triggerFreeScanUsedNotification: () => Promise<void>;
+  checkMissedRoutine: () => Promise<void>;
 }
 
 export const [NotificationProvider, useNotifications] = createContextHook<NotificationContextType>(() => {
@@ -88,15 +90,56 @@ export const [NotificationProvider, useNotifications] = createContextHook<Notifi
     await sendFreeScanUsedNotification();
   }, []);
 
+  const checkMissedRoutine = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const currentHour = new Date().getHours();
+      
+      const morningRoutineDone = await AsyncStorage.getItem(`routine_morning_${new Date().toDateString()}`);
+      const eveningRoutineDone = await AsyncStorage.getItem(`routine_evening_${new Date().toDateString()}`);
+      const lastMissedNotification = await AsyncStorage.getItem('last_missed_routine_notification');
+      
+      const shouldSendMorningReminder = currentHour >= 11 && currentHour < 14 && !morningRoutineDone;
+      const shouldSendEveningReminder = currentHour >= 22 && currentHour < 23 && !eveningRoutineDone;
+      
+      const canSendNotification = !lastMissedNotification || 
+        (new Date().getTime() - new Date(lastMissedNotification).getTime()) > 4 * 60 * 60 * 1000;
+      
+      if (canSendNotification && (shouldSendMorningReminder || shouldSendEveningReminder)) {
+        console.log('[NotificationContext] Sending missed routine notification');
+        await sendMissedRoutineNotification();
+        await AsyncStorage.setItem('last_missed_routine_notification', new Date().toISOString());
+      }
+    } catch (error) {
+      console.error('[NotificationContext] Error checking missed routine:', error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !isInitialized) return;
+
+    const checkInterval = setInterval(() => {
+      checkMissedRoutine();
+    }, 60 * 60 * 1000);
+
+    checkMissedRoutine();
+
+    return () => clearInterval(checkInterval);
+  }, [user, isInitialized, checkMissedRoutine]);
+
   return useMemo(() => ({
     isInitialized,
     updateNotificationSchedule,
     triggerStreakNotification,
     triggerFreeScanUsedNotification,
+    checkMissedRoutine,
   }), [
     isInitialized,
     updateNotificationSchedule,
     triggerStreakNotification,
     triggerFreeScanUsedNotification,
+    checkMissedRoutine,
   ]);
 });
