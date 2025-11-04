@@ -36,6 +36,12 @@ CREATE TABLE IF NOT EXISTS public.glow_forecasts (
 -- Enable RLS
 ALTER TABLE public.glow_forecasts ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own forecasts" ON public.glow_forecasts;
+DROP POLICY IF EXISTS "Users can insert own forecasts" ON public.glow_forecasts;
+DROP POLICY IF EXISTS "Users can update own forecasts" ON public.glow_forecasts;
+DROP POLICY IF EXISTS "Users can delete own forecasts" ON public.glow_forecasts;
+
 -- RLS Policies
 CREATE POLICY "Users can view own forecasts" ON public.glow_forecasts
   FOR SELECT USING (auth.uid() = user_id);
