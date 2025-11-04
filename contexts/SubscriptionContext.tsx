@@ -46,7 +46,7 @@ export interface SubscriptionContextType {
   restorePurchases: () => Promise<{ success: boolean; error?: string }>;
 }
 
-const STORAGE_KEY = 'glowcheck_subscription_state';
+const STORAGE_KEY = 'lumyn_subscription_state';
 
 const DEFAULT_STATE: SubscriptionState = {
   isPremium: false,

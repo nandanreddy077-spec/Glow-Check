@@ -77,7 +77,7 @@ export default function TermsOfServiceScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>7. Medical and Safety Disclaimer</Text>
-          <Text style={styles.paragraph}>GlowCheck provides informational guidance only and is not a substitute for professional medical advice. Do not rely solely on the App for diagnosis or treatment. Stop using products if irritation occurs and consult a professional.</Text>
+          <Text style={styles.paragraph}>Lumyn provides informational guidance only and is not a substitute for professional medical advice. Do not rely solely on the App for diagnosis or treatment. Stop using products if irritation occurs and consult a professional.</Text>
         </View>
 
         <View style={styles.section}>
@@ -121,7 +121,7 @@ export default function TermsOfServiceScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>By using GlowCheck, you acknowledge and agree to these Terms of Service.</Text>
+          <Text style={styles.footerText}>By using Lumyn, you acknowledge and agree to these Terms of Service.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

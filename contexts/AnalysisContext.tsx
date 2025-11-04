@@ -94,7 +94,7 @@ const storage = {
   async clearOldData(): Promise<void> {
     try {
       const keysToCheck = [
-        'glowcheck_analysis_history',
+        'lumyn_analysis_history',
         'gamification_glow_boosts',
         'gamification_badges',
         'gamification_achievements',
@@ -160,7 +160,7 @@ interface AnalysisContextType {
   loadHistory: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'glowcheck_analysis_history';
+const STORAGE_KEY = 'lumyn_analysis_history';
 
 export const [AnalysisProvider, useAnalysis] = createContextHook((): AnalysisContextType => {
   const [currentResult, setCurrentResult] = useState<AnalysisResult | null>(null);

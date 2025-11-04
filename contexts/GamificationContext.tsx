@@ -209,7 +209,7 @@ export const [GamificationProvider, useGamification] = createContextHook(() => {
       console.log('🧹 Starting storage cleanup...');
       
       // Clean up old analysis history that might be causing quota issues
-      const analysisHistoryKey = 'glowcheck_analysis_history';
+      const analysisHistoryKey = 'lumyn_analysis_history';
       const analysisHistory = await AsyncStorage.getItem(analysisHistoryKey);
       if (analysisHistory) {
         try {

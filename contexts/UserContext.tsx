@@ -77,7 +77,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
       const [userData, firstTimeData, analysisData] = await Promise.all([
         storage.getItem(STORAGE_KEY),
         storage.getItem(FIRST_TIME_KEY),
-        storage.getItem('glowcheck_analysis_history'),
+        storage.getItem('lumyn_analysis_history'),
       ]);
       
       let baseUser = DEFAULT_USER;
@@ -107,12 +107,12 @@ export const [UserProvider, useUser] = createContextHook(() => {
             analysisHistory = JSON.parse(analysisData);
           } else {
             console.error('Invalid JSON format in analysis data:', analysisData);
-            await storage.setItem('glowcheck_analysis_history', JSON.stringify([]));
+            await storage.setItem('lumyn_analysis_history', JSON.stringify([]));
           }
         } catch (parseError) {
           console.error('Error parsing analysis data:', parseError, 'Data:', analysisData);
           // Clear corrupted analysis data
-          await storage.setItem('glowcheck_analysis_history', JSON.stringify([]));
+          await storage.setItem('lumyn_analysis_history', JSON.stringify([]));
           analysisHistory = [];
         }
         const analysisCount = analysisHistory.length;

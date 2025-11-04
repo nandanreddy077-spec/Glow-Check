@@ -48,7 +48,7 @@ interface SkincareContextType {
   isGenerating: boolean;
 }
 
-const STORAGE_KEY = 'glowcheck_skincare_plans';
+const STORAGE_KEY = 'lumyn_skincare_plans';
 
 export const [SkincareProvider, useSkincare] = createContextHook((): SkincareContextType => {
   const [currentPlan, setCurrentPlan] = useState<SkincarePlan | null>(null);

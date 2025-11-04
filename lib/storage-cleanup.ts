@@ -38,9 +38,9 @@ const storage = {
 };
 
 const STORAGE_KEYS = [
-  'glowcheck_user',
-  'glowcheck_first_time',
-  'glowcheck_analysis_history',
+  'lumyn_user',
+  'lumyn_first_time',
+  'lumyn_analysis_history',
   'gamification_badges',
   'gamification_achievements',
   'gamification_glow_boosts',
@@ -70,7 +70,7 @@ export async function validateAndCleanStorage(): Promise<void> {
           await storage.removeItem(key);
           
           // Reset to default values for critical keys
-          if (key === 'glowcheck_analysis_history') {
+          if (key === 'lumyn_analysis_history') {
             await storage.setItem(key, JSON.stringify([]));
           } else if (key === 'gamification_badges') {
             await storage.setItem(key, JSON.stringify([]));
@@ -103,7 +103,7 @@ export const clearAllStorageData = async () => {
     console.log('🧹 Starting storage cleanup...');
     
     const keysToRemove = [
-      'glowcheck_analysis_history',
+      'lumyn_analysis_history',
       'gamification_glow_boosts',
       'gamification_badges', 
       'gamification_achievements',

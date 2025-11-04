@@ -170,7 +170,7 @@ export default function PrivacyPolicyScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            By using GlowCheck, you acknowledge this Privacy Policy and consent to processing as described where consent is required.
+            By using Lumyn, you acknowledge this Privacy Policy and consent to processing as described where consent is required.
           </Text>
         </View>
       </ScrollView>
