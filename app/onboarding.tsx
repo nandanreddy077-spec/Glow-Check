@@ -23,7 +23,7 @@ const slides: Slide[] = [
     id: '1',
     title: 'Welcome to Lumyn',
     subtitle: 'AI-powered analysis reveals your unique radiance and creates personalized beauty plans',
-    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/nkd2glzj6a4rmufyg78r0',
+    image: '',
     stats: [
       { value: 'AI', label: 'Powered' },
       { value: '10s', label: 'Analysis' },
@@ -178,11 +178,15 @@ export default function OnboardingScreen() {
                         end={{ x: 1, y: 1 }}
                       >
                         <View style={styles.imageInner}>
-                          <Image 
-                            source={{ uri: s.image }} 
-                            style={styles.heroImage} 
-                            resizeMode="cover" 
-                          />
+                          {i === 0 ? (
+                            <Logo size={280} />
+                          ) : (
+                            <Image 
+                              source={{ uri: s.image }} 
+                              style={styles.heroImage} 
+                              resizeMode="cover" 
+                            />
+                          )}
                           <LinearGradient 
                             colors={['transparent', 'rgba(0,0,0,0.15)']} 
                             style={styles.imageGradient} 
@@ -415,6 +419,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     borderRadius: 140,
     overflow: 'hidden',
     backgroundColor: palette.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroImage: { 
     width: '100%', 
