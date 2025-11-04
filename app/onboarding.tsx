@@ -179,7 +179,7 @@ export default function OnboardingScreen() {
                       >
                         <View style={styles.imageInner}>
                           {i === 0 ? (
-                            <Logo size={280} />
+                            <Logo size={220} />
                           ) : (
                             <Image 
                               source={{ uri: s.image }} 
@@ -187,10 +187,12 @@ export default function OnboardingScreen() {
                               resizeMode="cover" 
                             />
                           )}
-                          <LinearGradient 
-                            colors={['transparent', 'rgba(0,0,0,0.15)']} 
-                            style={styles.imageGradient} 
-                          />
+                          {i !== 0 && (
+                            <LinearGradient 
+                              colors={['transparent', 'rgba(0,0,0,0.15)']} 
+                              style={styles.imageGradient} 
+                            />
+                          )}
                         </View>
                       </LinearGradient>
                       
