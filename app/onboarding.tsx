@@ -23,7 +23,7 @@ const slides: Slide[] = [
     id: '1',
     title: 'Welcome to Lumyn',
     subtitle: 'AI-powered analysis reveals your unique radiance and creates personalized beauty plans',
-    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/wdrokw9xnolfhtc6301rh',
+    image: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/nkd2glzj6a4rmufyg78r0',
     stats: [
       { value: 'AI', label: 'Powered' },
       { value: '10s', label: 'Analysis' },
