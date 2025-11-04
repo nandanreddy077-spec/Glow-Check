@@ -354,8 +354,14 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   }
 }
 
-export async function scheduleAllNotifications() {
-  console.log('[Notifications] Scheduling premium notifications...');
+export async function scheduleAllNotifications(userContext?: {
+  isTrialUser?: boolean;
+  isPremium?: boolean;
+  hasUsedFreeScan?: boolean;
+  trialDaysLeft?: number;
+  lastScanDate?: string;
+}) {
+  console.log('[Notifications] Scheduling smart notifications with context:', userContext);
   
   const hasPermission = await requestNotificationPermissions();
   if (!hasPermission) {
@@ -364,11 +370,21 @@ export async function scheduleAllNotifications() {
   }
 
   try {
+    const lastScheduledStr = await getStorageItem('last_notification_schedule');
+    const lastScheduled = lastScheduledStr ? new Date(lastScheduledStr) : null;
+    const now = new Date();
+    
+    if (lastScheduled && (now.getTime() - lastScheduled.getTime()) < 12 * 60 * 60 * 1000) {
+      console.log('[Notifications] Already scheduled in last 12 hours, skipping');
+      return true;
+    }
+
     await Notifications.cancelAllScheduledNotificationsAsync();
     
     const scheduledIds: string[] = [];
+    const schedule = getSmartNotificationSchedule(userContext);
 
-    for (const config of NOTIFICATION_SCHEDULE) {
+    for (const config of schedule) {
       const template = getRandomTemplate(config.type);
       
       const trigger: any = {
@@ -382,26 +398,7 @@ export async function scheduleAllNotifications() {
       }
 
       if (Platform.OS === 'web') {
-        const now = new Date();
-        let scheduleTime = new Date();
-        scheduleTime.setHours(config.hour, config.minute, 0, 0);
-        
-        if (scheduleTime.getTime() <= now.getTime()) {
-          scheduleTime.setDate(scheduleTime.getDate() + 1);
-        }
-
-        const ms = scheduleTime.getTime() - now.getTime();
-        
-        setTimeout(() => {
-          if ('Notification' in globalThis && Notification.permission === 'granted') {
-            new Notification(template.title, { body: template.body });
-            
-            setInterval(() => {
-              const randomTemplate = getRandomTemplate(config.type);
-              new Notification(randomTemplate.title, { body: randomTemplate.body });
-            }, 24 * 60 * 60 * 1000);
-          }
-        }, ms);
+        console.log('[Notifications] Web notification scheduling skipped - handled by context');
       } else {
         const id = await Notifications.scheduleNotificationAsync({
           content: {
@@ -418,7 +415,8 @@ export async function scheduleAllNotifications() {
     }
 
     await setStorageItem('scheduled_notification_ids', JSON.stringify(scheduledIds));
-    console.log(`[Notifications] Scheduled ${scheduledIds.length} notifications successfully`);
+    await setStorageItem('last_notification_schedule', now.toISOString());
+    console.log(`[Notifications] Scheduled ${scheduledIds.length} smart notifications`);
     return true;
   } catch (error) {
     console.error('[Notifications] Error scheduling notifications:', error);
@@ -498,25 +496,86 @@ export async function sendMissedRoutineNotification() {
   }
 }
 
-export async function initializeNotifications() {
-  console.log('[Notifications] Initializing premium notification system...');
+function getSmartNotificationSchedule(userContext?: {
+  isTrialUser?: boolean;
+  isPremium?: boolean;
+  hasUsedFreeScan?: boolean;
+  trialDaysLeft?: number;
+  lastScanDate?: string;
+}): ScheduleConfig[] {
+  const baseSchedule: ScheduleConfig[] = [];
+  
+  if (!userContext) {
+    return [
+      { type: 'morning_motivation', hour: 9, minute: 0 },
+      { type: 'glow_tip', hour: 17, minute: 0 },
+    ];
+  }
+
+  if (userContext.isPremium) {
+    return [
+      { type: 'morning_motivation', hour: 8, minute: 0 },
+      { type: 'routine_reminder', hour: 10, minute: 0 },
+      { type: 'midday_boost', hour: 14, minute: 0 },
+      { type: 'glow_tip', hour: 16, minute: 0 },
+      { type: 'evening_wind_down', hour: 21, minute: 0 },
+      { type: 'community_engagement', hour: 19, minute: 0 },
+      { type: 'weekly_progress', hour: 10, minute: 0, days: [0] },
+    ];
+  }
+
+  if (userContext.isTrialUser) {
+    baseSchedule.push(
+      { type: 'morning_motivation', hour: 8, minute: 30 },
+      { type: 'routine_reminder', hour: 10, minute: 0 },
+      { type: 'evening_wind_down', hour: 21, minute: 0 },
+    );
+
+    if (userContext.trialDaysLeft && userContext.trialDaysLeft <= 2) {
+      baseSchedule.push(
+        { type: 'trial_ending_soon', hour: 19, minute: 0 },
+      );
+    }
+
+    if (userContext.trialDaysLeft === 5) {
+      baseSchedule.push(
+        { type: 'trial_day5_payment', hour: 18, minute: 0 },
+      );
+    }
+
+    return baseSchedule;
+  }
+
+  if (userContext.hasUsedFreeScan) {
+    return [
+      { type: 'results_expiring', hour: 19, minute: 0 },
+      { type: 'free_scan_used', hour: 14, minute: 0 },
+    ];
+  }
+
+  return [
+    { type: 'morning_motivation', hour: 9, minute: 0 },
+    { type: 'glow_tip', hour: 17, minute: 0 },
+  ];
+}
+
+export async function initializeNotifications(userContext?: {
+  isTrialUser?: boolean;
+  isPremium?: boolean;
+  hasUsedFreeScan?: boolean;
+  trialDaysLeft?: number;
+  lastScanDate?: string;
+}) {
+  console.log('[Notifications] Initializing smart notification system...');
   
   try {
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
-      console.log('[Notifications] Permission not granted, skipping scheduling');
+      console.log('[Notifications] Permission not granted, skipping');
       return false;
     }
 
-    await scheduleAllNotifications();
-    
-    const lastScheduled = await getStorageItem('last_notification_schedule');
-    const today = new Date().toDateString();
-    
-    if (lastScheduled !== today) {
-      await scheduleAllNotifications();
-      await setStorageItem('last_notification_schedule', today);
-    }
+    await scheduleAllNotifications(userContext);
     
     return true;
   } catch (error) {

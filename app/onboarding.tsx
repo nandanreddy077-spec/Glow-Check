@@ -8,7 +8,7 @@ import { ChevronRight, Sparkles, Star, Zap } from 'lucide-react-native';
 import Logo from '@/components/Logo';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
-import { startDailyNotifications } from '@/lib/notifications';
+
 
 interface Slide {
   id: string;
@@ -115,14 +115,12 @@ export default function OnboardingScreen() {
       scrollRef.current?.scrollTo({ x: next * width, animated: true });
     } else {
       setIsFirstTime(false);
-      await startDailyNotifications();
       router.replace('/signup');
     }
   }, [index, width, setIsFirstTime]);
 
   const handleSkip = useCallback(async () => {
     setIsFirstTime(false);
-    await startDailyNotifications();
     router.replace('/signup');
   }, [setIsFirstTime]);
 

@@ -18,9 +18,10 @@ import { ProgressTrackingProvider } from "@/contexts/ProgressTrackingContext";
 import { ProductTrackingProvider } from "@/contexts/ProductTrackingContext";
 import { SeasonalAdvisorProvider } from "@/contexts/SeasonalAdvisorContext";
 import { GlowForecastContext } from "@/contexts/GlowForecastContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-import { initializeNotifications } from "@/lib/notifications";
+
 import { StyleSheet } from 'react-native';
 
 // Notifications are handled in the simplified notification system
@@ -70,21 +71,16 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Validate and clean corrupted storage data on app start
         await validateAndCleanStorage();
         console.log('✅ Storage validated and cleaned successfully');
       } catch (error) {
         console.error('❌ Storage cleanup failed:', error);
       } finally {
-        await initializeNotifications();
         SplashScreen.hideAsync();
       }
     };
     
     initializeApp();
-
-    // Notification listeners not needed in simplified system
-    // Web notifications are handled directly in the notification system
   }, []);
 
   return (
@@ -99,7 +95,8 @@ export default function RootLayout() {
                       <StyleProvider>
                         <SubscriptionProvider>
                           <FreemiumProvider>
-                            <ProgressTrackingProvider>
+                            <NotificationProvider>
+                              <ProgressTrackingProvider>
                               <ProductTrackingProvider>
                                 <SeasonalAdvisorProvider>
                                   <GlowForecastContext>
@@ -112,7 +109,8 @@ export default function RootLayout() {
                                   </GlowForecastContext>
                                 </SeasonalAdvisorProvider>
                               </ProductTrackingProvider>
-                            </ProgressTrackingProvider>
+                              </ProgressTrackingProvider>
+                            </NotificationProvider>
                           </FreemiumProvider>
                         </SubscriptionProvider>
                       </StyleProvider>
