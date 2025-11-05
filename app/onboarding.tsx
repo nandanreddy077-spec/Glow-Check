@@ -334,7 +334,7 @@ export default function OnboardingScreen() {
                           <View style={styles.imageInner}>
                             {i === 0 ? (
                               <View style={styles.logoContainer}>
-                                <Logo size={180} />
+                                <Logo size={260} />
                               </View>
                             ) : (
                               <>
@@ -601,7 +601,6 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     width: '100%',
     height: '100%',
     backgroundColor: '#FFFFFF',
-    padding: spacing.xl,
   },
   sparkleContainer: {
     position: 'absolute',
