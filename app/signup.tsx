@@ -8,7 +8,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +31,7 @@ export default function SignupScreen() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
+  const [glowAnim] = useState(new Animated.Value(0));
   const { signUp } = useAuth();
   const { theme } = useTheme();
   
@@ -42,12 +42,12 @@ export default function SignupScreen() {
       Animated.sequence([
         Animated.timing(sparkleAnim, {
           toValue: 1,
-          duration: 3000,
+          duration: 2000,
           useNativeDriver: true,
         }),
         Animated.timing(sparkleAnim, {
           toValue: 0,
-          duration: 3000,
+          duration: 2000,
           useNativeDriver: true,
         }),
       ])
@@ -57,12 +57,27 @@ export default function SignupScreen() {
       Animated.sequence([
         Animated.timing(floatingAnim, {
           toValue: 1,
-          duration: 4000,
+          duration: 3000,
           useNativeDriver: true,
         }),
         Animated.timing(floatingAnim, {
           toValue: 0,
-          duration: 4000,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const glowAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2500,
           useNativeDriver: true,
         }),
       ])
@@ -70,12 +85,14 @@ export default function SignupScreen() {
     
     sparkleAnimation.start();
     floatingAnimation.start();
+    glowAnimation.start();
     
     return () => {
       sparkleAnimation.stop();
       floatingAnimation.stop();
+      glowAnimation.stop();
     };
-  }, [sparkleAnim, floatingAnim]);
+  }, [sparkleAnim, floatingAnim, glowAnim]);
 
   const handleSignup = async () => {
     if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -126,11 +143,52 @@ export default function SignupScreen() {
   const styles = createStyles(palette);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={getGradient(theme).hero}
         style={styles.gradient}
       >
+        {/* Animated Background Orbs */}
+        <Animated.View
+          style={[
+            styles.orb1,
+            {
+              opacity: glowAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.15, 0.25],
+              }),
+              transform: [
+                {
+                  scale: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 1.2],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+        
+        <Animated.View
+          style={[
+            styles.orb2,
+            {
+              opacity: glowAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.2, 0.3],
+              }),
+              transform: [
+                {
+                  scale: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1.2, 1],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+
         {/* Floating decorative elements */}
         <Animated.View 
           style={[
@@ -138,18 +196,18 @@ export default function SignupScreen() {
             {
               opacity: sparkleAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.3, 0.8],
+                outputRange: [0.4, 0.9],
               }),
               transform: [{
                 rotate: sparkleAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: ['0deg', '360deg'],
-                })
-              }]
+                }),
+              }],
             }
           ]}
         >
-          <Sparkles color={palette.blush} size={16} fill={palette.blush} />
+          <Sparkles color={palette.primary} size={20} fill={palette.primary} />
         </Animated.View>
         
         <Animated.View 
@@ -158,12 +216,18 @@ export default function SignupScreen() {
             {
               opacity: sparkleAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.4, 0.9],
+                outputRange: [0.5, 1],
               }),
+              transform: [{
+                translateY: floatingAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -10],
+                }),
+              }],
             }
           ]}
         >
-          <Heart color={palette.lavender} size={14} fill={palette.lavender} />
+          <Heart color={palette.blush} size={16} fill={palette.blush} />
         </Animated.View>
         
         <Animated.View 
@@ -172,219 +236,208 @@ export default function SignupScreen() {
             {
               opacity: floatingAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.5, 1],
+                outputRange: [0.6, 1],
               }),
+              transform: [{
+                translateY: floatingAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 10],
+                }),
+              }],
             }
           ]}
         >
-          <Star color={palette.champagne} size={12} fill={palette.champagne} />
+          <Star color={palette.champagne} size={14} fill={palette.champagne} />
         </Animated.View>
         
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-        >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
+        <SafeAreaView style={styles.safeArea}>
+          <TouchableOpacity onPress={navigateBack} style={styles.backButton}>
+            <View style={styles.backButtonCircle}>
+              <ArrowLeft size={20} color={palette.textPrimary} />
+            </View>
+          </TouchableOpacity>
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.keyboardView}
           >
-            <TouchableOpacity onPress={navigateBack} style={styles.backButton}>
-              <ArrowLeft size={24} color={palette.textLight} />
-            </TouchableOpacity>
-            
-            <Animated.View 
-              style={[
-                styles.header,
-                {
-                  transform: [{
-                    translateY: floatingAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, -8],
-                    })
-                  }]
-                }
-              ]}
-            >
-              <Logo size={100} style={{ marginBottom: 24 }} />
-              <View style={styles.titleContainer}>
+            <View style={styles.content}>
+              {/* Logo Header */}
+              <Animated.View 
+                style={[
+                  styles.logoContainer,
+                  {
+                    transform: [{
+                      scale: floatingAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.05],
+                      })
+                    }]
+                  }
+                ]}
+              >
+                <View style={styles.logoCircle}>
+                  <Logo size={70} />
+                </View>
+                
                 <Text style={styles.title}>Join Lumyn</Text>
-              </View>
-              <Text style={styles.subtitle}>Begin your radiant beauty journey</Text>
-              
-              <View style={styles.welcomeBadge}>
-                <Sparkles color={palette.primary} size={16} fill={palette.blush} />
-                <Text style={styles.welcomeBadgeText}>Your transformation starts here</Text>
-              </View>
-            </Animated.View>
+                <Text style={styles.subtitle}>Begin your radiant journey</Text>
+              </Animated.View>
 
-            <Animated.View 
-              style={[
-                styles.form,
-                shadow.elevated,
-                {
-                  transform: [{
-                    translateY: floatingAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, -4],
-                    })
-                  }]
-                }
-              ]}
-            >
-              <View style={styles.inputContainer}>
-                <View style={styles.inputIconContainer}>
-                  <User size={20} color={palette.primary} style={styles.inputIcon} />
+              {/* Compact Form */}
+              <View style={styles.form}>
+                <View style={styles.inputContainer}>
+                  <User size={18} color={palette.primary} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Full name"
+                    placeholderTextColor={palette.textMuted}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    testID="fullname-input"
+                  />
                 </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Your beautiful name"
-                  placeholderTextColor={palette.textMuted}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                  testID="fullname-input"
-                />
-              </View>
 
-              <View style={styles.inputContainer}>
-                <View style={styles.inputIconContainer}>
-                  <Mail size={20} color={palette.primary} style={styles.inputIcon} />
+                <View style={styles.inputContainer}>
+                  <Mail size={18} color={palette.primary} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email address"
+                    placeholderTextColor={palette.textMuted}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    testID="email-input"
+                  />
                 </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Your radiant email"
-                  placeholderTextColor={palette.textMuted}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  testID="email-input"
-                />
-              </View>
 
-              <View style={styles.inputContainer}>
-                <View style={styles.inputIconContainer}>
-                  <Lock size={20} color={palette.primary} style={styles.inputIcon} />
+                <View style={styles.inputContainer}>
+                  <Lock size={18} color={palette.primary} />
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Password"
+                    placeholderTextColor={palette.textMuted}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    testID="password-input"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                    testID="toggle-password"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} color={palette.textMuted} />
+                    ) : (
+                      <Eye size={18} color={palette.textMuted} />
+                    )}
+                  </TouchableOpacity>
                 </View>
-                <TextInput
-                  style={[styles.input, styles.passwordInput]}
-                  placeholder="Create secure password"
-                  placeholderTextColor={palette.textMuted}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  testID="password-input"
-                />
+
+                <View style={styles.inputContainer}>
+                  <Lock size={18} color={palette.primary} />
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Confirm password"
+                    placeholderTextColor={palette.textMuted}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    testID="confirm-password-input"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeIcon}
+                    testID="toggle-confirm-password"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} color={palette.textMuted} />
+                    ) : (
+                      <Eye size={18} color={palette.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                  testID="toggle-password"
+                  style={[styles.signupButton, (isLoading || !acceptTerms) && styles.signupButtonDisabled]}
+                  onPress={handleSignup}
+                  disabled={isLoading || !acceptTerms}
+                  testID="signup-button"
                 >
-                  {showPassword ? (
-                    <EyeOff size={20} color={palette.textMuted} />
-                  ) : (
-                    <Eye size={20} color={palette.textMuted} />
-                  )}
+                  <LinearGradient
+                    colors={getGradient(theme).primary}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.signupButtonGradient}
+                  >
+                    <Sparkles color={palette.textLight} size={18} />
+                    <Text style={styles.signupButtonText}>
+                      {isLoading ? 'Creating Account...' : 'Begin My Glow Journey'}
+                    </Text>
+                  </LinearGradient>
                 </TouchableOpacity>
-              </View>
 
-              <View style={styles.inputContainer}>
-                <View style={styles.inputIconContainer}>
-                  <Lock size={20} color={palette.primary} style={styles.inputIcon} />
-                </View>
-                <TextInput
-                  style={[styles.input, styles.passwordInput]}
-                  placeholder="Confirm your password"
-                  placeholderTextColor={palette.textMuted}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  testID="confirm-password-input"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={styles.eyeIcon}
-                  testID="toggle-confirm-password"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff size={20} color={palette.textMuted} />
-                  ) : (
-                    <Eye size={20} color={palette.textMuted} />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.termsContainer}>
                 <TouchableOpacity 
-                  style={styles.checkbox} 
+                  style={styles.termsContainer} 
                   onPress={() => setAcceptTerms(!acceptTerms)}
+                  activeOpacity={0.7}
                   testID="terms-checkbox"
                 >
-                  <View style={[styles.checkboxInner, acceptTerms && styles.checkboxChecked]}>
-                    {acceptTerms && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
+                  <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
+                    {acceptTerms && <Text style={styles.checkmark}>✓</Text>}
                   </View>
-                </TouchableOpacity>
-                <View style={styles.termsTextContainer}>
                   <Text style={styles.termsText}>
-                    I accept the{' '}
+                    I agree to the{' '}
                     <Text 
                       style={styles.termsLink}
-                      onPress={() => router.push('/terms-of-service')}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        router.push('/terms-of-service');
+                      }}
                     >
-                      Terms of Service
+                      Terms
                     </Text>
-                    {' '}and{' '}
+                    {' '}&{' '}
                     <Text 
                       style={styles.termsLink}
-                      onPress={() => router.push('/privacy-policy')}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        router.push('/privacy-policy');
+                      }}
                     >
-                      Privacy Policy
+                      Privacy
                     </Text>
                   </Text>
+                </TouchableOpacity>
+
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>OR</Text>
+                  <View style={styles.dividerLine} />
                 </View>
-              </View>
 
-              <TouchableOpacity
-                style={[styles.signupButton, (isLoading || !acceptTerms) && styles.signupButtonDisabled]}
-                onPress={handleSignup}
-                disabled={isLoading || !acceptTerms}
-                testID="signup-button"
-              >
-                <LinearGradient
-                  colors={getGradient(theme).primary}
-                  style={styles.signupButtonGradient}
+                <TouchableOpacity 
+                  style={styles.loginButton}
+                  onPress={navigateToLogin}
                 >
-                  <Heart color={palette.textLight} size={18} fill={palette.textLight} />
-                  <Text style={styles.signupButtonText}>
-                    {isLoading ? 'Creating your beautiful journey...' : 'Begin My Glow Journey'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>
-                  Already part of our beautiful community?{' '}
-                  <Text 
-                    style={styles.loginLink}
-                    onPress={navigateToLogin}
-                  >
-                    Welcome Back
-                  </Text>
-                </Text>
+                  <Text style={styles.loginText}>Already have an account? </Text>
+                  <Text style={styles.loginLink}>Sign In</Text>
+                </TouchableOpacity>
               </View>
-            </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -396,95 +449,90 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   gradient: {
     flex: 1,
   },
+  safeArea: {
+    flex: 1,
+  },
   keyboardView: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
+  content: {
+    flex: 1,
+    justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxxxl,
   },
   backButton: {
     position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 1,
-    padding: spacing.sm,
+    top: spacing.lg,
+    left: spacing.lg,
+    zIndex: 10,
   },
-  header: {
+  backButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: palette.surface,
     alignItems: 'center',
-    marginBottom: spacing.xl,
-    marginTop: 60,
+    justifyContent: 'center',
+    ...shadow.card,
   },
-  titleContainer: {
-    flexDirection: 'row',
+  logoContainer: {
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xxl,
+  },
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: palette.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+    ...shadow.elevated,
+    borderWidth: 3,
+    borderColor: palette.primary,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '900',
     color: palette.textPrimary,
     textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: -1,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 15,
     color: palette.textSecondary,
     textAlign: 'center',
-    fontWeight: '500',
-    marginBottom: spacing.lg,
-    lineHeight: 24,
-  },
-  welcomeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.overlayLight,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.pill,
-    gap: spacing.sm,
-  },
-  welcomeBadgeText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: palette.primary,
-    letterSpacing: 0.5,
+    fontWeight: '600',
   },
   form: {
     backgroundColor: palette.surface,
-    borderRadius: radii.xl,
+    borderRadius: radii.xxl,
     padding: spacing.xl,
+    ...shadow.elevated,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: palette.borderLight,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: palette.surfaceElevated,
     borderRadius: radii.lg,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     paddingHorizontal: spacing.lg,
-    height: 60,
+    height: 52,
     borderWidth: 1,
     borderColor: palette.borderLight,
-  },
-  inputIconContainer: {
-    marginRight: spacing.md,
-  },
-  inputIcon: {
-    // Icon styling handled by container
+    gap: spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: palette.textPrimary,
     fontWeight: '500',
   },
   passwordInput: {
-    paddingRight: spacing.xxxxl,
+    paddingRight: spacing.xl,
   },
   eyeIcon: {
     position: 'absolute',
@@ -493,10 +541,11 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   signupButton: {
     borderRadius: radii.lg,
-    height: 60,
-    marginBottom: spacing.xl,
-    marginTop: spacing.md,
+    height: 56,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
     overflow: 'hidden',
+    ...shadow.card,
   },
   signupButtonGradient: {
     flex: 1,
@@ -506,44 +555,24 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     gap: spacing.sm,
   },
   signupButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   signupButtonText: {
     color: palette.textLight,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  loginText: {
-    color: palette.textSecondary,
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  loginLink: {
-    color: palette.primary,
-    fontSize: 15,
-    fontWeight: '700',
   },
   termsContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.lg,
+    gap: spacing.sm,
   },
   checkbox: {
-    marginRight: spacing.md,
-    marginTop: 2,
-  },
-  checkboxInner: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: 4,
     borderWidth: 2,
     borderColor: palette.borderLight,
@@ -557,47 +586,88 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   checkmark: {
     color: palette.textLight,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  termsTextContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
+    fontSize: 11,
+    fontWeight: '900',
   },
   termsText: {
-    fontSize: 13,
+    fontSize: 12,
     color: palette.textSecondary,
     fontWeight: '500',
-    lineHeight: 20,
   },
   termsLink: {
-    fontSize: 13,
     color: palette.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
-    lineHeight: 20,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+    gap: spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: palette.borderLight,
+  },
+  dividerText: {
+    fontSize: 12,
+    color: palette.textMuted,
+    fontWeight: '600',
+  },
+  loginButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loginText: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  loginLink: {
+    color: palette.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  
+  // Background orbs
+  orb1: {
+    position: 'absolute',
+    top: -100,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: palette.blush,
+  },
+  orb2: {
+    position: 'absolute',
+    bottom: -150,
+    left: -100,
+    width: 350,
+    height: 350,
+    borderRadius: 175,
+    backgroundColor: palette.lavender,
   },
   
   // Floating elements
   floatingSparkle1: {
     position: 'absolute',
-    top: 100,
-    right: 40,
+    top: '15%',
+    right: '10%',
     zIndex: 1,
   },
   floatingSparkle2: {
     position: 'absolute',
-    top: 160,
-    left: 30,
+    top: '25%',
+    left: '8%',
     zIndex: 1,
   },
   floatingSparkle3: {
     position: 'absolute',
-    top: 220,
-    right: 80,
+    bottom: '20%',
+    right: '15%',
     zIndex: 1,
   },
-  
 });
