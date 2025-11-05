@@ -534,9 +534,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
   },
   slideContent: {
     flex: 1,
-    paddingTop: height * 0.08,
+    paddingTop: height * 0.1,
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.lg,
   },
   
   floatingElement: {
@@ -568,7 +567,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
   
   imageSection: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     zIndex: 1,
   },
   imageContainer: {
@@ -587,9 +586,9 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     ...shadow.elevated,
   },
   imageInner: {
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
     overflow: 'hidden',
     backgroundColor: palette.surface,
     alignItems: 'center',
@@ -618,16 +617,16 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
   },
   glowRing: {
     position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
+    width: 340,
+    height: 340,
+    borderRadius: 170,
     borderWidth: 3,
     borderColor: palette.primary,
   },
   glowRing2: {
-    width: 340,
-    height: 340,
-    borderRadius: 170,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
     borderWidth: 2,
   },
   
@@ -636,16 +635,16 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     zIndex: 1,
   },
   textContent: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   title: {
-    fontSize: 34,
+    fontSize: 38,
     fontWeight: '900',
     color: palette.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     letterSpacing: -1.5,
-    lineHeight: 40,
+    lineHeight: 44,
   },
   subtitle: {
     fontSize: 16,
@@ -671,19 +670,19 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     ...shadow.card,
   },
   featureCardGradient: {
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.xs,
     alignItems: 'center',
-    gap: 4,
-    minHeight: 100,
+    gap: spacing.xs,
+    minHeight: 110,
   },
   featureIconContainer: {
     marginBottom: spacing.xs,
   },
   featureIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadow.glow,
@@ -707,8 +706,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
   
   bottomNav: {
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxl,
-    gap: spacing.md,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.lg,
   },
   pagination: { 
     flexDirection: 'row', 
@@ -733,7 +732,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     ...shadow.elevated,
   },
   primaryGradient: { 
-    paddingVertical: 18, 
+    paddingVertical: 22, 
     paddingHorizontal: spacing.xl, 
     flexDirection: 'row', 
     alignItems: 'center', 
