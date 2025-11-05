@@ -16,10 +16,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
-import { Eye, EyeOff, Mail, Lock, Heart, Sparkles, Star, Wifi } from 'lucide-react-native';
+import { Eye, EyeOff, Mail, Lock, Heart, Sparkles, Star } from 'lucide-react-native';
 import Logo from '@/components/Logo';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
-import { testSupabaseConnection } from '@/lib/supabase';
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -27,7 +27,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'testing' | 'connected' | 'failed'>('unknown');
+
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
   const { signIn } = useAuth();
@@ -69,8 +69,7 @@ export default function LoginScreen() {
     sparkleAnimation.start();
     floatingAnimation.start();
     
-    // Test Supabase connection on component mount
-    testConnection();
+
     
     return () => {
       sparkleAnimation.stop();
@@ -78,16 +77,7 @@ export default function LoginScreen() {
     };
   }, [sparkleAnim, floatingAnim]);
   
-  const testConnection = async () => {
-    setConnectionStatus('testing');
-    try {
-      const isConnected = await testSupabaseConnection();
-      setConnectionStatus(isConnected ? 'connected' : 'failed');
-    } catch (error) {
-      console.error('Connection test error:', error);
-      setConnectionStatus('failed');
-    }
-  };
+
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -206,7 +196,7 @@ export default function LoginScreen() {
                 }
               ]}
             >
-              <Logo size={100} style={{ marginBottom: 24 }} />
+              <Logo size={80} style={{ marginBottom: 20 }} />
               <View style={styles.titleContainer}>
                 <Text style={styles.title}>Welcome to Lumyn</Text>
               </View>
@@ -217,21 +207,7 @@ export default function LoginScreen() {
                 <Text style={styles.welcomeBadgeText}>Your glow awaits</Text>
               </View>
               
-              {/* Connection Status Indicator */}
-              <TouchableOpacity onPress={testConnection} style={styles.connectionStatus}>
-                <Wifi 
-                  size={16} 
-                  color={connectionStatus === 'connected' ? '#10B981' : connectionStatus === 'failed' ? '#EF4444' : palette.textMuted} 
-                />
-                <Text style={[
-                  styles.connectionText,
-                  { color: connectionStatus === 'connected' ? '#10B981' : connectionStatus === 'failed' ? '#EF4444' : palette.textMuted }
-                ]}>
-                  {connectionStatus === 'testing' ? 'Testing...' : 
-                   connectionStatus === 'connected' ? 'Connected' : 
-                   connectionStatus === 'failed' ? 'Connection Failed' : 'Tap to test'}
-                </Text>
-              </TouchableOpacity>
+
             </Animated.View>
 
             <Animated.View 
@@ -343,13 +319,12 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
     padding: spacing.xl,
+    paddingTop: spacing.xxxl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xxxxl,
+    marginBottom: spacing.xxxl,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -358,18 +333,18 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     marginBottom: spacing.md,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '900',
     color: palette.textPrimary,
     textAlign: 'center',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 16,
     color: palette.textSecondary,
     textAlign: 'center',
     fontWeight: '500',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   welcomeBadge: {
     flexDirection: 'row',
@@ -388,8 +363,10 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   form: {
     backgroundColor: palette.surface,
-    borderRadius: radii.xl,
+    borderRadius: radii.xxl,
     padding: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xxl,
     borderWidth: 1,
     borderColor: palette.border,
   },
@@ -398,9 +375,9 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     alignItems: 'center',
     backgroundColor: palette.surfaceElevated,
     borderRadius: radii.lg,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     paddingHorizontal: spacing.lg,
-    height: 60,
+    height: 56,
     borderWidth: 1,
     borderColor: palette.borderLight,
   },
@@ -426,7 +403,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     paddingVertical: spacing.sm,
   },
   forgotPasswordText: {
@@ -436,8 +413,8 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   loginButton: {
     borderRadius: radii.lg,
-    height: 60,
-    marginBottom: spacing.xl,
+    height: 56,
+    marginBottom: spacing.lg,
     overflow: 'hidden',
   },
   loginButtonGradient: {
@@ -492,20 +469,6 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     zIndex: 1,
   },
   
-  // Connection status
-  connectionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.sm,
-    backgroundColor: palette.overlayLight,
-  },
-  connectionText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
+
   
 });
