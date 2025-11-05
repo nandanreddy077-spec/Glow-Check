@@ -3,7 +3,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 import { useFreemium } from './FreemiumContext';
-import { initializeNotifications, sendStreakNotification, sendFreeScanUsedNotification, sendMissedRoutineNotification } from '@/lib/notifications';
+import { initializeNotifications, sendStreakNotification, sendFreeScanUsedNotification, sendMissedRoutineNotification, sendMorningRoutineReminder, sendEveningRoutineReminder } from '@/lib/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface NotificationContextType {
@@ -115,11 +115,10 @@ export const [NotificationProvider, useNotifications] = createContextHook<Notifi
       
       const morningRoutineDone = await AsyncStorage.getItem(`routine_morning_${dateKey}`);
       const eveningRoutineDone = await AsyncStorage.getItem(`routine_evening_${dateKey}`);
-      const lastMorningNotif = await AsyncStorage.getItem('last_morning_missed_notif');
-      const lastEveningNotif = await AsyncStorage.getItem('last_evening_missed_notif');
-      
-      const shouldSendMorningReminder = currentHour >= 11 && currentHour < 14 && !morningRoutineDone;
-      const shouldSendEveningReminder = currentHour >= 22 && currentHour < 23 && !eveningRoutineDone;
+      const lastMorningNotif = await AsyncStorage.getItem('last_morning_notif');
+      const lastEveningNotif = await AsyncStorage.getItem('last_evening_notif');
+      const lastMorningMissedNotif = await AsyncStorage.getItem('last_morning_missed_notif');
+      const lastEveningMissedNotif = await AsyncStorage.getItem('last_evening_missed_notif');
       
       const canSendMorningNotif = !lastMorningNotif || 
         (new Date().getTime() - new Date(lastMorningNotif).getTime()) > 24 * 60 * 60 * 1000;
@@ -127,13 +126,31 @@ export const [NotificationProvider, useNotifications] = createContextHook<Notifi
       const canSendEveningNotif = !lastEveningNotif || 
         (new Date().getTime() - new Date(lastEveningNotif).getTime()) > 24 * 60 * 60 * 1000;
       
-      if (shouldSendMorningReminder && canSendMorningNotif) {
+      const canSendMorningMissedNotif = !lastMorningMissedNotif || 
+        (new Date().getTime() - new Date(lastMorningMissedNotif).getTime()) > 24 * 60 * 60 * 1000;
+      
+      const canSendEveningMissedNotif = !lastEveningMissedNotif || 
+        (new Date().getTime() - new Date(lastEveningMissedNotif).getTime()) > 24 * 60 * 60 * 1000;
+      
+      if (currentHour === 8 && canSendMorningNotif) {
+        console.log('[NotificationContext] Sending morning routine reminder (8 AM)');
+        await sendMorningRoutineReminder();
+        await AsyncStorage.setItem('last_morning_notif', new Date().toISOString());
+      }
+      
+      if (currentHour >= 11 && currentHour < 14 && !morningRoutineDone && canSendMorningMissedNotif) {
         console.log('[NotificationContext] Sending morning missed routine notification');
         await sendMissedRoutineNotification('morning');
         await AsyncStorage.setItem('last_morning_missed_notif', new Date().toISOString());
       }
       
-      if (shouldSendEveningReminder && canSendEveningNotif) {
+      if (currentHour === 21 && canSendEveningNotif) {
+        console.log('[NotificationContext] Sending evening routine reminder (9 PM)');
+        await sendEveningRoutineReminder();
+        await AsyncStorage.setItem('last_evening_notif', new Date().toISOString());
+      }
+      
+      if (currentHour >= 22 && currentHour < 23 && !eveningRoutineDone && canSendEveningMissedNotif) {
         console.log('[NotificationContext] Sending evening missed routine notification');
         await sendMissedRoutineNotification('evening');
         await AsyncStorage.setItem('last_evening_missed_notif', new Date().toISOString());
@@ -149,8 +166,6 @@ export const [NotificationProvider, useNotifications] = createContextHook<Notifi
     const checkInterval = setInterval(() => {
       checkMissedRoutine();
     }, 60 * 60 * 1000);
-
-    checkMissedRoutine();
 
     return () => clearInterval(checkInterval);
   }, [user, isInitialized, checkMissedRoutine]);

@@ -312,17 +312,7 @@ interface ScheduleConfig {
   days?: number[];
 }
 
-const NOTIFICATION_SCHEDULE: ScheduleConfig[] = [
-  { type: 'morning_motivation', hour: 8, minute: 0 },
-  { type: 'pre_routine_reminder', hour: 9, minute: 50 },
-  { type: 'routine_reminder', hour: 10, minute: 0 },
-  { type: 'midday_boost', hour: 14, minute: 30 },
-  { type: 'glow_tip', hour: 16, minute: 0 },
-  { type: 'community_engagement', hour: 18, minute: 0 },
-  { type: 'evening_wind_down', hour: 21, minute: 30 },
-  { type: 'routine_reminder', hour: 22, minute: 0 },
-  { type: 'weekly_progress', hour: 10, minute: 0, days: [0] },
-];
+
 
 function getRandomTemplate(type: NotificationType): NotificationTemplate {
   const templates = PREMIUM_NOTIFICATIONS[type];
@@ -508,9 +498,89 @@ export async function sendStreakNotification(streakDays: number) {
   }
 }
 
+export async function sendMorningRoutineReminder() {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  const dateKey = new Date().toDateString();
+  const morningRoutineDone = await getStorageItem(`routine_morning_${dateKey}`);
+  
+  if (morningRoutineDone) {
+    console.log('[Notifications] Morning routine already done, skipping reminder');
+    return;
+  }
+
+  const template = getRandomTemplate('morning_motivation');
+
+  try {
+    if (Platform.OS === 'web') {
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
+      }
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          data: template.data || {},
+          sound: true,
+        },
+        trigger: null,
+      });
+    }
+    console.log('[Notifications] Sent morning routine reminder');
+  } catch (error) {
+    console.error('[Notifications] Error sending morning routine reminder:', error);
+  }
+}
+
+export async function sendEveningRoutineReminder() {
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  const dateKey = new Date().toDateString();
+  const eveningRoutineDone = await getStorageItem(`routine_evening_${dateKey}`);
+  
+  if (eveningRoutineDone) {
+    console.log('[Notifications] Evening routine already done, skipping reminder');
+    return;
+  }
+
+  const template = getRandomTemplate('evening_wind_down');
+
+  try {
+    if (Platform.OS === 'web') {
+      if ('Notification' in globalThis && Notification.permission === 'granted') {
+        new Notification(template.title, { body: template.body });
+      }
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: template.title,
+          body: template.body,
+          data: template.data || {},
+          sound: true,
+        },
+        trigger: null,
+      });
+    }
+    console.log('[Notifications] Sent evening routine reminder');
+  } catch (error) {
+    console.error('[Notifications] Error sending evening routine reminder:', error);
+  }
+}
+
 export async function sendMissedRoutineNotification(routineType: 'morning' | 'evening' = 'morning') {
   const hasPermission = await requestNotificationPermissions();
   if (!hasPermission) return;
+
+  const dateKey = new Date().toDateString();
+  const routineDone = await getStorageItem(`routine_${routineType}_${dateKey}`);
+  
+  if (routineDone) {
+    console.log(`[Notifications] ${routineType} routine already done, skipping missed notification`);
+    return;
+  }
 
   const template = getRandomTemplate('missed_routine');
   const customTitle = routineType === 'morning' 
@@ -550,18 +620,14 @@ function getSmartNotificationSchedule(userContext?: {
   
   if (!userContext) {
     return [
-      { type: 'morning_motivation', hour: 9, minute: 0 },
       { type: 'glow_tip', hour: 17, minute: 0 },
     ];
   }
 
   if (userContext.isPremium) {
     return [
-      { type: 'morning_motivation', hour: 8, minute: 0 },
-      { type: 'routine_reminder', hour: 10, minute: 0 },
       { type: 'midday_boost', hour: 14, minute: 0 },
       { type: 'glow_tip', hour: 16, minute: 0 },
-      { type: 'evening_wind_down', hour: 21, minute: 0 },
       { type: 'community_engagement', hour: 19, minute: 0 },
       { type: 'weekly_progress', hour: 10, minute: 0, days: [0] },
     ];
@@ -569,9 +635,7 @@ function getSmartNotificationSchedule(userContext?: {
 
   if (userContext.isTrialUser) {
     baseSchedule.push(
-      { type: 'morning_motivation', hour: 8, minute: 30 },
-      { type: 'routine_reminder', hour: 10, minute: 0 },
-      { type: 'evening_wind_down', hour: 21, minute: 0 },
+      { type: 'glow_tip', hour: 16, minute: 0 },
     );
 
     if (userContext.trialDaysLeft && userContext.trialDaysLeft <= 2) {
@@ -597,7 +661,6 @@ function getSmartNotificationSchedule(userContext?: {
   }
 
   return [
-    { type: 'morning_motivation', hour: 9, minute: 0 },
     { type: 'glow_tip', hour: 17, minute: 0 },
   ];
 }

@@ -1,30 +1,50 @@
 # ✨ Personalized Notification System - Complete Guide
 
-## 🎯 How It Works Now
+## 🎯 How It Works Now (FIXED)
 
 ### **Smart Initialization**
 - Notifications are **NOT** scheduled on every app open
 - They initialize **once per 24 hours** maximum
 - Context changes trigger updates **only if 12+ hours** have passed
-- This prevents the "random notification spam" issue
+- ✅ **FIXED:** No more random notifications when opening the app
+- ✅ **FIXED:** Routine reminders only sent if user hasn't completed the routine
+- ✅ **FIXED:** Smart timing based on actual user behavior
 
 ### **Behavior-Based Notifications**
 
-#### 1. **Morning Routine Reminders** (11 AM - 2 PM)
-- Only sent if user **hasn't completed morning routine**
-- Checks `routine_morning_[date]` storage key
+#### 1. **Morning Routine Flow**
+**8:00 AM - Morning Reminder:**
+- Sent automatically at 8 AM (only if routine not done)
+- Checks if `routine_morning_[date]` exists
 - Won't spam - sends max **once per 24 hours**
 - Examples:
-  - "Your skincare routine is ghosting you 👻"
-  - "This is awkward... Your morning routine is still waiting"
+  - "Good morning, gorgeous! ☀️"
+  - "Your mirror is calling... 🪞"
 
-#### 2. **Evening Routine Reminders** (10 PM - 11 PM)
-- Only sent if user **hasn't completed evening routine**
-- Checks `routine_evening_[date]` storage key
+**11:00 AM - 2:00 PM - Missed Routine Alert:**
+- Only sent if user **hasn't completed morning routine by 11 AM**
+- Creates urgency with FOMO copy
+- Separate throttle from morning reminder
+- Examples:
+  - "Your skincare routine is ghosting you 👻"
+  - "Houston, we have a problem 🚨"
+
+#### 2. **Evening Routine Flow**
+**9:00 PM - Evening Reminder:**
+- Sent automatically at 9 PM (only if routine not done)
+- Checks if `routine_evening_[date]` exists
 - Won't spam - sends max **once per 24 hours**
 - Examples:
   - "Netflix can wait. Your skin can't! 🌙"
-  - "Before you scroll to sleep... Give your skin the TLC"
+  - "Psst... beauty sleep starts now 😴✨"
+
+**10:00 PM - 11:00 PM - Missed Routine Alert:**
+- Only sent if user **hasn't completed evening routine by 10 PM**
+- Streak protection messaging
+- Separate throttle from evening reminder
+- Examples:
+  - "Before you scroll to sleep... 📱"
+  - "Plot twist: Your skin is judging you 😏"
 
 #### 3. **Streak Notifications** (Instant)
 - Triggered when user completes a routine
@@ -36,24 +56,23 @@
 ### **User-Type Specific Notifications**
 
 #### Free Users
-- Morning motivation: 9 AM
-- Glow tips: 5 PM
+- Glow tips: 5 PM (daily)
 - Minimal, non-intrusive
+- No routine reminders (conversion incentive)
 
 #### Trial Users
-- Morning motivation: 8:30 AM
-- Routine reminders: 10 AM
-- Evening reminders: 9 PM
+- Morning routine: 8 AM → 11 AM-2 PM if missed
+- Evening routine: 9 PM → 10 PM-11 PM if missed
+- Glow tips: 4 PM
 - **Special:** Trial ending alerts (when 2 days left)
 - **Special:** Payment reminder (day 5 of trial)
 
 #### Premium Users (Full Experience)
-- Morning motivation: 8 AM
-- Routine reminder: 10 AM
+- Morning routine: 8 AM → 11 AM-2 PM if missed
+- Evening routine: 9 PM → 10 PM-11 PM if missed
 - Midday boost: 2 PM
 - Glow tip: 4 PM
 - Community engagement: 7 PM
-- Evening wind-down: 9 PM
 - Weekly progress: Sundays at 10 AM
 
 ## 🚀 Conversion-Focused Features
@@ -104,8 +123,10 @@
 `routine_evening_${dateString}` // "1" if done
 
 // Notification throttling
-'last_morning_missed_notif'  // ISO timestamp
-'last_evening_missed_notif'  // ISO timestamp
+'last_morning_notif'         // ISO timestamp (8 AM reminder)
+'last_evening_notif'         // ISO timestamp (9 PM reminder)
+'last_morning_missed_notif'  // ISO timestamp (11 AM-2 PM alert)
+'last_evening_missed_notif'  // ISO timestamp (10 PM-11 PM alert)
 'last_notification_init'     // Timestamp (ms)
 'last_notification_update'   // Timestamp (ms)
 ```
@@ -192,14 +213,18 @@
 
 ---
 
-## ✅ Current Status
+## ✅ Current Status (UPDATED)
 
 The notification system is now:
 - ✅ Personalized based on user behavior
 - ✅ Properly throttled to prevent spam
 - ✅ Conversion-optimized with urgency
-- ✅ Engaging with playful copy
+- ✅ Engaging with playful copy (Zomato-inspired)
 - ✅ Tracking routine completion
+- ✅ **FIXED:** No more random notifications on app open!
+- ✅ **FIXED:** Smart routine reminders that check if done
+- ✅ **FIXED:** Separate morning/evening reminder + missed alert flow
+- ✅ **FIXED:** Hourly checks without immediate execution
 - ✅ Ready for production
 
-**No more random notifications on app open!** 🎉
+**All notification spam issues resolved!** 🎉
