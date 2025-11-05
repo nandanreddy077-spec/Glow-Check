@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,13 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Gift, Sparkles, Check, X } from 'lucide-react-native';
+import { ArrowLeft, Gift, Sparkles, Check, X, Tag } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
@@ -25,19 +26,36 @@ const PROMO_CODES = {
     code: 'WELCOME7DAYS',
     days: 7,
     type: 'trial' as const,
-    description: '7 days free premium access',
+    description: '7 days premium access',
+    emoji: '🎉',
   },
   GLOW1WEEK: {
     code: 'GLOW1WEEK',
     days: 7,
     type: 'trial' as const,
-    description: '1 week free trial',
+    description: '1 week premium trial',
+    emoji: '✨',
   },
   BEAUTY7: {
     code: 'BEAUTY7',
     days: 7,
     type: 'trial' as const,
-    description: '7 days premium trial',
+    description: '7 days beauty experience',
+    emoji: '💅',
+  },
+  GLOWUP14: {
+    code: 'GLOWUP14',
+    days: 14,
+    type: 'trial' as const,
+    description: '2 weeks premium trial',
+    emoji: '🌟',
+  },
+  PREMIUM30: {
+    code: 'PREMIUM30',
+    days: 30,
+    type: 'trial' as const,
+    description: '1 month premium access',
+    emoji: '👑',
   },
 };
 
@@ -48,9 +66,54 @@ export default function RedeemPromoScreen() {
   const [promoCode, setPromoCode] = useState('');
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [successAnimation] = useState(new Animated.Value(0));
+  const [shakeAnimation] = useState(new Animated.Value(0));
 
   const palette = getPalette(theme);
   const gradient = getGradient(theme);
+
+  useEffect(() => {
+    Animated.spring(successAnimation, {
+      toValue: 1,
+      tension: 40,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const triggerShake = useCallback(() => {
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -10,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [shakeAnimation]);
+
+  const triggerSuccess = useCallback(() => {
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, []);
 
   const validatePromoCode = useCallback((code: string): boolean => {
     const normalizedCode = code.trim().toUpperCase();
@@ -60,6 +123,7 @@ export default function RedeemPromoScreen() {
   const handleRedeemPromo = useCallback(async () => {
     if (!promoCode.trim()) {
       setValidationError('Please enter a promo code');
+      triggerShake();
       return;
     }
 
@@ -67,6 +131,7 @@ export default function RedeemPromoScreen() {
 
     if (!validatePromoCode(normalizedCode)) {
       setValidationError('Invalid promo code. Please check and try again.');
+      triggerShake();
       return;
     }
 
@@ -74,14 +139,24 @@ export default function RedeemPromoScreen() {
 
     if (!promoDetails) {
       setValidationError('Promo code not found');
+      triggerShake();
       return;
     }
 
     if (state.isPremium) {
       Alert.alert(
-        'Already Premium',
+        '✨ Already Premium',
         'You already have an active premium subscription. Promo codes can only be redeemed by free users.',
-        [{ text: 'OK' }]
+        [{ text: 'Got it' }]
+      );
+      return;
+    }
+
+    if (state.hasStartedTrial) {
+      Alert.alert(
+        '💫 Trial Already Active',
+        'You already have an active trial. Promo codes can only be used once per account.',
+        [{ text: 'Got it' }]
       );
       return;
     }
@@ -94,13 +169,14 @@ export default function RedeemPromoScreen() {
       console.log(`Promo details:`, promoDetails);
 
       await startLocalTrial(promoDetails.days);
+      triggerSuccess();
 
       Alert.alert(
-        '🎉 Promo Code Redeemed!',
-        `You now have ${promoDetails.days} days of premium access! Enjoy unlimited scans, AI coaching, and all premium features.`,
+        `${promoDetails.emoji} Promo Code Redeemed!`,
+        `Congratulations! You now have ${promoDetails.days} days of premium access.\n\nEnjoy:\n✨ Unlimited glow scans\n💅 AI beauty coaching\n🌟 Personalized skincare plans\n👗 Style recommendations\n\nYour glow journey starts now!`,
         [
           {
-            text: 'Start Your Glow Journey ✨',
+            text: 'Start Glowing ✨',
             onPress: () => {
               router.replace('/(tabs)');
             },
@@ -110,16 +186,19 @@ export default function RedeemPromoScreen() {
     } catch (error) {
       console.error('Failed to redeem promo code:', error);
       Alert.alert(
-        'Redemption Failed',
-        'We could not redeem your promo code. Please try again.',
+        '😞 Redemption Failed',
+        'We couldn\'t redeem your promo code. Please try again or contact support if the problem persists.',
         [{ text: 'OK' }]
       );
     } finally {
       setIsRedeeming(false);
     }
-  }, [promoCode, validatePromoCode, state.isPremium, startLocalTrial]);
+  }, [promoCode, validatePromoCode, state.isPremium, state.hasStartedTrial, startLocalTrial, triggerShake, triggerSuccess]);
 
   const handleBack = useCallback(() => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     router.back();
   }, []);
 
@@ -153,7 +232,20 @@ export default function RedeemPromoScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.heroSection}>
+          <Animated.View 
+            style={[
+              styles.heroSection,
+              {
+                opacity: successAnimation,
+                transform: [{
+                  translateY: successAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                  }),
+                }],
+              },
+            ]}
+          >
             <LinearGradient colors={gradient.rose} style={styles.heroIcon}>
               <Gift color={palette.pearl} size={40} strokeWidth={2} />
             </LinearGradient>
@@ -161,22 +253,31 @@ export default function RedeemPromoScreen() {
               Have a Promo Code?
             </Text>
             <Text style={[styles.heroSubtitle, { color: palette.textSecondary }]}>
-              Unlock premium features with your promo code
+              Unlock premium features with your exclusive code
             </Text>
-          </View>
+          </Animated.View>
 
-          <View style={[styles.inputContainer, shadow.card]}>
+          <Animated.View 
+            style={[
+              styles.inputContainer,
+              shadow.card,
+              {
+                transform: [{ translateX: shakeAnimation }],
+              },
+            ]}
+          >
             <View
               style={[
                 styles.inputWrapper,
                 {
                   backgroundColor: palette.surface,
-                  borderColor: validationError ? palette.error : palette.divider,
+                  borderColor: validationError ? palette.error : promoCode.length > 0 ? palette.gold : palette.divider,
+                  borderWidth: promoCode.length > 0 ? 2 : 1,
                 },
               ]}
             >
-              <Gift
-                color={validationError ? palette.error : palette.gold}
+              <Tag
+                color={validationError ? palette.error : promoCode.length > 0 ? palette.gold : palette.textMuted}
                 size={20}
                 strokeWidth={2.5}
               />
@@ -187,12 +288,15 @@ export default function RedeemPromoScreen() {
                     color: palette.textPrimary,
                   },
                 ]}
-                placeholder="Enter promo code"
+                placeholder="Enter your exclusive code"
                 placeholderTextColor={palette.textMuted}
                 value={promoCode}
                 onChangeText={(text) => {
                   setPromoCode(text);
                   setValidationError(null);
+                  if (Platform.OS !== 'web' && text.length > 0) {
+                    Haptics.selectionAsync();
+                  }
                 }}
                 autoCapitalize="characters"
                 autoCorrect={false}
@@ -200,19 +304,38 @@ export default function RedeemPromoScreen() {
                 testID="promo-code-input"
               />
               {promoCode.length > 0 && !isRedeeming && (
-                <TouchableOpacity onPress={() => setPromoCode('')} testID="clear-promo">
+                <TouchableOpacity 
+                  onPress={() => {
+                    setPromoCode('');
+                    if (Platform.OS !== 'web') {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                  }} 
+                  testID="clear-promo"
+                >
                   <X color={palette.textMuted} size={20} strokeWidth={2.5} />
                 </TouchableOpacity>
               )}
             </View>
             {validationError && (
-              <Text style={[styles.errorText, { color: palette.error }]}>{validationError}</Text>
+              <Animated.View
+                style={{
+                  opacity: successAnimation,
+                }}
+              >
+                <Text style={[styles.errorText, { color: palette.error }]}>{validationError}</Text>
+              </Animated.View>
             )}
-          </View>
+          </Animated.View>
 
           <TouchableOpacity
             style={styles.redeemButton}
-            onPress={handleRedeemPromo}
+            onPress={() => {
+              if (Platform.OS !== 'web') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              }
+              handleRedeemPromo();
+            }}
             disabled={isRedeeming || !promoCode.trim()}
             activeOpacity={0.8}
             testID="redeem-button"
@@ -224,9 +347,16 @@ export default function RedeemPromoScreen() {
                   : gradient.primary
               }
               style={styles.redeemGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
             >
               {isRedeeming ? (
-                <ActivityIndicator color={palette.textPrimary} />
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color={palette.textPrimary} size="small" />
+                  <Text style={[styles.redeemText, { color: palette.textPrimary, marginLeft: 10 }]}>
+                    Activating...
+                  </Text>
+                </View>
               ) : (
                 <>
                   <Sparkles color={palette.textPrimary} size={20} strokeWidth={2.5} />
@@ -299,13 +429,25 @@ export default function RedeemPromoScreen() {
           </View>
 
           <View style={styles.helpSection}>
+            <View style={styles.divider} />
             <Text style={[styles.helpTitle, { color: palette.textSecondary }]}>
               Where to find promo codes?
             </Text>
             <Text style={[styles.helpText, { color: palette.textMuted }]}>
-              Check your email for exclusive offers, follow us on social media, or contact our
-              support team.
+              • Check your email for exclusive offers{`\n`}
+              • Follow us on social media for special codes{`\n`}
+              • Contact support for assistance{`\n`}
+              • Look for seasonal promotions
             </Text>
+            
+            {state.hasStartedTrial && (
+              <View style={[styles.trialNotice, { backgroundColor: 'rgba(255, 215, 0, 0.1)', borderColor: palette.gold }]}>
+                <Sparkles color={palette.gold} size={16} strokeWidth={2.5} />
+                <Text style={[styles.trialNoticeText, { color: palette.textSecondary }]}>
+                  You already have an active trial. Promo codes cannot be stacked.
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -416,6 +558,31 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     letterSpacing: 0.3,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    marginBottom: 20,
+  },
+  trialNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  trialNoticeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 18,
   },
   benefitsCard: {
     borderRadius: 20,
