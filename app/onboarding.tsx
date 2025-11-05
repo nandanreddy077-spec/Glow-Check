@@ -1,56 +1,99 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated, Image, TouchableOpacity, StatusBar, ScrollView } from 'react-native';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions, Animated, Image, TouchableOpacity, StatusBar, ScrollView, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useUser } from '@/contexts/UserContext';
-import { ChevronRight, Sparkles, Star, Zap } from 'lucide-react-native';
+import { ChevronRight, Sparkles, Star, Zap, Heart, Camera, TrendingUp, Users, Award, Wand2 } from 'lucide-react-native';
 import Logo from '@/components/Logo';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
-
 
 interface Slide {
   id: string;
   title: string;
   subtitle: string;
   image: string;
-  stats: { value: string; label: string }[];
+  features: { icon: React.ReactNode; title: string; description: string }[];
+  ctaText: string;
+  gradientColors: readonly string[];
 }
 
 const slides: Slide[] = [
   {
     id: '1',
-    title: 'Welcome to Lumyn',
-    subtitle: 'AI-powered analysis reveals your unique radiance and creates personalized beauty plans',
+    title: 'Your Glow Journey\nStarts Here',
+    subtitle: 'Discover your unique beauty potential with AI-powered insights',
     image: '',
-    stats: [
-      { value: 'AI', label: 'Powered' },
-      { value: '10s', label: 'Analysis' },
-      { value: '30+', label: 'Metrics' },
+    features: [
+      { 
+        icon: <Camera size={20} />, 
+        title: 'AI Analysis', 
+        description: 'Instant skin assessment' 
+      },
+      { 
+        icon: <Wand2 size={20} />, 
+        title: 'Personalized', 
+        description: 'Plans made for you' 
+      },
+      { 
+        icon: <TrendingUp size={20} />, 
+        title: 'Track Progress', 
+        description: 'See your transformation' 
+      },
     ],
+    ctaText: 'Discover Your Glow',
+    gradientColors: ['#FDF8F5', '#F9F1EC'],
   },
   {
     id: '2',
-    title: 'Transform Your Routine',
-    subtitle: 'Daily coaching and tracking that adapts to your progress and lifestyle',
-    image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1080&auto=format&fit=crop',
-    stats: [
-      { value: '30', label: 'Day Plans' },
-      { value: '50+', label: 'Products' },
-      { value: '24/7', label: 'Support' },
+    title: 'Beauty That\nEvolves With You',
+    subtitle: 'Daily coaching and smart routines that adapt to your lifestyle',
+    image: 'https://images.unsplash.com/photo-1552693673-1bf958298935?q=80&w=1080&auto=format&fit=crop',
+    features: [
+      { 
+        icon: <Heart size={20} />, 
+        title: 'Daily Care', 
+        description: 'Morning & evening routines' 
+      },
+      { 
+        icon: <Award size={20} />, 
+        title: 'Rewards', 
+        description: 'Earn points & achievements' 
+      },
+      { 
+        icon: <Star size={20} />, 
+        title: 'Pro Tips', 
+        description: 'Expert beauty advice' 
+      },
     ],
+    ctaText: 'Start Your Routine',
+    gradientColors: ['#FFF5F7', '#FDF0F5'],
   },
   {
     id: '3',
-    title: 'Join the Movement',
-    subtitle: 'Connect with a global community celebrating authentic beauty and self-care',
-    image: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1080&auto=format&fit=crop',
-    stats: [
-      { value: 'New', label: 'Community' },
-      { value: '7 Day', label: 'Free Trial' },
-      { value: '24/7', label: 'Access' },
+    title: 'Join 100K+\nGlowing Together',
+    subtitle: 'Share your journey, inspire others, celebrate authentic beauty',
+    image: 'https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?q=80&w=1080&auto=format&fit=crop',
+    features: [
+      { 
+        icon: <Users size={20} />, 
+        title: 'Community', 
+        description: 'Connect & share tips' 
+      },
+      { 
+        icon: <Sparkles size={20} />, 
+        title: 'Free Trial', 
+        description: '7 days premium access' 
+      },
+      { 
+        icon: <Zap size={20} />, 
+        title: 'Transform', 
+        description: 'See results in days' 
+      },
     ],
+    ctaText: 'Begin Free Trial',
+    gradientColors: ['#F9F0FF', '#FFF5F7'],
   },
 ];
 
@@ -64,11 +107,15 @@ export default function OnboardingScreen() {
   const scrollRef = useRef<ScrollView | null>(null);
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [pulseAnim] = useState(new Animated.Value(0));
+  const [floatAnim] = useState(new Animated.Value(0));
+  const [rotateAnim] = useState(new Animated.Value(0));
+  const [scaleInAnim] = useState(new Animated.Value(0));
+  const [slideInAnim] = useState(new Animated.Value(0));
   
   const palette = getPalette(theme);
   const gradient = getGradient(theme);
   
-  React.useEffect(() => {
+  useEffect(() => {
     const sparkleAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(sparkleAnim, {
@@ -98,15 +145,65 @@ export default function OnboardingScreen() {
         }),
       ])
     );
+
+    const floatAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const rotateAnimation = Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 20000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
     
     sparkleAnimation.start();
     pulseAnimation.start();
+    floatAnimation.start();
+    rotateAnimation.start();
     
     return () => {
       sparkleAnimation.stop();
       pulseAnimation.stop();
+      floatAnimation.stop();
+      rotateAnimation.stop();
     };
-  }, [sparkleAnim, pulseAnim]);
+  }, [sparkleAnim, pulseAnim, floatAnim, rotateAnim]);
+
+  useEffect(() => {
+    scaleInAnim.setValue(0);
+    slideInAnim.setValue(0);
+
+    Animated.parallel([
+      Animated.spring(scaleInAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideInAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [index, scaleInAnim, slideInAnim]);
 
   const handleNext = useCallback(async () => {
     const next = index + 1;
@@ -132,11 +229,6 @@ export default function OnboardingScreen() {
     <ErrorBoundary>
       <View style={styles.container} testID="onboarding-screen">
         <StatusBar barStyle={theme === 'light' ? 'dark-content' : 'light-content'} />
-        
-        <LinearGradient 
-          colors={gradient.hero} 
-          style={StyleSheet.absoluteFillObject}
-        />
 
         <Animated.ScrollView
           horizontal
@@ -156,154 +248,219 @@ export default function OnboardingScreen() {
               outputRange: [0.85, 1, 0.85],
               extrapolate: 'clamp',
             });
+
+            const floatY = floatAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-10, 10],
+            });
+
+            const rotate = rotateAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0deg', '360deg'],
+            });
+
+            const scaleIn = scaleInAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.8, 1],
+            });
+
+            const slideIn = slideInAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [50, 0],
+            });
             
             return (
               <View key={s.id} style={[styles.slide, { width }]}>
+                <LinearGradient 
+                  colors={s.gradientColors as any} 
+                  style={StyleSheet.absoluteFillObject}
+                />
+
                 <View style={styles.slideContent}>
+                  <Animated.View 
+                    style={[
+                      styles.floatingElement,
+                      styles.floatingElement1,
+                      {
+                        transform: [
+                          { translateY: floatY },
+                          { rotate },
+                        ],
+                      },
+                    ]}
+                  >
+                    <LinearGradient 
+                      colors={gradient.primary} 
+                      style={styles.decorCircle}
+                    />
+                  </Animated.View>
+
+                  <Animated.View 
+                    style={[
+                      styles.floatingElement,
+                      styles.floatingElement2,
+                      {
+                        transform: [
+                          { translateY: floatAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [10, -10],
+                          }) },
+                        ],
+                      },
+                    ]}
+                  >
+                    <View style={styles.decorRing} />
+                  </Animated.View>
                   
-                  {/* Image Section */}
                   <Animated.View 
                     style={[
                       styles.imageSection,
-                      { transform: [{ scale }] }
+                      { 
+                        transform: [
+                          { scale: i === index ? scale : 0.9 },
+                          { scale: scaleIn },
+                        ] 
+                      }
                     ]}
                   >
                     <View style={styles.imageContainer}>
-                      <LinearGradient 
-                        colors={i === 0 ? gradient.primary : i === 1 ? gradient.rose : gradient.mint} 
-                        style={styles.imageBorder}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                      >
-                        <View style={styles.imageInner}>
-                          {i === 0 ? (
-                            <Logo size={220} />
-                          ) : (
-                            <Image 
-                              source={{ uri: s.image }} 
-                              style={styles.heroImage} 
-                              resizeMode="cover" 
-                            />
-                          )}
-                          {i !== 0 && (
-                            <LinearGradient 
-                              colors={['transparent', 'rgba(0,0,0,0.15)']} 
-                              style={styles.imageGradient} 
-                            />
-                          )}
-                        </View>
-                      </LinearGradient>
-                      
-                      {/* Animated glow rings */}
-                      <Animated.View 
-                        style={[
-                          styles.glowRing,
-                          {
-                            opacity: pulseAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [0.15, 0.35],
-                            }),
-                            transform: [{
-                              scale: pulseAnim.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [1, 1.15],
-                              })
-                            }]
-                          }
-                        ]}
-                      />
-                    </View>
-
-                    {/* Stats badges */}
-                    <View style={styles.statsContainer}>
-                      {s.stats.map((stat, idx) => (
+                      <View style={styles.imageWrapper}>
+                        <LinearGradient 
+                          colors={i === 0 ? gradient.primary : i === 1 ? gradient.rose : gradient.lavender} 
+                          style={styles.imageBorder}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                        >
+                          <View style={styles.imageInner}>
+                            {i === 0 ? (
+                              <View style={styles.logoContainer}>
+                                <Logo size={180} />
+                                <Animated.View 
+                                  style={[
+                                    styles.sparkleContainer,
+                                    {
+                                      opacity: sparkleAnim,
+                                    },
+                                  ]}
+                                >
+                                  <Sparkles 
+                                    color={palette.primary} 
+                                    size={24} 
+                                    fill={palette.primary} 
+                                  />
+                                </Animated.View>
+                              </View>
+                            ) : (
+                              <>
+                                <Image 
+                                  source={{ uri: s.image }} 
+                                  style={styles.heroImage} 
+                                  resizeMode="cover" 
+                                />
+                                <LinearGradient 
+                                  colors={['transparent', 'rgba(0,0,0,0.2)']} 
+                                  style={styles.imageGradient} 
+                                />
+                              </>
+                            )}
+                          </View>
+                        </LinearGradient>
+                        
                         <Animated.View 
-                          key={idx}
                           style={[
-                            styles.statBadge,
+                            styles.glowRing,
                             {
-                              opacity: sparkleAnim.interpolate({
-                                inputRange: [0, 0.5, 1],
-                                outputRange: idx === 1 ? [0.9, 1, 0.9] : [1, 0.9, 1],
-                              })
+                              opacity: pulseAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.2, 0.4],
+                              }),
+                              transform: [{
+                                scale: pulseAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [1, 1.15],
+                                })
+                              }]
                             }
                           ]}
-                        >
-                          <Text style={styles.statValue}>{stat.value}</Text>
-                          <Text style={styles.statLabel}>{stat.label}</Text>
-                        </Animated.View>
-                      ))}
+                        />
+                        <Animated.View 
+                          style={[
+                            styles.glowRing,
+                            styles.glowRing2,
+                            {
+                              opacity: pulseAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.15, 0.3],
+                              }),
+                              transform: [{
+                                scale: pulseAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [1.1, 1.25],
+                                })
+                              }]
+                            }
+                          ]}
+                        />
+                      </View>
                     </View>
                   </Animated.View>
 
-                  {/* Content Section */}
-                  <View style={styles.contentSection}>
+                  <Animated.View 
+                    style={[
+                      styles.contentSection,
+                      {
+                        opacity: slideInAnim,
+                        transform: [{ translateY: slideIn }],
+                      },
+                    ]}
+                  >
                     <View style={styles.textContent}>
                       <Text style={styles.title}>{s.title}</Text>
                       <Text style={styles.subtitle}>{s.subtitle}</Text>
                     </View>
 
-                    {/* Feature highlights */}
-                    <View style={styles.featuresContainer}>
-                      {i === 0 && (
-                        <>
-                          <View style={styles.feature}>
-                            <View style={styles.featureIcon}>
-                              <Zap color={palette.primary} size={16} fill={palette.primary} />
+                    <View style={styles.featuresGrid}>
+                      {s.features.map((feature, idx) => (
+                        <Animated.View 
+                          key={idx}
+                          style={[
+                            styles.featureCard,
+                            {
+                              opacity: sparkleAnim.interpolate({
+                                inputRange: [0, 0.5, 1],
+                                outputRange: idx === 1 ? [0.95, 1, 0.95] : [1, 0.95, 1],
+                              }),
+                            }
+                          ]}
+                        >
+                          <LinearGradient 
+                            colors={[palette.surface, palette.surfaceAlt]} 
+                            style={styles.featureCardGradient}
+                          >
+                            <View style={styles.featureIconContainer}>
+                              <LinearGradient 
+                                colors={gradient.primary} 
+                                style={styles.featureIconBg}
+                              >
+                                {React.cloneElement(feature.icon as React.ReactElement<any>, {
+                                  color: palette.textLight,
+                                } as any)}
+                              </LinearGradient>
                             </View>
-                            <Text style={styles.featureText}>Instant AI Analysis</Text>
-                          </View>
-                          <View style={styles.feature}>
-                            <View style={styles.featureIcon}>
-                              <Sparkles color={palette.primary} size={16} fill={palette.primary} />
-                            </View>
-                            <Text style={styles.featureText}>Personalized Plans</Text>
-                          </View>
-                        </>
-                      )}
-                      {i === 1 && (
-                        <>
-                          <View style={styles.feature}>
-                            <View style={styles.featureIcon}>
-                              <Star color={palette.primary} size={16} fill={palette.primary} />
-                            </View>
-                            <Text style={styles.featureText}>Daily Coaching</Text>
-                          </View>
-                          <View style={styles.feature}>
-                            <View style={styles.featureIcon}>
-                              <Sparkles color={palette.primary} size={16} fill={palette.primary} />
-                            </View>
-                            <Text style={styles.featureText}>Smart Tracking</Text>
-                          </View>
-                        </>
-                      )}
-                      {i === 2 && (
-                        <>
-                          <View style={styles.feature}>
-                            <View style={styles.featureIcon}>
-                              <Sparkles color={palette.primary} size={16} fill={palette.primary} />
-                            </View>
-                            <Text style={styles.featureText}>Global Community</Text>
-                          </View>
-                          <View style={styles.feature}>
-                            <View style={styles.featureIcon}>
-                              <Star color={palette.primary} size={16} fill={palette.primary} />
-                            </View>
-                            <Text style={styles.featureText}>Expert Support</Text>
-                          </View>
-                        </>
-                      )}
+                            <Text style={styles.featureCardTitle}>{feature.title}</Text>
+                            <Text style={styles.featureCardDescription}>{feature.description}</Text>
+                          </LinearGradient>
+                        </Animated.View>
+                      ))}
                     </View>
-                  </View>
+                  </Animated.View>
                 </View>
               </View>
             );
           })}
         </Animated.ScrollView>
 
-        {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
-          {/* Pagination */}
           <View style={styles.pagination}>
             {slides.map((_, i) => {
               const opacity = dotPosition.interpolate({
@@ -331,12 +488,11 @@ export default function OnboardingScreen() {
             })}
           </View>
 
-          {/* CTA Buttons */}
           <View style={styles.ctaContainer}>
             <TouchableOpacity 
               onPress={handleNext} 
               style={styles.primaryButton}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityRole="button" 
               testID="onboarding-next"
             >
@@ -346,14 +502,11 @@ export default function OnboardingScreen() {
                 end={{ x: 1, y: 1 }} 
                 style={styles.primaryGradient}
               >
+                <Sparkles color={palette.textLight} size={22} fill={palette.textLight} />
                 <Text style={styles.primaryButtonText}>
-                  {index === slides.length - 1 ? 'Start Your Journey' : 'Continue'}
+                  {slides[index].ctaText}
                 </Text>
-                {index === slides.length - 1 ? (
-                  <Sparkles color={palette.textLight} size={20} />
-                ) : (
-                  <ChevronRight color={palette.textLight} size={24} strokeWidth={2.5} />
-                )}
+                <ChevronRight color={palette.textLight} size={24} strokeWidth={3} />
               </LinearGradient>
             </TouchableOpacity>
 
@@ -368,7 +521,6 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Sign in link */}
           <TouchableOpacity 
             style={styles.signinButton} 
             onPress={() => router.replace('/login')}
@@ -392,35 +544,79 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
   },
   slide: { 
     flex: 1,
+    position: 'relative',
   },
   slideContent: {
     flex: 1,
-    paddingTop: height * 0.08,
+    paddingTop: height * 0.1,
     paddingHorizontal: spacing.xl,
   },
   
-  // Image Section
+  floatingElement: {
+    position: 'absolute',
+    zIndex: 0,
+  },
+  floatingElement1: {
+    top: height * 0.15,
+    right: spacing.xl,
+  },
+  floatingElement2: {
+    top: height * 0.25,
+    left: spacing.xl,
+  },
+  decorCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    opacity: 0.15,
+  },
+  decorRing: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: palette.primary,
+    opacity: 0.2,
+  },
+  
   imageSection: {
     alignItems: 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xl,
+    zIndex: 1,
   },
   imageContainer: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  imageWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   imageBorder: {
-    padding: 4,
-    borderRadius: 140,
+    padding: 5,
+    borderRadius: 160,
+    ...shadow.elevated,
   },
   imageInner: {
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
     overflow: 'hidden',
     backgroundColor: palette.surface,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  sparkleContainer: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
   },
   heroImage: { 
     width: '100%', 
@@ -431,106 +627,92 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     bottom: 0,
     left: 0,
     right: 0,
-    height: 100,
+    height: 120,
   },
   glowRing: {
     position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    borderWidth: 2,
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    borderWidth: 3,
     borderColor: palette.primary,
   },
-  
-  // Stats
-  statsContainer: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xl,
-  },
-  statBadge: {
-    backgroundColor: palette.surface,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    minWidth: 90,
-    ...shadow.card,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: palette.primary,
-    marginBottom: 2,
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: palette.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  glowRing2: {
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    borderWidth: 2,
   },
   
-  // Content Section
   contentSection: {
     flex: 1,
+    zIndex: 1,
   },
   textContent: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   title: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: '900',
     color: palette.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.md,
-    letterSpacing: -1,
-    lineHeight: 42,
+    marginBottom: spacing.lg,
+    letterSpacing: -1.5,
+    lineHeight: 44,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 16,
     color: palette.textSecondary,
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 24,
     fontWeight: '500',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   
-  // Features
-  featuresContainer: {
+  featuresGrid: {
     flexDirection: 'row',
     gap: spacing.md,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     flexWrap: 'wrap',
   },
-  feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.overlayLight,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radii.pill,
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: palette.borderLight,
+  featureCard: {
+    width: '31%',
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    ...shadow.card,
   },
-  featureIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: palette.overlayGold,
+  featureCardGradient: {
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  featureIconContainer: {
+    marginBottom: spacing.xs,
+  },
+  featureIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadow.glow,
   },
-  featureText: {
-    fontSize: 14,
-    fontWeight: '700',
+  featureCardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
     color: palette.textPrimary,
-    letterSpacing: 0.2,
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  featureCardDescription: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: palette.textSecondary,
+    textAlign: 'center',
+    lineHeight: 15,
   },
   
-  // Bottom Navigation
   bottomNav: {
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxxl,
@@ -549,7 +731,6 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     backgroundColor: palette.primary,
   },
   
-  // CTA
   ctaContainer: {
     gap: spacing.md,
   },
@@ -560,7 +741,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     ...shadow.elevated,
   },
   primaryGradient: { 
-    paddingVertical: 20, 
+    paddingVertical: 22, 
     paddingHorizontal: spacing.xl, 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -570,8 +751,10 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
   primaryButtonText: { 
     color: palette.textLight, 
     fontWeight: '800', 
-    fontSize: 18,
-    letterSpacing: 0.3,
+    fontSize: 17,
+    letterSpacing: 0.5,
+    flex: 1,
+    textAlign: 'center',
   },
   skipButton: {
     paddingVertical: spacing.md,
@@ -583,7 +766,6 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     fontWeight: '600' 
   },
   
-  // Sign in
   signinButton: { 
     alignSelf: 'center',
     paddingVertical: spacing.md,
