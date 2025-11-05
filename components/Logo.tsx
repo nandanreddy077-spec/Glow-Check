@@ -10,10 +10,10 @@ const LOGO_URL = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachment
 
 export default function Logo({ size = 80, style }: LogoProps) {
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { width: size, height: size }, style]}>
       <Image
         source={{ uri: LOGO_URL }}
-        style={[styles.logo, { width: size, height: size, borderRadius: size * 0.5 }]}
+        style={[styles.logo, { width: size * 1.1, height: size * 1.1 }]}
         resizeMode="cover"
       />
     </View>
@@ -24,8 +24,10 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 1000,
+    overflow: 'hidden',
   },
   logo: {
-    overflow: 'hidden',
+    // Logo size calculated dynamically
   },
 });
