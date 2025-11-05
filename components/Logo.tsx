@@ -13,7 +13,7 @@ export default function Logo({ size = 80, style }: LogoProps) {
     <View style={[styles.container, style]}>
       <Image
         source={{ uri: LOGO_URL }}
-        style={[styles.logo, { width: size * 0.8, height: size * 0.8, borderRadius: size * 0.4 }]}
+        style={[styles.logo, { width: size, height: size, borderRadius: size * 0.5 }]}
         resizeMode="cover"
       />
     </View>

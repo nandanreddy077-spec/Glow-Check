@@ -196,7 +196,9 @@ export default function LoginScreen() {
                 }
               ]}
             >
-              <Logo size={80} style={{ marginBottom: 20 }} />
+              <View style={styles.logoCircle}>
+                <Logo size={120} />
+              </View>
               <View style={styles.titleContainer}>
                 <Text style={styles.title}>Welcome to Lumyn</Text>
               </View>
@@ -325,6 +327,17 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   header: {
     alignItems: 'center',
     marginBottom: spacing.xxxl,
+  },
+  logoCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: palette.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+    ...shadow.elevated,
+    overflow: 'hidden',
   },
   titleContainer: {
     flexDirection: 'row',

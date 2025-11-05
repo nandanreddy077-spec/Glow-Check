@@ -269,7 +269,7 @@ export default function SignupScreen() {
                 ]}
               >
                 <View style={styles.logoCircle}>
-                  <Logo size={70} />
+                  <Logo size={100} />
                 </View>
                 
                 <Text style={styles.title}>Join Lumyn</Text>
