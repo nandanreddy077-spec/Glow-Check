@@ -333,14 +333,22 @@ export default function SignupScreen() {
                   </View>
                 </TouchableOpacity>
                 <View style={styles.termsTextContainer}>
-                  <Text style={styles.termsText}>I accept the </Text>
-                  <TouchableOpacity onPress={() => router.push('/terms-of-service')}>
-                    <Text style={styles.termsLink}>Terms of Service</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.termsText}> and </Text>
-                  <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
-                    <Text style={styles.termsLink}>Privacy Policy</Text>
-                  </TouchableOpacity>
+                  <Text style={styles.termsText}>
+                    I accept the{' '}
+                    <Text 
+                      style={styles.termsLink}
+                      onPress={() => router.push('/terms-of-service')}
+                    >
+                      Terms of Service
+                    </Text>
+                    {' '}and{' '}
+                    <Text 
+                      style={styles.termsLink}
+                      onPress={() => router.push('/privacy-policy')}
+                    >
+                      Privacy Policy
+                    </Text>
+                  </Text>
                 </View>
               </View>
 
@@ -362,10 +370,15 @@ export default function SignupScreen() {
               </TouchableOpacity>
 
               <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Already part of our beautiful community? </Text>
-                <TouchableOpacity onPress={navigateToLogin} testID="login-link">
-                  <Text style={styles.loginLink}>Welcome Back</Text>
-                </TouchableOpacity>
+                <Text style={styles.loginText}>
+                  Already part of our beautiful community?{' '}
+                  <Text 
+                    style={styles.loginLink}
+                    onPress={navigateToLogin}
+                  >
+                    Welcome Back
+                  </Text>
+                </Text>
               </View>
             </Animated.View>
           </ScrollView>
@@ -388,8 +401,9 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xxxxl,
   },
   backButton: {
     position: 'absolute',
@@ -400,7 +414,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xxxxl,
+    marginBottom: spacing.xl,
     marginTop: 60,
   },
   titleContainer: {
@@ -499,11 +513,14 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
+    textAlign: 'center',
+    flexShrink: 1,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   loginText: {
     color: palette.textSecondary,
@@ -519,7 +536,6 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: spacing.lg,
-    paddingHorizontal: spacing.xs,
   },
   checkbox: {
     marginRight: spacing.md,
@@ -549,7 +565,6 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    paddingRight: spacing.xs,
   },
   termsText: {
     fontSize: 13,
