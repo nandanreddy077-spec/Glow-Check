@@ -13,8 +13,8 @@ export default function Logo({ size = 80, style }: LogoProps) {
     <View style={[styles.container, style]}>
       <Image
         source={{ uri: LOGO_URL }}
-        style={[styles.logo, { width: size, height: size }]}
-        resizeMode="contain"
+        style={[styles.logo, { width: size * 0.8, height: size * 0.8, borderRadius: size * 0.4 }]}
+        resizeMode="cover"
       />
     </View>
   );
@@ -26,6 +26,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    borderRadius: 20,
+    overflow: 'hidden',
   },
 });
