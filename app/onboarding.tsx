@@ -334,21 +334,7 @@ export default function OnboardingScreen() {
                           <View style={styles.imageInner}>
                             {i === 0 ? (
                               <View style={styles.logoContainer}>
-                                <Logo size={180} />
-                                <Animated.View 
-                                  style={[
-                                    styles.sparkleContainer,
-                                    {
-                                      opacity: sparkleAnim,
-                                    },
-                                  ]}
-                                >
-                                  <Sparkles 
-                                    color={palette.primary} 
-                                    size={24} 
-                                    fill={palette.primary} 
-                                  />
-                                </Animated.View>
+                                <Logo size={220} />
                               </View>
                             ) : (
                               <>
