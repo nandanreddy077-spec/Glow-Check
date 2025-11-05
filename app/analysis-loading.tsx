@@ -174,13 +174,22 @@ export default function AnalysisLoadingScreen() {
       console.log('🚀 Starting', isMultiAngle ? 'multi-angle' : 'single-angle', 'analysis...');
       
       // Convert images to base64
+      console.log('📸 Starting image conversion...');
       const frontBase64 = await convertImageToBase64(frontImage);
+      console.log('✅ Front image converted, length:', frontBase64?.length || 0);
+      
       let leftBase64: string | null = null;
       let rightBase64: string | null = null;
       
       if (isMultiAngle && leftImage && rightImage) {
+        console.log('📸 Converting left profile...');
         leftBase64 = await convertImageToBase64(leftImage);
+        console.log('✅ Left image converted, length:', leftBase64?.length || 0);
+        
+        console.log('📸 Converting right profile...');
         rightBase64 = await convertImageToBase64(rightImage);
+        console.log('✅ Right image converted, length:', rightBase64?.length || 0);
+        
         console.log('📸 All three angles converted to base64');
       }
 
@@ -225,16 +234,38 @@ export default function AnalysisLoadingScreen() {
   };
 
   const convertImageToBase64 = async (imageUri: string): Promise<string> => {
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-    return new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        resolve(result.split(',')[1]); // Remove data:image/jpeg;base64, prefix
-      };
-      reader.readAsDataURL(blob);
-    });
+    try {
+      console.log('📸 Converting image to base64:', imageUri.substring(0, 50));
+      
+      // If already base64
+      if (imageUri.startsWith('data:image')) {
+        const base64Data = imageUri.split(',')[1];
+        console.log('✅ Image already in base64 format');
+        return base64Data;
+      }
+      
+      // For file URIs, fetch and convert
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1];
+          console.log('✅ Image converted to base64, length:', base64Data?.length || 0);
+          resolve(base64Data);
+        };
+        reader.onerror = (error) => {
+          console.error('❌ FileReader error:', error);
+          reject(new Error('Failed to convert image to base64'));
+        };
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('❌ Error converting image to base64:', error);
+      throw error;
+    }
   };
 
 
@@ -511,10 +542,11 @@ Respond with ONLY a valid JSON object with this structure:
         }
       ];
 
+      console.log('🤖 Sending AI request with image length:', images.front?.length || 0);
       let analysisText;
       try {
         analysisText = await makeAIRequest(messages);
-        console.log('Raw AI response:', analysisText);
+        console.log('✅ AI response received, length:', analysisText?.length || 0);
       } catch (error) {
         console.error('Analysis AI API failed after retries, using fallback:', error);
         console.log('🔄 Using enhanced fallback analysis due to API error...');

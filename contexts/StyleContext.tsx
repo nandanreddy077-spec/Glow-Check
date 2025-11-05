@@ -213,6 +213,15 @@ Respond in this exact JSON format:
   }
 }`;
 
+      // Convert image to base64 if needed
+      let imageBase64 = imageUri;
+      if (imageUri.startsWith('data:')) {
+        imageBase64 = imageUri.split(',')[1];
+        console.log('✅ Style image already in base64 format, length:', imageBase64?.length || 0);
+      } else {
+        console.log('📸 Style image URI (not base64):', imageUri.substring(0, 50));
+      }
+      
       const messages = [
         {
           role: 'user',
@@ -223,16 +232,17 @@ Respond in this exact JSON format:
             },
             {
               type: 'image',
-              image: imageUri.startsWith('data:') ? imageUri.split(',')[1] : imageUri
+              image: imageBase64
             }
           ]
         }
       ];
 
+      console.log('🤖 Sending style AI request with image length:', imageBase64?.length || 0);
       let completion;
       try {
         completion = await makeAIRequest(messages);
-        console.log('Raw AI response:', completion);
+        console.log('✅ Style AI response received, length:', completion?.length || 0);
       } catch (error) {
         console.error('Style AI API failed after retries, using fallback:', error);
         // Use fallback analysis immediately if AI fails
