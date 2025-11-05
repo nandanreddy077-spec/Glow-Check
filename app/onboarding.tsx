@@ -49,7 +49,7 @@ const slides: Slide[] = [
     id: '2',
     title: 'Beauty That\nEvolves With You',
     subtitle: 'Daily coaching and smart routines that adapt to your lifestyle',
-    image: 'https://images.unsplash.com/photo-1552693673-1bf958298935?q=80&w=1080&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=1080&auto=format&fit=crop',
     features: [
       { 
         icon: <Heart size={20} />, 
@@ -334,7 +334,7 @@ export default function OnboardingScreen() {
                           <View style={styles.imageInner}>
                             {i === 0 ? (
                               <View style={styles.logoContainer}>
-                                <Logo size={220} />
+                                <Logo size={180} />
                               </View>
                             ) : (
                               <>
@@ -662,16 +662,19 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     flexWrap: 'wrap',
   },
   featureCard: {
-    width: '31%',
+    flex: 1,
+    minWidth: '30%',
+    maxWidth: '32%',
     borderRadius: radii.lg,
     overflow: 'hidden',
     ...shadow.card,
   },
   featureCardGradient: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
+    minHeight: 110,
   },
   featureIconContainer: {
     marginBottom: spacing.xs,
@@ -685,18 +688,20 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     ...shadow.glow,
   },
   featureCardTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: palette.textPrimary,
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    lineHeight: 16,
+    marginBottom: 2,
   },
   featureCardDescription: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
     color: palette.textSecondary,
     textAlign: 'center',
-    lineHeight: 15,
+    lineHeight: 14,
   },
   
   bottomNav: {
