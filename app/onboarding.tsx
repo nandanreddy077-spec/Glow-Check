@@ -601,6 +601,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
     width: '100%',
     height: '100%',
     backgroundColor: '#FFFFFF',
+    padding: spacing.xl,
   },
   sparkleContainer: {
     position: 'absolute',
