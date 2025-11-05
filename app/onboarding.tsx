@@ -598,7 +598,9 @@ const createStyles = (palette: ReturnType<typeof getPalette>, height: number) =>
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
   },
   sparkleContainer: {
     position: 'absolute',
