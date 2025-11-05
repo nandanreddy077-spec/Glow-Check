@@ -53,62 +53,73 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
   }, [analysisHistory]);
 
   // Utility function for making AI API calls with retry logic
-  const makeAIRequest = async (messages: any[], maxRetries = 2): Promise<any> => {
+  const makeAIRequest = async (messages: any[], maxRetries = 1): Promise<any> => {
     let lastError: Error | null = null;
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
         
-        // Try the original API first
+        // Try the toolkit API with timeout
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+          
           const response = await fetch(`${(process.env.EXPO_PUBLIC_TOOLKIT_URL ?? 'https://toolkit.rork.com').replace(/\/$/, '')}/text/llm/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ messages })
+            body: JSON.stringify({ messages }),
+            signal: controller.signal
           });
+          
+          clearTimeout(timeoutId);
 
           if (response.ok) {
             const data = await response.json();
             if (data.completion) {
+              console.log('✅ Style AI API succeeded');
               return data.completion;
             }
+          } else {
+            console.log(`Primary API returned status ${response.status}`);
           }
-        } catch (error) {
-          console.log('Primary API failed, trying fallback...');
+        } catch (fetchError) {
+          console.log('Primary API failed:', fetchError instanceof Error ? fetchError.message : 'Unknown error');
         }
         
         // Fallback to OpenAI API (only if a key is provided)
         const fallbackKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
         if (!fallbackKey) {
-          throw new Error('OpenAI key not configured');
+          console.log('No OpenAI key configured, will use fallback analysis');
+          throw new Error('No AI API available');
         }
+        
+        console.log('Trying OpenAI API fallback...');
+        const controller2 = new AbortController();
+        const timeoutId2 = setTimeout(() => controller2.abort(), 8000); // 8 second timeout
+        
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? ''}`
+            'Authorization': `Bearer ${fallbackKey}`
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
             messages: messages,
             max_tokens: 2000,
             temperature: 0.7
-          })
+          }),
+          signal: controller2.signal
         });
+        
+        clearTimeout(timeoutId2);
 
         if (!openaiResponse.ok) {
           const errorText = await openaiResponse.text().catch(() => 'Unknown error');
           console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
-          
-          if (openaiResponse.status === 500 && attempt < maxRetries) {
-            lastError = new Error(`AI API error: ${openaiResponse.status}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            continue;
-          }
-          
           throw new Error(`AI API error: ${openaiResponse.status}`);
         }
 
@@ -117,18 +128,21 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
           throw new Error('No completion in AI response');
         }
         
+        console.log('✅ OpenAI API succeeded');
         return openaiData.choices[0].message.content;
       } catch (error) {
         console.error(`Style AI API error (attempt ${attempt + 1}):`, error instanceof Error ? error.message : String(error));
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          console.log(`Waiting before retry ${attempt + 1}...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
         }
       }
     }
     
+    console.log('❌ All Style AI API attempts failed, will use fallback analysis');
     throw lastError || new Error('AI API request failed after all retries');
   };
 
