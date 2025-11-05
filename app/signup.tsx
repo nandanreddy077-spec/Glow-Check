@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
-import { Eye, EyeOff, Mail, Lock, User, Heart, Sparkles, Star, ArrowLeft } from 'lucide-react-native';
+import { Eye, EyeOff, Mail, Lock, User, Heart, Sparkles, Star } from 'lucide-react-native';
 import Logo from '@/components/Logo';
 import { getPalette, getGradient, shadow, spacing, radii } from '@/constants/theme';
 
@@ -134,9 +134,7 @@ export default function SignupScreen() {
     router.push('/login');
   };
 
-  const navigateBack = () => {
-    router.back();
-  };
+
 
 
 
@@ -251,12 +249,6 @@ export default function SignupScreen() {
         </Animated.View>
         
         <SafeAreaView style={styles.safeArea}>
-          <TouchableOpacity onPress={navigateBack} style={styles.backButton}>
-            <View style={styles.backButtonCircle}>
-              <ArrowLeft size={20} color={palette.textPrimary} />
-            </View>
-          </TouchableOpacity>
-
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.keyboardView}
@@ -460,21 +452,7 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
   },
-  backButton: {
-    position: 'absolute',
-    top: spacing.lg,
-    left: spacing.lg,
-    zIndex: 10,
-  },
-  backButtonCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: palette.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadow.card,
-  },
+
   logoContainer: {
     alignItems: 'center',
     marginBottom: spacing.xxl,
