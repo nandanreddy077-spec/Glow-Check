@@ -301,11 +301,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         if (user?.id) {
           try {
             await supabase
-              .from('user_profiles')
+              .from('profiles')
               .update({ 
                 revenuecat_user_id: user.id,
                 subscription_status: 'premium',
                 subscription_product_id: productId,
+                is_premium: true,
                 updated_at: new Date().toISOString()
               })
               .eq('id', user.id);
