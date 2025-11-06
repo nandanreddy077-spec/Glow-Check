@@ -236,10 +236,14 @@ export default function HomeScreen() {
             <Logo size={32} />
             <Text style={styles.brandingName}>GlowCheck</Text>
           </View>
-          <View style={styles.pointsBadge}>
+          <TouchableOpacity 
+            onPress={() => router.push('/profile')} 
+            activeOpacity={0.8}
+            style={styles.pointsBadge}
+          >
             <Flame color={palette.gold} size={14} fill={palette.gold} />
             <Text style={styles.pointsText}>{user.stats.totalPoints || 0}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.header}>
