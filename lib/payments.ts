@@ -14,12 +14,11 @@ export const REVENUECAT_CONFIG = {
 // Go to App Store Connect > Your App > Subscriptions > Copy the Product ID exactly
 export const PRODUCT_IDS = {
   // iOS App Store IDs (from App Store Connect - Subscription Group: Premium Access)
-  // TODO: Replace these with your ACTUAL product IDs from App Store Connect
   MONTHLY: Platform.OS === 'ios' 
-    ? 'monthly_glow_premium'  // ⚠️ UPDATE THIS - Example: 'com.glowcheck01.app.monthly' or 'monthly_premium'
+    ? 'com.glowcheck.monthly.premium'
     : 'com.glowcheck01.app.premium.monthly',
   YEARLY: Platform.OS === 'ios'
-    ? 'yearly_glow_premium'   // ⚠️ UPDATE THIS - Example: 'com.glowcheck01.app.yearly' or 'yearly_premium'
+    ? 'com.glowcheck.yearly1.premium'
     : 'com.glowcheck01.app.premium.yearly',
 } as const;
 
