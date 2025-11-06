@@ -13,7 +13,6 @@ import { useAnalysis, AnalysisResult } from '@/contexts/AnalysisContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
-import { generateText } from '@rork/toolkit-sdk';
 
 
 
@@ -385,7 +384,99 @@ export default function AnalysisLoadingScreen() {
     }
   };
 
+  // Utility function for making AI API calls with retry logic
+  const makeAIRequest = async (messages: any[], maxRetries = 1): Promise<any> => {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Analysis AI API attempt ${attempt + 1}/${maxRetries + 1}`);
+        
+        // Try the toolkit API with timeout
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+          
+          const response = await fetch(`${(process.env.EXPO_PUBLIC_TOOLKIT_URL ?? 'https://toolkit.rork.com').replace(/\/$/, '')}/text/llm/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ messages }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
 
+          if (response.ok) {
+            const data = await response.json();
+            if (data.completion) {
+              console.log('✅ Analysis AI API succeeded');
+              return data.completion;
+            }
+          } else {
+            console.log(`Primary API returned status ${response.status}`);
+          }
+        } catch (fetchError) {
+          console.log('Primary API failed:', fetchError instanceof Error ? fetchError.message : 'Unknown error');
+        }
+        
+        // Fallback to OpenAI API (only if a key is provided)
+        const fallbackKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
+        if (!fallbackKey) {
+          console.log('No OpenAI key configured, will use fallback analysis');
+          throw new Error('No AI API available');
+        }
+        
+        console.log('Trying OpenAI API fallback...');
+        const controller2 = new AbortController();
+        const timeoutId2 = setTimeout(() => controller2.abort(), 8000); // 8 second timeout
+        
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${fallbackKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: messages,
+            max_tokens: 2000,
+            temperature: 0.7
+          }),
+          signal: controller2.signal
+        });
+        
+        clearTimeout(timeoutId2);
+
+        if (!openaiResponse.ok) {
+          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
+          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
+          throw new Error(`AI API error: ${openaiResponse.status}`);
+        }
+
+        const openaiData = await openaiResponse.json();
+        if (!openaiData.choices?.[0]?.message?.content) {
+          throw new Error('No completion in AI response');
+        }
+        
+        console.log('✅ OpenAI API succeeded');
+        return openaiData.choices[0].message.content;
+      } catch (error) {
+        console.error(`Analysis AI API error (attempt ${attempt + 1}):`, error instanceof Error ? error.message : String(error));
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        
+        if (attempt < maxRetries) {
+          console.log(`Waiting before retry ${attempt + 1}...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+      }
+    }
+    
+    console.log('❌ All AI API attempts failed, will use fallback analysis');
+    throw lastError || new Error('AI API request failed after all retries');
+  };
 
   const analyzeWithAdvancedAI = async (images: {
     front: string;
@@ -455,10 +546,7 @@ Respond with ONLY a valid JSON object with this structure:
     try {
       console.log('Making advanced AI analysis request...');
       
-      const messages: Array<{
-        role: 'user';
-        content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>;
-      }> = [
+      const messages = [
         {
           role: 'user',
           content: [
@@ -469,10 +557,15 @@ Respond with ONLY a valid JSON object with this structure:
       ];
 
       console.log('🤖 Sending AI request with image length:', images.front?.length || 0);
-      const analysisText = await generateText({
-        messages
-      });
-      console.log('✅ AI response received, length:', analysisText?.length || 0);
+      let analysisText;
+      try {
+        analysisText = await makeAIRequest(messages);
+        console.log('✅ AI response received, length:', analysisText?.length || 0);
+      } catch (error) {
+        console.error('Analysis AI API failed after retries, using fallback:', error);
+        console.log('🔄 Using enhanced fallback analysis due to API error...');
+        return generateFallbackAnalysis(visionData);
+      }
       
       // Parse JSON response with better error handling
       let cleanedText = analysisText.trim();
@@ -524,14 +617,16 @@ Respond with ONLY a valid JSON object with this structure:
             return parsed;
           } catch (e3) {
             console.error('Failed all JSON parse attempts');
-            throw new Error('Failed to parse AI response');
+            console.log('🔄 Using enhanced fallback analysis due to parse error...');
+            return generateFallbackAnalysis(visionData);
           }
         }
       }
       
     } catch (error) {
       console.error('Advanced AI analysis error:', error);
-      throw error;
+      console.log('🔄 Using enhanced fallback analysis due to API error...');
+      return generateFallbackAnalysis(visionData);
     }
   };
 
