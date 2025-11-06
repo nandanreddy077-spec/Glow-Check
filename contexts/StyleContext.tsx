@@ -207,43 +207,25 @@ Respond in this exact JSON format:
       }
 
       console.log('🤖 Sending style AI request with image length:', imageBase64?.length || 0);
-      let analysisData;
-      try {
-        analysisData = await generateObject({
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: analysisPrompt
-                },
-                {
-                  type: 'image',
-                  image: imageBase64
-                }
-              ]
-            }
-          ],
-          schema: StyleAnalysisSchema,
-        });
-        console.log('✅ Style AI response received');
-      } catch (error) {
-        console.error('Style AI API failed, using fallback:', error);
-        // Use fallback analysis immediately if AI fails
-        const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
-        const result: StyleAnalysisResult = {
-          id: Date.now().toString(),
-          image: imageUri,
-          occasion,
-          ...fallbackAnalysis,
-          timestamp: new Date()
-        };
-        
-        setAnalysisResult(result);
-        await saveAnalysisToHistory(result);
-        return result;
-      }
+      const analysisData = await generateObject({
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: analysisPrompt
+              },
+              {
+                type: 'image',
+                image: imageBase64
+              }
+            ]
+          }
+        ],
+        schema: StyleAnalysisSchema,
+      });
+      console.log('✅ Style AI response received');
 
       const result: StyleAnalysisResult = {
         id: Date.now().toString(),
@@ -259,87 +241,11 @@ Respond in this exact JSON format:
       return result;
     } catch (error) {
       console.error('Error analyzing outfit:', error);
-      // Create fallback analysis on any error
-      const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
-      const result: StyleAnalysisResult = {
-        id: Date.now().toString(),
-        image: imageUri,
-        occasion,
-        ...fallbackAnalysis,
-        timestamp: new Date()
-      };
-      
-      setAnalysisResult(result);
-      await saveAnalysisToHistory(result);
-      return result;
+      throw error;
     } finally {
       setIsAnalyzing(false);
     }
   }, [saveAnalysisToHistory]);
-
-  // Helper function to create fallback style analysis
-  const createFallbackStyleAnalysis = (occasion: string) => {
-    return {
-      overallScore: 75,
-      vibe: 'Stylish and put-together',
-      colorAnalysis: {
-        dominantColors: ['Black', 'White', 'Blue'],
-        colorHarmony: 80,
-        seasonalMatch: 'Autumn',
-        recommendedColors: ['Navy', 'Burgundy', 'Cream']
-      },
-      outfitBreakdown: {
-        top: {
-          item: 'Casual top',
-          fit: 85,
-          color: 'Neutral',
-          style: 'Classic',
-          rating: 80,
-          feedback: 'Good fit and style choice'
-        },
-        bottom: {
-          item: 'Casual bottom',
-          fit: 80,
-          color: 'Neutral',
-          style: 'Classic',
-          rating: 75,
-          feedback: 'Complements the overall look'
-        },
-        accessories: {
-          jewelry: {
-            items: ['Watch', 'Ring'],
-            appropriateness: 85,
-            feedback: 'Well-chosen accessories'
-          },
-          shoes: {
-            style: 'Casual',
-            match: 80,
-            feedback: 'Good match for the outfit'
-          },
-          bag: {
-            style: 'Casual',
-            match: 75,
-            feedback: 'Functional and stylish'
-          }
-        }
-      },
-      occasionMatch: {
-        appropriateness: 85,
-        formalityLevel: 'Casual',
-        suggestions: ['Consider adding a statement piece', `Great for ${occasion.toLowerCase()}`]
-      },
-      bodyTypeRecommendations: {
-        strengths: ['Good proportions', 'Flattering fit'],
-        improvements: ['Try different silhouettes', 'Experiment with colors'],
-        stylesThatSuit: ['Classic', 'Casual', 'Smart casual']
-      },
-      overallFeedback: {
-        whatWorked: ['Good color coordination', 'Appropriate for occasion'],
-        improvements: ['Add more personality', 'Try bolder accessories'],
-        specificSuggestions: ['Consider layering', 'Experiment with textures']
-      }
-    };
-  };
 
   const resetAnalysis = useCallback(() => {
     setCurrentImage(null);
