@@ -238,7 +238,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.pointsBadge}>
             <Flame color={palette.gold} size={14} fill={palette.gold} />
-            <Text style={styles.pointsText}>{user.stats.glowPoints || 0}</Text>
+            <Text style={styles.pointsText}>{user.stats.totalPoints || 0}</Text>
           </View>
         </View>
 
