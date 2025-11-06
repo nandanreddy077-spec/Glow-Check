@@ -212,7 +212,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
       );
       
       const subscriptionPromise = supabase
-        .rpc('get_user_subscription_status', { user_id: user.id });
+        .rpc('get_user_subscription_status', { user_uuid: user.id });
       
       const { data, error } = await Promise.race([
         subscriptionPromise,
