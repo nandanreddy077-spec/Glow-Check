@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { StyleAnalysisResult } from '@/types/user';
+import { generateObject } from '@rork/toolkit-sdk';
+import { z } from 'zod';
 
 const OCCASIONS = [
   { id: 'casual', name: 'Casual Day Out', icon: '👕' },
@@ -15,6 +17,68 @@ const OCCASIONS = [
   { id: 'travel', name: 'Travel', icon: '✈️' },
   { id: 'brunch', name: 'Brunch/Lunch', icon: '🥂' },
 ];
+
+// Zod schema for style analysis
+const StyleAnalysisSchema = z.object({
+  overallScore: z.number(),
+  vibe: z.string(),
+  colorAnalysis: z.object({
+    dominantColors: z.array(z.string()),
+    colorHarmony: z.number(),
+    seasonalMatch: z.string(),
+    recommendedColors: z.array(z.string()),
+  }),
+  outfitBreakdown: z.object({
+    top: z.object({
+      item: z.string(),
+      fit: z.number(),
+      color: z.string(),
+      style: z.string(),
+      rating: z.number(),
+      feedback: z.string(),
+    }),
+    bottom: z.object({
+      item: z.string(),
+      fit: z.number(),
+      color: z.string(),
+      style: z.string(),
+      rating: z.number(),
+      feedback: z.string(),
+    }),
+    accessories: z.object({
+      jewelry: z.object({
+        items: z.array(z.string()),
+        appropriateness: z.number(),
+        feedback: z.string(),
+      }),
+      shoes: z.object({
+        style: z.string(),
+        match: z.number(),
+        feedback: z.string(),
+      }),
+      bag: z.object({
+        style: z.string(),
+        match: z.number(),
+        feedback: z.string(),
+      }),
+    }),
+  }),
+  occasionMatch: z.object({
+    appropriateness: z.number(),
+    formalityLevel: z.string(),
+    suggestions: z.array(z.string()),
+  }),
+  bodyTypeRecommendations: z.object({
+    strengths: z.array(z.string()),
+    improvements: z.array(z.string()),
+    stylesThatSuit: z.array(z.string()),
+  }),
+  overallFeedback: z.object({
+    whatWorked: z.array(z.string()),
+    improvements: z.array(z.string()),
+    specificSuggestions: z.array(z.string()),
+  }),
+});
 
 export const [StyleProvider, useStyle] = createContextHook(() => {
   const [currentImage, setCurrentImage] = useState<string | null>(null);
@@ -51,100 +115,6 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
       console.error('Error saving analysis to history:', error);
     }
   }, [analysisHistory]);
-
-  // Utility function for making AI API calls with retry logic
-  const makeAIRequest = async (messages: any[], maxRetries = 1): Promise<any> => {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Style AI API attempt ${attempt + 1}/${maxRetries + 1}`);
-        
-        // Try the toolkit API with timeout
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-          
-          const response = await fetch(`${(process.env.EXPO_PUBLIC_TOOLKIT_URL ?? 'https://toolkit.rork.com').replace(/\/$/, '')}/text/llm/`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ messages }),
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.completion) {
-              console.log('✅ Style AI API succeeded');
-              return data.completion;
-            }
-          } else {
-            console.log(`Primary API returned status ${response.status}`);
-          }
-        } catch (fetchError) {
-          console.log('Primary API failed:', fetchError instanceof Error ? fetchError.message : 'Unknown error');
-        }
-        
-        // Fallback to OpenAI API (only if a key is provided)
-        const fallbackKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
-        if (!fallbackKey) {
-          console.log('No OpenAI key configured, will use fallback analysis');
-          throw new Error('No AI API available');
-        }
-        
-        console.log('Trying OpenAI API fallback...');
-        const controller2 = new AbortController();
-        const timeoutId2 = setTimeout(() => controller2.abort(), 8000); // 8 second timeout
-        
-        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${fallbackKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: messages,
-            max_tokens: 2000,
-            temperature: 0.7
-          }),
-          signal: controller2.signal
-        });
-        
-        clearTimeout(timeoutId2);
-
-        if (!openaiResponse.ok) {
-          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
-          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
-          throw new Error(`AI API error: ${openaiResponse.status}`);
-        }
-
-        const openaiData = await openaiResponse.json();
-        if (!openaiData.choices?.[0]?.message?.content) {
-          throw new Error('No completion in AI response');
-        }
-        
-        console.log('✅ OpenAI API succeeded');
-        return openaiData.choices[0].message.content;
-      } catch (error) {
-        console.error(`Style AI API error (attempt ${attempt + 1}):`, error instanceof Error ? error.message : String(error));
-        lastError = error instanceof Error ? error : new Error('Unknown error');
-        
-        if (attempt < maxRetries) {
-          console.log(`Waiting before retry ${attempt + 1}...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          continue;
-        }
-      }
-    }
-    
-    console.log('❌ All Style AI API attempts failed, will use fallback analysis');
-    throw lastError || new Error('AI API request failed after all retries');
-  };
 
   const analyzeOutfit = useCallback(async (imageUri: string, occasion: string): Promise<StyleAnalysisResult> => {
     setIsAnalyzing(true);
@@ -235,67 +205,32 @@ Respond in this exact JSON format:
       } else {
         console.log('📸 Style image URI (not base64):', imageUri.substring(0, 50));
       }
-      
-      const messages = [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: analysisPrompt
-            },
-            {
-              type: 'image',
-              image: imageBase64
-            }
-          ]
-        }
-      ];
 
       console.log('🤖 Sending style AI request with image length:', imageBase64?.length || 0);
-      let completion;
-      try {
-        completion = await makeAIRequest(messages);
-        console.log('✅ Style AI response received, length:', completion?.length || 0);
-      } catch (error) {
-        console.error('Style AI API failed after retries, using fallback:', error);
-        // Use fallback analysis immediately if AI fails
-        const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
-        const result: StyleAnalysisResult = {
-          id: Date.now().toString(),
-          image: imageUri,
-          occasion,
-          ...fallbackAnalysis,
-          timestamp: new Date()
-        };
-        
-        setAnalysisResult(result);
-        await saveAnalysisToHistory(result);
-        return result;
-      }
-
       let analysisData;
       try {
-        let cleanedResponse = completion.replace(/```json\n?|```\n?/g, '').trim();
-        
-        // If the response doesn't start with {, try to find JSON in the response
-        if (!cleanedResponse.startsWith('{')) {
-          const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            cleanedResponse = jsonMatch[0];
-          } else {
-            console.error('No valid JSON found in style response:', cleanedResponse);
-            throw new Error('No valid JSON found in AI response');
-          }
-        }
-        
-        analysisData = JSON.parse(cleanedResponse);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        console.log('Problematic response:', completion);
-        
-        // Fallback: Create a basic analysis structure
-        console.log('Creating fallback style analysis due to parse error');
+        analysisData = await generateObject({
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: analysisPrompt
+                },
+                {
+                  type: 'image',
+                  image: imageBase64
+                }
+              ]
+            }
+          ],
+          schema: StyleAnalysisSchema,
+        });
+        console.log('✅ Style AI response received');
+      } catch (error) {
+        console.error('Style AI API failed, using fallback:', error);
+        // Use fallback analysis immediately if AI fails
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),
