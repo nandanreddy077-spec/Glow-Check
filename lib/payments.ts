@@ -5,7 +5,7 @@ export const REVENUECAT_CONFIG = {
   // Production RevenueCat API Keys - Configured for production
   API_KEY_IOS: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || 'appl_UpDZroTEjwQSDDRJdqLgYihNxsh',
   API_KEY_ANDROID: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID || 'goog_xCXiGuMlJXxLNPQUlodNDLnAAYZ',
-  ENTITLEMENT_ID: 'premium', // This should match your RevenueCat entitlement
+  ENTITLEMENT_ID: 'Premium Access', // This matches your RevenueCat entitlement
 } as const;
 
 // Product IDs for App Store and Google Play
