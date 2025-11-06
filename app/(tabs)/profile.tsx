@@ -35,6 +35,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAnalysis } from "@/contexts/AnalysisContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
+import Logo from "@/components/Logo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { getPalette, getGradient, shadow } from "@/constants/theme";
@@ -248,6 +249,14 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={getGradient(theme).hero} style={StyleSheet.absoluteFillObject} />
       <ScrollView showsVerticalScrollIndicator={false} testID="profileScroll" contentContainerStyle={styles.scrollContent}>
+        {/* Branding Header */}
+        <View style={styles.brandingHeader}>
+          <View style={styles.brandingContainer}>
+            <Logo size={28} />
+            <Text style={styles.brandingName}>GlowCheck</Text>
+          </View>
+        </View>
+
         <View style={styles.header}>
           <TouchableOpacity 
             onPress={handleAvatarPress} 
@@ -558,6 +567,25 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   },
   scrollContent: {
     paddingBottom: 40,
+  },
+  brandingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  brandingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  brandingName: {
+    fontSize: 20,
+    fontWeight: '900' as const,
+    color: palette.textPrimary,
+    letterSpacing: -0.4,
   },
   header: {
     alignItems: "center",

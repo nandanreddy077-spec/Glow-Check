@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Wand2, Sun, Zap, Compass, ArrowRight, TrendingUp, Package, AlertCircle } from "lucide-react-native";
+import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Wand2, Sun, Zap, Compass, ArrowRight, TrendingUp, Package, AlertCircle, Flame } from "lucide-react-native";
 import { router } from "expo-router";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ import { useProgressTracking } from "@/contexts/ProgressTrackingContext";
 import { useProductTracking } from "@/contexts/ProductTrackingContext";
 import { useSeasonalAdvisor } from "@/contexts/SeasonalAdvisorContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
+import Logo from "@/components/Logo";
 import { getPalette, getGradient, shadow, spacing, radii, typography } from "@/constants/theme";
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -230,6 +231,17 @@ export default function HomeScreen() {
           <Heart color={palette.champagne} size={14} fill={palette.champagne} />
         </Animated.View>
         
+        <View style={styles.brandingHeader}>
+          <View style={styles.brandingContainer}>
+            <Logo size={32} />
+            <Text style={styles.brandingName}>GlowCheck</Text>
+          </View>
+          <View style={styles.pointsBadge}>
+            <Flame color={palette.gold} size={14} fill={palette.gold} />
+            <Text style={styles.pointsText}>{user.stats.glowPoints || 0}</Text>
+          </View>
+        </View>
+
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.greeting}>Hello beautiful,</Text>
@@ -554,6 +566,40 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
   container: {
     flex: 1,
     backgroundColor: palette.backgroundStart,
+  },
+  brandingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  brandingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  brandingName: {
+    fontSize: 24,
+    fontWeight: '900' as const,
+    color: palette.textPrimary,
+    letterSpacing: -0.5,
+  },
+  pointsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.overlayGold,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  pointsText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: palette.gold,
+    letterSpacing: 0.3,
   },
   scrollContent: {
     paddingBottom: 40,

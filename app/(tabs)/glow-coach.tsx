@@ -37,7 +37,8 @@ import {
   Sparkles,
   Heart,
   Star,
-  Gem
+  Gem,
+  Flame
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -49,6 +50,7 @@ import { SkincareStep, WeeklyPlan, SkincarePlan } from '@/types/skincare';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DailyRewardsModal from '@/components/DailyRewardsModal';
+import Logo from '@/components/Logo';
 import AnimatedProgressBar from '@/components/AnimatedProgressBar';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -504,6 +506,14 @@ export default function GlowCoachScreen() {
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={gradient.hero} style={StyleSheet.absoluteFillObject} />
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Branding Header */}
+        <View style={styles.brandingHeader}>
+          <View style={styles.brandingContainer}>
+            <Logo size={28} />
+            <Text style={styles.brandingName}>GlowCheck</Text>
+          </View>
+        </View>
+
         {/* Luxurious Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -932,6 +942,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: palette.backgroundStart,
+  },
+  brandingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  brandingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  brandingName: {
+    fontSize: 20,
+    fontWeight: '900' as const,
+    color: palette.textPrimary,
+    letterSpacing: -0.4,
   },
   header: {
     paddingHorizontal: spacing.xxl,
