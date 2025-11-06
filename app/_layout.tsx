@@ -17,7 +17,7 @@ import { FreemiumProvider } from "@/contexts/FreemiumContext";
 import { ProgressTrackingProvider } from "@/contexts/ProgressTrackingContext";
 import { ProductTrackingProvider } from "@/contexts/ProductTrackingContext";
 import { SeasonalAdvisorProvider } from "@/contexts/SeasonalAdvisorContext";
-import { GlowForecastContext } from "@/contexts/GlowForecastContext";
+import { GlowForecastContext as GlowForecastProvider } from "@/contexts/GlowForecastContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -99,14 +99,14 @@ export default function RootLayout() {
                               <ProgressTrackingProvider>
                               <ProductTrackingProvider>
                                 <SeasonalAdvisorProvider>
-                                  <GlowForecastContext>
+                                  <GlowForecastProvider>
                                     <GestureHandlerRootView style={styles.container}>
                                       <CommunityProvider>
                                         <TrialStarter />
                                         <RootLayoutNav />
                                       </CommunityProvider>
                                     </GestureHandlerRootView>
-                                  </GlowForecastContext>
+                                  </GlowForecastProvider>
                                 </SeasonalAdvisorProvider>
                               </ProductTrackingProvider>
                               </ProgressTrackingProvider>
