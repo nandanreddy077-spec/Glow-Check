@@ -76,6 +76,11 @@ export interface SubscriptionInfo {
   purchaseToken?: string;
 }
 
+export interface PromoCodeResult {
+  success: boolean;
+  error?: string;
+}
+
 class PaymentService {
   private isInitialized = false;
   private purchasesModule: any = null;
@@ -509,7 +514,6 @@ class PaymentService {
       
       const opened = await this.openSubscriptionManagement();
       if (!opened) {
-        // Fallback: Show instructions
         if (Platform.OS !== 'web') {
           Alert.alert(
             'Manage Subscription',
@@ -525,6 +529,76 @@ class PaymentService {
     } catch (error) {
       console.error('Failed to cancel subscription:', error);
       return false;
+    }
+  }
+
+  async redeemPromoCode(promoCode: string): Promise<PromoCodeResult> {
+    try {
+      console.log(`Redeeming promo code: ${promoCode}`);
+      
+      if (!this.isInitialized) {
+        await this.initialize();
+      }
+
+      if (Platform.OS === 'web') {
+        return {
+          success: false,
+          error: 'Promo codes can only be redeemed on iOS or Android devices.',
+        };
+      }
+
+      if (!this.purchasesModule) {
+        console.log('RevenueCat not available for promo code redemption');
+        return {
+          success: false,
+          error: 'Promo code redemption is not available. Please update the app.',
+        };
+      }
+
+      try {
+        const Purchases = this.purchasesModule;
+        
+        console.log('Presenting promo code redemption...');
+        await Purchases.presentCodeRedemptionSheet();
+        
+        console.log('Checking subscription status after redemption...');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        
+        const customerInfo = await Purchases.getCustomerInfo();
+        const entitlement = customerInfo.entitlements.active[REVENUECAT_CONFIG.ENTITLEMENT_ID];
+        
+        if (entitlement) {
+          console.log('Promo code redeemed successfully!');
+          return {
+            success: true,
+          };
+        } else {
+          return {
+            success: false,
+            error: 'Promo code redemption was not completed. Please try again.',
+          };
+        }
+      } catch (error: any) {
+        console.error('Promo code redemption error:', error);
+        
+        if (error.code === 'PURCHASE_CANCELLED_ERROR' || error.userCancelled) {
+          return {
+            success: false,
+            error: 'Promo code redemption cancelled',
+          };
+        }
+        
+        return {
+          success: false,
+          error: error.message || 'Failed to redeem promo code. Please check the code and try again.',
+        };
+      }
+    } catch (error) {
+      console.error('Failed to redeem promo code:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to redeem promo code',
+      };
     }
   }
 }

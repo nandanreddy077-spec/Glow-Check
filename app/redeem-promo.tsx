@@ -20,8 +20,23 @@ import { ArrowLeft, Gift, Sparkles, Check, X, Tag } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
+import { paymentService } from '@/lib/payments';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 const PROMO_CODES = {
+  WELCOME17: {
+    code: 'WELCOME17',
+    type: 'appstore_promo' as const,
+    description: 'Free for the first month',
+    emoji: '🎉',
+  },
+  GLOWCHECK: {
+    code: 'GLOWCHECK',
+    type: 'appstore_promo' as const,
+    description: 'Free for the first month',
+    emoji: '✨',
+  },
   WELCOME7DAYS: {
     code: 'WELCOME7DAYS',
     days: 7,
@@ -43,25 +58,12 @@ const PROMO_CODES = {
     description: '7 days beauty experience',
     emoji: '💅',
   },
-  GLOWUP14: {
-    code: 'GLOWUP14',
-    days: 14,
-    type: 'trial' as const,
-    description: '2 weeks premium trial',
-    emoji: '🌟',
-  },
-  PREMIUM30: {
-    code: 'PREMIUM30',
-    days: 30,
-    type: 'trial' as const,
-    description: '1 month premium access',
-    emoji: '👑',
-  },
 };
 
 export default function RedeemPromoScreen() {
   const { theme } = useTheme();
-  const { startLocalTrial, state } = useSubscription();
+  const { startLocalTrial, state, setSubscriptionData } = useSubscription();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [promoCode, setPromoCode] = useState('');
   const [isRedeeming, setIsRedeeming] = useState(false);
@@ -79,7 +81,7 @@ export default function RedeemPromoScreen() {
       friction: 8,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [successAnimation]);
 
   const triggerShake = useCallback(() => {
     if (Platform.OS !== 'web') {
@@ -152,15 +154,6 @@ export default function RedeemPromoScreen() {
       return;
     }
 
-    if (state.hasStartedTrial) {
-      Alert.alert(
-        '💫 Trial Already Active',
-        'You already have an active trial. Promo codes can only be used once per account.',
-        [{ text: 'Got it' }]
-      );
-      return;
-    }
-
     setIsRedeeming(true);
     setValidationError(null);
 
@@ -168,21 +161,88 @@ export default function RedeemPromoScreen() {
       console.log(`Redeeming promo code: ${normalizedCode}`);
       console.log(`Promo details:`, promoDetails);
 
-      await startLocalTrial(promoDetails.days);
-      triggerSuccess();
+      if (promoDetails.type === 'appstore_promo') {
+        if (Platform.OS === 'web') {
+          Alert.alert(
+            '📱 Mobile Only',
+            'App Store promo codes can only be redeemed on iOS devices. Please use the mobile app to redeem this code.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
 
-      Alert.alert(
-        `${promoDetails.emoji} Promo Code Redeemed!`,
-        `Congratulations! You now have ${promoDetails.days} days of premium access.\n\nEnjoy:\n✨ Unlimited glow scans\n💅 AI beauty coaching\n🌟 Personalized skincare plans\n👗 Style recommendations\n\nYour glow journey starts now!`,
-        [
-          {
-            text: 'Start Glowing ✨',
-            onPress: () => {
-              router.replace('/(tabs)');
+        const result = await paymentService.redeemPromoCode(normalizedCode);
+        
+        if (result.success) {
+          await setSubscriptionData({
+            isPremium: true,
+            hasAddedPayment: true,
+            hasStartedTrial: false,
+            trialStartedAt: undefined,
+            trialEndsAt: undefined,
+          });
+          
+          if (user?.id) {
+            try {
+              await supabase
+                .from('profiles')
+                .update({ 
+                  subscription_status: 'premium',
+                  is_premium: true,
+                  promo_code_used: normalizedCode,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id);
+              
+              console.log('Promo code synced with backend');
+            } catch (backendError) {
+              console.error('Failed to update backend promo code status:', backendError);
+            }
+          }
+          
+          triggerSuccess();
+          Alert.alert(
+            `${promoDetails.emoji} Promo Code Redeemed!`,
+            `Congratulations! ${promoDetails.description}\n\nEnjoy:\n✨ Unlimited glow scans\n💅 AI beauty coaching\n🌟 Personalized skincare plans\n👗 Style recommendations\n\nYour glow journey starts now!`,
+            [
+              {
+                text: 'Start Glowing ✨',
+                onPress: () => {
+                  router.replace('/(tabs)');
+                },
+              },
+            ]
+          );
+        } else {
+          setValidationError(result.error || 'Failed to redeem promo code');
+          triggerShake();
+        }
+      } else if (promoDetails.type === 'trial' && promoDetails.days) {
+        if (state.hasStartedTrial) {
+          Alert.alert(
+            '💫 Trial Already Used',
+            'You already used your trial. Promo codes can only be used once per account.',
+            [{ text: 'Got it' }]
+          );
+          return;
+        }
+
+        await startLocalTrial(promoDetails.days);
+        triggerSuccess();
+
+        Alert.alert(
+          `${promoDetails.emoji} Promo Code Redeemed!`,
+          `Congratulations! You now have ${promoDetails.days} days of premium access.\n\nEnjoy:\n✨ Unlimited glow scans\n💅 AI beauty coaching\n🌟 Personalized skincare plans\n👗 Style recommendations\n\nYour glow journey starts now!`,
+          [
+            {
+              text: 'Start Glowing ✨',
+              onPress: () => {
+                router.replace('/(tabs)');
+              },
             },
-          },
-        ]
-      );
+          ]
+        );
+      }
     } catch (error) {
       console.error('Failed to redeem promo code:', error);
       Alert.alert(
@@ -193,7 +253,7 @@ export default function RedeemPromoScreen() {
     } finally {
       setIsRedeeming(false);
     }
-  }, [promoCode, validatePromoCode, state.isPremium, state.hasStartedTrial, startLocalTrial, triggerShake, triggerSuccess]);
+  }, [promoCode, validatePromoCode, state.isPremium, state.hasStartedTrial, startLocalTrial, setSubscriptionData, user?.id, triggerShake, triggerSuccess]);
 
   const handleBack = useCallback(() => {
     if (Platform.OS !== 'web') {
