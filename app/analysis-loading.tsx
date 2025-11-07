@@ -13,6 +13,8 @@ import { useAnalysis, AnalysisResult } from '@/contexts/AnalysisContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
+import { generateObject } from '@rork/toolkit-sdk';
+import { z } from 'zod';
 
 
 
@@ -42,6 +44,42 @@ const ENGAGEMENT_TIPS = [
   "💫 Amazing: Your unique features make you beautiful!",
 ];
 
+const analysisSchema = z.object({
+  skinAnalysis: z.object({
+    skinType: z.string(),
+    skinTone: z.string(),
+    skinQuality: z.string(),
+    textureScore: z.number(),
+    clarityScore: z.number(),
+    hydrationLevel: z.number(),
+    poreVisibility: z.number(),
+    elasticity: z.number(),
+    pigmentationEvenness: z.number(),
+  }),
+  dermatologyAssessment: z.object({
+    acneRisk: z.enum(['Low', 'Medium', 'High']),
+    agingSigns: z.array(z.string()),
+    skinConcerns: z.array(z.string()),
+    recommendedTreatments: z.array(z.string()),
+    skinConditions: z.array(z.string()),
+    preventiveMeasures: z.array(z.string()),
+  }),
+  beautyScores: z.object({
+    overallScore: z.number(),
+    facialSymmetry: z.number(),
+    skinGlow: z.number(),
+    jawlineDefinition: z.number(),
+    eyeArea: z.number(),
+    lipArea: z.number(),
+    cheekboneDefinition: z.number(),
+    skinTightness: z.number(),
+    facialHarmony: z.number(),
+  }),
+  professionalRecommendations: z.array(z.string()),
+  confidence: z.number(),
+  analysisAccuracy: z.string(),
+});
+
 export default function AnalysisLoadingScreen() {
   const { frontImage, leftImage, rightImage, multiAngle } = useLocalSearchParams<{ 
     frontImage: string;
@@ -69,12 +107,10 @@ export default function AnalysisLoadingScreen() {
   const styles = createStyles(palette);
 
   const startAnalysis = async () => {
-    // Increment scan count immediately when analysis starts
     console.log('🔢 Incrementing glow scan count...');
     await incrementGlowScan();
     console.log('✅ Scan count incremented successfully');
     
-    // Start flowing animation
     setFlowAnimationRunning(true);
     const flowAnimation = Animated.loop(
       Animated.timing(flowAnim, {
@@ -85,7 +121,6 @@ export default function AnalysisLoadingScreen() {
     );
     flowAnimation.start();
 
-    // Start pulse animation for engagement
     const pulseAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -102,12 +137,10 @@ export default function AnalysisLoadingScreen() {
     );
     pulseAnimation.start();
 
-    // Cycle through engagement tips
     const tipInterval = setInterval(() => {
       setEngagementTip(prev => (prev + 1) % ENGAGEMENT_TIPS.length);
     }, 3000);
 
-    // Simulate analysis progress
     for (let i = 0; i < steps.length; i++) {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -119,44 +152,35 @@ export default function AnalysisLoadingScreen() {
       const newProgress = ((i + 1) / steps.length) * 100;
       setProgress(newProgress);
       
-      // Animate progress bar to match the actual progress
       Animated.timing(progressAnim, {
         toValue: newProgress,
         duration: 500,
         useNativeDriver: false,
       }).start();
       
-      // Stop flowing animation when we reach 100%
       if (newProgress >= 100) {
         setFlowAnimationRunning(false);
         flowAnimation.stop();
       }
     }
 
-    // Clear tip interval
     clearInterval(tipInterval);
     
-    // Show analyzing state
     setIsAnalyzing(true);
     
-    // Perform actual AI analysis
     const analysisResult = await performAIAnalysis();
     
     if (analysisResult) {
-      // Store the result in context and AsyncStorage
       setCurrentResult(analysisResult);
       await saveAnalysis(analysisResult);
-      // Refresh user data to update stats
       refreshUserData();
     }
     
-    // Stop animations
     setFlowAnimationRunning(false);
     flowAnimation.stop();
     pulseAnimation.stop();
     setIsAnalyzing(false);
     
-    // Navigate to results
     router.replace('/analysis-results');
   };
 
@@ -173,7 +197,6 @@ export default function AnalysisLoadingScreen() {
     try {
       console.log('🚀 Starting', isMultiAngle ? 'multi-angle' : 'single-angle', 'analysis...');
       
-      // Convert images to base64
       console.log('📸 Starting image conversion...');
       const frontBase64 = await convertImageToBase64(frontImage);
       console.log('✅ Front image converted, length:', frontBase64?.length || 0);
@@ -193,7 +216,6 @@ export default function AnalysisLoadingScreen() {
         console.log('📸 All three angles converted to base64');
       }
 
-      // Perform comprehensive face analysis
       const analysisData = await performComprehensiveFaceAnalysis({
         front: frontBase64,
         left: leftBase64,
@@ -217,7 +239,6 @@ export default function AnalysisLoadingScreen() {
     } catch (error) {
       console.error('❌ Error during AI analysis:', error);
       
-      // For any error, navigate back to analysis screen with error message
       if (error instanceof Error && error.message === 'NO_FACE_DETECTED') {
         router.replace({
           pathname: '/glow-analysis',
@@ -237,14 +258,12 @@ export default function AnalysisLoadingScreen() {
     try {
       console.log('📸 Converting image to base64:', imageUri.substring(0, 50));
       
-      // If already base64
       if (imageUri.startsWith('data:image')) {
         const base64Data = imageUri.split(',')[1];
         console.log('✅ Image already in base64 format');
         return base64Data;
       }
       
-      // For file URIs, fetch and convert
       const response = await fetch(imageUri);
       const blob = await response.blob();
       
@@ -285,7 +304,6 @@ export default function AnalysisLoadingScreen() {
       console.log('4. 3D facial structure analysis (if multi-angle)');
       console.log('5. Medical-grade scoring & recommendations');
       
-      // Step 1: Analyze all available angles with Google Vision API
       console.log('\n🔍 Step 1: Multi-angle Google Vision API analysis...');
       const frontVisionData = await analyzeWithGoogleVision(images.front);
       let leftVisionData = null;
@@ -298,14 +316,12 @@ export default function AnalysisLoadingScreen() {
         rightVisionData = await analyzeWithGoogleVision(images.right);
       }
       
-      // Step 2: Validate face detection across all angles
       console.log('\n✅ Step 2: Professional-grade face validation...');
       if (!validateMultiAngleFaceDetection(frontVisionData, leftVisionData, rightVisionData, images.isMultiAngle)) {
         console.log('❌ Professional face validation failed - throwing NO_FACE_DETECTED error');
         throw new Error('NO_FACE_DETECTED');
       }
       
-      // Step 3: Advanced AI dermatological analysis with multi-angle context
       console.log('\n🧠 Step 3: Advanced multi-angle dermatological analysis...');
       const dermatologyData = await analyzeWithAdvancedAI(images, {
         front: frontVisionData,
@@ -313,7 +329,6 @@ export default function AnalysisLoadingScreen() {
         right: rightVisionData
       });
       
-      // Step 4: Calculate comprehensive scores with 3D analysis
       console.log('\n📊 Step 4: Medical-grade scoring with 3D facial analysis...');
       const finalResult = calculateAdvancedScores({
         front: frontVisionData,
@@ -382,100 +397,6 @@ export default function AnalysisLoadingScreen() {
       console.error('Google Vision API error:', error);
       throw error;
     }
-  };
-
-  // Utility function for making AI API calls with retry logic
-  const makeAIRequest = async (messages: any[], maxRetries = 1): Promise<any> => {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Analysis AI API attempt ${attempt + 1}/${maxRetries + 1}`);
-        
-        // Try the toolkit API with timeout
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-          
-          const response = await fetch(`${(process.env.EXPO_PUBLIC_TOOLKIT_URL ?? 'https://toolkit.rork.com').replace(/\/$/, '')}/text/llm/`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ messages }),
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.completion) {
-              console.log('✅ Analysis AI API succeeded');
-              return data.completion;
-            }
-          } else {
-            console.log(`Primary API returned status ${response.status}`);
-          }
-        } catch (fetchError) {
-          console.log('Primary API failed:', fetchError instanceof Error ? fetchError.message : 'Unknown error');
-        }
-        
-        // Fallback to OpenAI API (only if a key is provided)
-        const fallbackKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
-        if (!fallbackKey) {
-          console.log('No OpenAI key configured, will use fallback analysis');
-          throw new Error('No AI API available');
-        }
-        
-        console.log('Trying OpenAI API fallback...');
-        const controller2 = new AbortController();
-        const timeoutId2 = setTimeout(() => controller2.abort(), 8000); // 8 second timeout
-        
-        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${fallbackKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: messages,
-            max_tokens: 2000,
-            temperature: 0.7
-          }),
-          signal: controller2.signal
-        });
-        
-        clearTimeout(timeoutId2);
-
-        if (!openaiResponse.ok) {
-          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
-          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
-          throw new Error(`AI API error: ${openaiResponse.status}`);
-        }
-
-        const openaiData = await openaiResponse.json();
-        if (!openaiData.choices?.[0]?.message?.content) {
-          throw new Error('No completion in AI response');
-        }
-        
-        console.log('✅ OpenAI API succeeded');
-        return openaiData.choices[0].message.content;
-      } catch (error) {
-        console.error(`Analysis AI API error (attempt ${attempt + 1}):`, error instanceof Error ? error.message : String(error));
-        lastError = error instanceof Error ? error : new Error('Unknown error');
-        
-        if (attempt < maxRetries) {
-          console.log(`Waiting before retry ${attempt + 1}...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          continue;
-        }
-      }
-    }
-    
-    console.log('❌ All AI API attempts failed, will use fallback analysis');
-    throw lastError || new Error('AI API request failed after all retries');
   };
 
   const analyzeWithAdvancedAI = async (images: {
@@ -548,79 +469,26 @@ Respond with ONLY a valid JSON object with this structure:
       
       const messages = [
         {
-          role: 'user',
+          role: 'user' as const,
           content: [
-            { type: 'text', text: prompt },
-            { type: 'image', image: images.front }
+            { type: 'text' as const, text: prompt },
+            { type: 'image' as const, image: images.front }
           ]
         }
       ];
 
       console.log('🤖 Sending AI request with image length:', images.front?.length || 0);
-      let analysisText;
       try {
-        analysisText = await makeAIRequest(messages);
-        console.log('✅ AI response received, length:', analysisText?.length || 0);
+        const analysisResult = await generateObject({
+          messages: messages,
+          schema: analysisSchema
+        });
+        console.log('✅ AI analysis completed successfully');
+        return analysisResult;
       } catch (error) {
-        console.error('Analysis AI API failed after retries, using fallback:', error);
+        console.error('Analysis AI API failed, using fallback:', error);
         console.log('🔄 Using enhanced fallback analysis due to API error...');
         return generateFallbackAnalysis(visionData);
-      }
-      
-      // Parse JSON response with better error handling
-      let cleanedText = analysisText.trim();
-      
-      // Remove markdown code blocks
-      cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
-      
-      // Find the JSON object
-      const jsonStart = cleanedText.indexOf('{');
-      const jsonEnd = cleanedText.lastIndexOf('}');
-      
-      if (jsonStart === -1 || jsonEnd === -1 || jsonStart >= jsonEnd) {
-        console.error('No valid JSON structure found in response');
-        throw new Error('No valid JSON found in AI response');
-      }
-      
-      const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
-      console.log('Extracted JSON string:', jsonString);
-      
-      try {
-        // First attempt: parse as-is
-        return JSON.parse(jsonString);
-      } catch (parseError) {
-        console.error('Initial JSON parse error:', parseError);
-        console.log('Attempting to sanitize JSON...');
-
-        // Second attempt: sanitize and parse
-        const sanitized = sanitizeJson(jsonString);
-        try {
-          const parsed = JSON.parse(sanitized);
-          console.log('Successfully parsed after sanitization');
-          return parsed;
-        } catch (e2) {
-          console.error('Failed to parse JSON after sanitization:', e2);
-          
-          // Third attempt: try to fix specific issues
-          try {
-            // Remove problematic characters and fix structure
-            let fixed = sanitized;
-            // Fix arrays that might be incomplete
-            fixed = fixed.replace(/\[([^\]]*),\s*$/gm, '[$1]');
-            // Ensure all strings are properly quoted
-            fixed = fixed.replace(/(:\s*)([^"\[\{\d\-][^,\}\]]*)/g, '$1"$2"');
-            // Remove any remaining problematic characters
-            fixed = fixed.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
-            
-            const parsed = JSON.parse(fixed);
-            console.log('Successfully parsed after deep fix');
-            return parsed;
-          } catch (e3) {
-            console.error('Failed all JSON parse attempts');
-            console.log('🔄 Using enhanced fallback analysis due to parse error...');
-            return generateFallbackAnalysis(visionData);
-          }
-        }
       }
       
     } catch (error) {
@@ -631,74 +499,60 @@ Respond with ONLY a valid JSON object with this structure:
   };
 
   const generateConsistentScore = (imageUri: string, visionData?: any): number => {
-    // Create a more sophisticated hash based on actual facial features
     let baseHash = 0;
     
-    // Hash the image URI for base consistency
     for (let i = 0; i < imageUri.length; i++) {
       const char = imageUri.charCodeAt(i);
       baseHash = ((baseHash << 5) - baseHash) + char;
       baseHash = baseHash & baseHash;
     }
     
-    // If we have vision data, incorporate actual facial measurements
     let featureScore = 75;
     if (visionData?.faceAnnotations?.[0]) {
       const face = visionData.faceAnnotations[0];
       
-      // Calculate facial symmetry score
       if (face.landmarks) {
         const symmetryScore = calculateFacialSymmetry(face.landmarks);
         featureScore = Math.max(featureScore, symmetryScore);
       }
       
-      // Factor in detection confidence
       const confidence = face.detectionConfidence || 0.5;
-      featureScore += Math.round(confidence * 15); // Up to 15 bonus points
+      featureScore += Math.round(confidence * 15);
       
-      // Factor in face angles (better angles = higher score)
       const rollAngle = Math.abs(face.rollAngle || 0);
       const panAngle = Math.abs(face.panAngle || 0);
       const tiltAngle = Math.abs(face.tiltAngle || 0);
       const angleScore = Math.max(0, 10 - (rollAngle + panAngle + tiltAngle) / 10);
       featureScore += Math.round(angleScore);
       
-      // Factor in image quality
       const qualityBonus = (face.underExposedLikelihood === 'VERY_UNLIKELY' ? 3 : 0) +
                           (face.blurredLikelihood === 'VERY_UNLIKELY' ? 3 : 0);
       featureScore += qualityBonus;
     }
     
-    // Combine hash-based consistency with feature-based scoring
     const normalizedHash = Math.abs(baseHash) % 1000;
     const hashScore = 70 + Math.floor((normalizedHash / 1000) * 25);
     
-    // Weight: 60% feature-based, 40% hash-based for consistency
     const finalScore = Math.round((featureScore * 0.6) + (hashScore * 0.4));
     
-    // Ensure score is within realistic range
     return Math.max(65, Math.min(98, finalScore));
   };
 
   const generateFallbackAnalysis = (visionData?: any) => {
     console.log('📊 Generating enhanced fallback analysis with feature-based scoring...');
     
-    // Generate consistent score based on image and vision data
     const baseScore = generateConsistentScore(frontImage || '', visionData?.front);
     const skinTypes = ['Normal', 'Dry', 'Oily', 'Combination', 'Sensitive'];
     const skinTones = ['Light Warm', 'Medium Neutral', 'Medium Warm', 'Dark Cool', 'Light Cool', 'Medium Cool', 'Dark Warm'];
 
     
-    // Create more realistic variations based on actual score range
-    const scoreRange = baseScore - 75; // 0-23 range
-    const variation = Math.floor(scoreRange / 4) - 3; // -3 to +3 variation
+    const scoreRange = baseScore - 75;
+    const variation = Math.floor(scoreRange / 4) - 3;
     
-    // Determine skin quality based on score
     let skinQuality = 'Good';
     if (baseScore >= 90) skinQuality = 'Excellent';
     else if (baseScore >= 80) skinQuality = 'Very Good';
     
-    // Generate detailed scores with realistic correlations
     const textureScore = Math.max(65, Math.min(98, baseScore + variation));
     const clarityScore = Math.max(65, Math.min(98, baseScore + variation + 2));
     const hydrationScore = Math.max(65, Math.min(98, baseScore + variation - 1));
@@ -706,7 +560,6 @@ Respond with ONLY a valid JSON object with this structure:
     const elasticityScore = Math.max(65, Math.min(98, baseScore + variation + 1));
     const pigmentationScore = Math.max(65, Math.min(98, baseScore + variation));
     
-    // Beauty scores with realistic proportions
     const symmetryScore = Math.max(70, Math.min(98, baseScore + variation + 2));
     const glowScore = Math.max(70, Math.min(98, baseScore + variation + 1));
     const jawlineScore = Math.max(65, Math.min(95, baseScore + variation - 2));
@@ -716,7 +569,6 @@ Respond with ONLY a valid JSON object with this structure:
     const tightnessScore = Math.max(70, Math.min(95, baseScore + variation - 1));
     const harmonyScore = Math.max(70, Math.min(98, baseScore + variation));
     
-    // Generate personalized recommendations based on score
     const recommendations = [
       "Maintain a consistent daily skincare routine with gentle cleansing",
       "Use a broad-spectrum SPF 30+ sunscreen daily for protection"
@@ -766,39 +618,9 @@ Respond with ONLY a valid JSON object with this structure:
         facialHarmony: harmonyScore
       },
       professionalRecommendations: recommendations,
-      confidence: Math.min(0.95, 0.80 + (baseScore - 75) * 0.006), // Higher confidence for higher scores
+      confidence: Math.min(0.95, 0.80 + (baseScore - 75) * 0.006),
       analysisAccuracy: visionData?.front ? 'Enhanced (feature-based analysis)' : 'Standard (consistent analysis)'
     };
-  };
-
-  const sanitizeJson = (input: string): string => {
-    let s = input;
-    // Replace smart quotes
-    s = s.replace(/[\u2018\u2019\u201C\u201D]/g, (m) => {
-      const map: Record<string, string> = {
-        '\u2018': '\'',
-        '\u2019': '\'',
-        '\u201C': '"',
-        '\u201D': '"',
-      };
-      return map[m] ?? m;
-    });
-    // Fix newlines
-    s = s.replace(/\r?\n/g, ' ');
-    // Remove trailing commas
-    s = s.replace(/,\s*([}\]])/g, '$1');
-    // Fix multiple spaces
-    s = s.replace(/\s+/g, ' ');
-    // Fix escaped apostrophes in JSON strings
-    s = s.replace(/don't/g, 'do not');
-    s = s.replace(/doesn't/g, 'does not');
-    s = s.replace(/won't/g, 'will not');
-    s = s.replace(/can't/g, 'cannot');
-    s = s.replace(/it's/g, 'it is');
-    // Fix common JSON issues
-    s = s.replace(/:\s*'([^']*)'/g, ':"$1"');
-    s = s.replace(/\&apos;/g, '');
-    return s;
   };
 
   const calculateAdvancedScores = (visionData: {
@@ -808,13 +630,11 @@ Respond with ONLY a valid JSON object with this structure:
   }, aiData: any, isMultiAngle: boolean) => {
     console.log('🧮 Calculating advanced multi-angle scores...');
     
-    // Extract face detection data from all angles
     const frontFaceData = visionData.front?.faceAnnotations?.[0];
     const leftFaceData = visionData.left?.faceAnnotations?.[0];
     const rightFaceData = visionData.right?.faceAnnotations?.[0];
     const imageProps = visionData.front?.imagePropertiesAnnotation;
     
-    // Calculate advanced facial symmetry using multi-angle data
     let facialSymmetry = 85;
     if (isMultiAngle && frontFaceData && leftFaceData && rightFaceData) {
       facialSymmetry = calculateMultiAngleFacialSymmetry(frontFaceData, leftFaceData, rightFaceData);
@@ -822,15 +642,13 @@ Respond with ONLY a valid JSON object with this structure:
       facialSymmetry = calculateFacialSymmetry(frontFaceData.landmarks);
     }
     
-    // Calculate skin brightness from image properties
     let brightnessScore = 80;
     if (imageProps?.dominantColors?.colors) {
       brightnessScore = calculateBrightnessScore(imageProps.dominantColors.colors);
     }
     
-    // Advanced scoring algorithm with multi-angle bonus
     const baseScore = aiData.beautyScores?.overallScore || 85;
-    const multiAngleBonus = isMultiAngle ? 5 : 0; // Bonus for comprehensive analysis
+    const multiAngleBonus = isMultiAngle ? 5 : 0;
     
     const overallScore = Math.min(100, Math.round(
       baseScore * 0.5 +
@@ -888,7 +706,6 @@ Respond with ONLY a valid JSON object with this structure:
 
   const calculateFacialSymmetry = (landmarks: any[]) => {
     try {
-      // Find key landmarks for comprehensive symmetry calculation
       const leftEye = landmarks.find((l: any) => l.type === 'LEFT_EYE');
       const rightEye = landmarks.find((l: any) => l.type === 'RIGHT_EYE');
       const noseTip = landmarks.find((l: any) => l.type === 'NOSE_TIP');
@@ -899,7 +716,6 @@ Respond with ONLY a valid JSON object with this structure:
       
       let symmetryScores = [];
       
-      // Eye-nose symmetry (primary)
       if (leftEye && rightEye && noseTip) {
         const leftNoseDistance = Math.abs(leftEye.position.x - noseTip.position.x);
         const rightNoseDistance = Math.abs(rightEye.position.x - noseTip.position.x);
@@ -909,7 +725,6 @@ Respond with ONLY a valid JSON object with this structure:
         symmetryScores.push(eyeSymmetryRatio * 100);
       }
       
-      // Mouth symmetry
       if (leftMouth && rightMouth && noseTip) {
         const leftMouthDistance = Math.abs(leftMouth.position.x - noseTip.position.x);
         const rightMouthDistance = Math.abs(rightMouth.position.x - noseTip.position.x);
@@ -919,7 +734,6 @@ Respond with ONLY a valid JSON object with this structure:
         symmetryScores.push(mouthSymmetryRatio * 100);
       }
       
-      // Ear symmetry (if available)
       if (leftEar && rightEar && noseTip) {
         const leftEarDistance = Math.abs(leftEar.position.x - noseTip.position.x);
         const rightEarDistance = Math.abs(rightEar.position.x - noseTip.position.x);
@@ -929,7 +743,6 @@ Respond with ONLY a valid JSON object with this structure:
         symmetryScores.push(earSymmetryRatio * 100);
       }
       
-      // Eye level symmetry
       if (leftEye && rightEye) {
         const eyeLevelDifference = Math.abs(leftEye.position.y - rightEye.position.y);
         const eyeDistance = Math.abs(leftEye.position.x - rightEye.position.x);
@@ -938,7 +751,6 @@ Respond with ONLY a valid JSON object with this structure:
       }
       
       if (symmetryScores.length > 0) {
-        // Weight the scores (eye-nose is most important)
         const weightedScore = symmetryScores.length === 1 ? symmetryScores[0] :
                              symmetryScores.reduce((sum, score, index) => {
                                const weight = index === 0 ? 0.5 : 0.5 / (symmetryScores.length - 1);
@@ -950,12 +762,11 @@ Respond with ONLY a valid JSON object with this structure:
     } catch (error) {
       console.error('Error calculating facial symmetry:', error);
     }
-    return 82; // Improved default value
+    return 82;
   };
 
   const calculateBrightnessScore = (colors: any[]) => {
     try {
-      // Calculate sophisticated brightness and glow score
       let totalBrightness = 0;
       let totalSaturation = 0;
       let totalPixelFraction = 0;
@@ -965,15 +776,12 @@ Respond with ONLY a valid JSON object with this structure:
         const rgb = color.color;
         const pixelFraction = color.pixelFraction || 0;
         
-        // Calculate brightness (luminance)
         const brightness = (rgb.red * 0.299 + rgb.green * 0.587 + rgb.blue * 0.114) / 255;
         
-        // Calculate saturation
         const max = Math.max(rgb.red, rgb.green, rgb.blue) / 255;
         const min = Math.min(rgb.red, rgb.green, rgb.blue) / 255;
         const saturation = max === 0 ? 0 : (max - min) / max;
         
-        // Identify skin-tone colors (warm, peachy, beige tones)
         const isSkinTone = (rgb.red > rgb.green && rgb.green > rgb.blue && 
                            rgb.red > 100 && rgb.green > 80 && rgb.blue > 60) ||
                           (rgb.red > 150 && rgb.green > 120 && rgb.blue > 90);
@@ -990,15 +798,12 @@ Respond with ONLY a valid JSON object with this structure:
       const avgBrightness = totalPixelFraction > 0 ? totalBrightness / totalPixelFraction : 0.5;
       const avgSaturation = totalPixelFraction > 0 ? totalSaturation / totalPixelFraction : 0.3;
       
-      // Calculate glow score based on brightness, saturation, and skin tone presence
-      let glowScore = avgBrightness * 70; // Base brightness score
+      let glowScore = avgBrightness * 70;
       
-      // Bonus for healthy saturation (not too dull, not oversaturated)
       const idealSaturation = 0.3;
       const saturationBonus = Math.max(0, 15 - Math.abs(avgSaturation - idealSaturation) * 50);
       glowScore += saturationBonus;
       
-      // Bonus for skin tone presence
       const skinToneBonus = Math.min(15, skinToneColors * 30);
       glowScore += skinToneBonus;
       
@@ -1006,25 +811,21 @@ Respond with ONLY a valid JSON object with this structure:
     } catch (error) {
       console.error('Error calculating brightness score:', error);
     }
-    return 82; // Improved default value
+    return 82;
   };
 
   const calculateMultiAngleFacialSymmetry = (frontFace: any, leftFace: any, rightFace: any) => {
     try {
       console.log('🔄 Calculating 3D facial symmetry from multi-angle data...');
       
-      // Advanced 3D symmetry calculation using profile data
       const frontSymmetry = calculateFacialSymmetry(frontFace.landmarks || []);
       
-      // Additional profile-based symmetry checks
       let profileSymmetry = 85;
       if (leftFace.landmarks && rightFace.landmarks) {
-        // Compare profile proportions
         const leftNose = leftFace.landmarks.find((l: any) => l.type === 'NOSE_TIP');
         const rightNose = rightFace.landmarks.find((l: any) => l.type === 'NOSE_TIP');
         
         if (leftNose && rightNose) {
-          // Calculate profile consistency
           const leftProfile = leftNose.position.x;
           const rightProfile = rightNose.position.x;
           const profileRatio = Math.min(leftProfile, rightProfile) / Math.max(leftProfile, rightProfile);
@@ -1032,11 +833,10 @@ Respond with ONLY a valid JSON object with this structure:
         }
       }
       
-      // Combine front and profile symmetry
       const combinedSymmetry = Math.round((frontSymmetry * 0.7) + (profileSymmetry * 0.3));
       console.log('3D symmetry calculated:', { frontSymmetry, profileSymmetry, combinedSymmetry });
       
-      return Math.min(100, combinedSymmetry + 5); // Bonus for 3D analysis
+      return Math.min(100, combinedSymmetry + 5);
       
     } catch (error) {
       console.error('Error calculating 3D facial symmetry:', error);
@@ -1053,12 +853,10 @@ Respond with ONLY a valid JSON object with this structure:
     try {
       console.log('🔍 Validating multi-angle face detection with professional criteria...');
       
-      // Always validate front face
       if (!validateSingleFaceDetection(frontVisionData, 'front')) {
         return false;
       }
       
-      // If multi-angle, validate profile faces with more lenient criteria
       if (isMultiAngle) {
         if (leftVisionData && !validateSingleFaceDetection(leftVisionData, 'left', true)) {
           console.log('⚠️ Left profile validation failed, but continuing with front analysis');
@@ -1081,7 +879,6 @@ Respond with ONLY a valid JSON object with this structure:
     try {
       console.log(`🔍 Validating ${angle} face detection...`);
       
-      // Check if face annotations exist
       const faceAnnotations = visionData?.faceAnnotations;
       if (!faceAnnotations || faceAnnotations.length === 0) {
         console.log(`❌ No face annotations found in ${angle} view`);
@@ -1090,8 +887,7 @@ Respond with ONLY a valid JSON object with this structure:
       
       const face = faceAnnotations[0];
       
-      // Professional-grade confidence threshold
-      const minConfidence = isProfile ? 0.3 : 0.5; // More lenient for profiles
+      const minConfidence = isProfile ? 0.3 : 0.5;
       const detectionConfidence = face.detectionConfidence || 0;
       console.log(`${angle} face detection confidence:`, detectionConfidence);
       
@@ -1100,11 +896,10 @@ Respond with ONLY a valid JSON object with this structure:
         return false;
       }
       
-      // Check facial landmarks based on view type
       const landmarks = face.landmarks || [];
       const requiredLandmarks = isProfile 
-        ? ['NOSE_TIP'] // Minimal for profiles
-        : ['LEFT_EYE', 'RIGHT_EYE', 'NOSE_TIP']; // Full for front view
+        ? ['NOSE_TIP']
+        : ['LEFT_EYE', 'RIGHT_EYE', 'NOSE_TIP'];
       
       const foundLandmarks = landmarks.map((l: any) => l.type);
       const missingLandmarks = requiredLandmarks.filter(required => 
@@ -1116,32 +911,29 @@ Respond with ONLY a valid JSON object with this structure:
         return false;
       }
       
-      // Check face size
       const boundingPoly = face.boundingPoly;
       if (boundingPoly && boundingPoly.vertices) {
         const vertices = boundingPoly.vertices;
         const width = Math.abs(vertices[1].x - vertices[0].x);
         const height = Math.abs(vertices[2].y - vertices[0].y);
         
-        const minSize = isProfile ? 80 : 100; // Smaller minimum for profiles
+        const minSize = isProfile ? 80 : 100;
         if (width < minSize || height < minSize) {
           console.log(`❌ Face too small in ${angle} view:`, { width, height }, `(required: ${minSize}x${minSize})`);
           return false;
         }
       }
       
-      // Check face angles with appropriate thresholds
       const rollAngle = Math.abs(face.rollAngle || 0);
       const panAngle = Math.abs(face.panAngle || 0);
       const tiltAngle = Math.abs(face.tiltAngle || 0);
       
-      const maxAngle = isProfile ? 90 : 45; // Allow more rotation for profiles
+      const maxAngle = isProfile ? 90 : 45;
       if (!isProfile && (rollAngle > maxAngle || panAngle > maxAngle || tiltAngle > maxAngle)) {
         console.log(`❌ Face angle too extreme in ${angle} view:`, { rollAngle, panAngle, tiltAngle }, `(max: ${maxAngle}°)`);
         return false;
       }
       
-      // Check image quality
       const underExposedLikelihood = face.underExposedLikelihood;
       if (underExposedLikelihood === 'VERY_LIKELY') {
         console.log(`❌ Face severely under-exposed in ${angle} view:`, underExposedLikelihood);
@@ -1182,7 +974,6 @@ Respond with ONLY a valid JSON object with this structure:
       
       <View style={styles.mainContent}>
         <View style={styles.content}>
-          {/* Profile Image with enhanced styling */}
           <View style={styles.imageContainer}>
             <Animated.View style={[styles.imageWrapper, { transform: [{ scale: pulseAnim }] }]}>
               <View style={styles.imageGlow}>
@@ -1194,22 +985,18 @@ Respond with ONLY a valid JSON object with this structure:
             </Animated.View>
           </View>
 
-          {/* Title with better typography */}
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Creating your</Text>
             <Text style={styles.titleAccent}>personalized plan...</Text>
           </View>
           
-          {/* Description with better spacing */}
           <Text style={styles.description}>
             Our AI is crafting a bespoke beauty journey{"\n"}tailored exclusively for you
           </Text>
 
-          {/* Progress Section */}
           <View style={styles.progressSection}>
             <View style={styles.progressContainer}>
               <View style={styles.progressBackground}>
-                {/* Flowing animation bar - only show when animation is running */}
                 {flowAnimationRunning && (
                   <Animated.View 
                     style={[
@@ -1225,7 +1012,6 @@ Respond with ONLY a valid JSON object with this structure:
                     ]} 
                   />
                 )}
-                {/* Actual progress bar */}
                 <Animated.View 
                   style={[
                     styles.progressBar,
@@ -1251,7 +1037,6 @@ Respond with ONLY a valid JSON object with this structure:
             </View>
           </View>
 
-          {/* Bottom tip */}
           <View style={styles.bottomTip}>
             <Text style={styles.tipText}>✨ This may take a few moments</Text>
           </View>
