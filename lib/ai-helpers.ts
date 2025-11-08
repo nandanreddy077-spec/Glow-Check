@@ -108,55 +108,41 @@ async function generateObjectWithOpenAI<T extends z.ZodType>(
     content: '\n\nRespond with ONLY a valid JSON object matching the schema. No markdown, no explanations.'
   });
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), params.timeout || DEFAULT_TIMEOUT);
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: openaiMessages,
+      temperature: 0.7,
+      max_tokens: 2000
+    })
+  });
 
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('OpenAI API error:', response.status, errorText);
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0]?.message?.content;
+  
+  if (!content) {
+    throw new Error('No response from OpenAI');
+  }
+
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  const jsonStr = jsonMatch ? jsonMatch[0] : content;
+  
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: openaiMessages,
-        temperature: 0.7,
-        max_tokens: 2000
-      })
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ OpenAI API HTTP error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
-    
-    if (!content) {
-      throw new Error('No response from OpenAI');
-    }
-
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    const jsonStr = jsonMatch ? jsonMatch[0] : content;
-    
-    try {
-      const parsed = JSON.parse(jsonStr);
-      return params.schema.parse(parsed);
-    } catch (error) {
-      console.error('❌ Failed to parse OpenAI response:', error);
-      throw error;
-    }
+    const parsed = JSON.parse(jsonStr);
+    return params.schema.parse(parsed);
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('OpenAI request timed out');
-    }
+    console.error('Failed to parse OpenAI response:', error);
     throw error;
   }
 }
@@ -243,42 +229,32 @@ export async function generateText(params: GenerateTextParams | string): Promise
               msg.content.filter(p => p.type === 'text').map(p => (p as TextPart).text).join('\n')
           }));
 
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-          try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          const response = await withTimeout(
+            fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${OPENAI_API_KEY}`
               },
-              signal: controller.signal,
               body: JSON.stringify({
                 model: 'gpt-4o-mini',
                 messages: openaiMessages,
                 temperature: 0.7,
                 max_tokens: 1000
               })
-            });
-            
-            clearTimeout(timeoutId);
+            }),
+            timeout,
+            'OpenAI text request timed out'
+          );
 
-            if (!response.ok) {
-              throw new Error(`OpenAI API error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const result = data.choices[0]?.message?.content || '';
-            console.log('✅ OpenAI text fallback success');
-            return result;
-          } catch (fetchError) {
-            clearTimeout(timeoutId);
-            if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-              throw new Error('OpenAI text request timed out');
-            }
-            throw fetchError;
+          if (!response.ok) {
+            throw new Error(`OpenAI API error: ${response.status}`);
           }
+
+          const data = await response.json();
+          const result = data.choices[0]?.message?.content || '';
+          console.log('✅ OpenAI text fallback success');
+          return result;
         } catch (openaiError) {
           console.error('❌ OpenAI text fallback failed:', openaiError);
           throw openaiError;
@@ -296,42 +272,32 @@ export async function generateText(params: GenerateTextParams | string): Promise
           msg.content.filter(p => p.type === 'text').map(p => (p as TextPart).text).join('\n')
       }));
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await withTimeout(
+        fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${OPENAI_API_KEY}`
           },
-          signal: controller.signal,
           body: JSON.stringify({
             model: 'gpt-4o-mini',
             messages: openaiMessages,
             temperature: 0.7,
             max_tokens: 1000
           })
-        });
-        
-        clearTimeout(timeoutId);
+        }),
+        timeout,
+        'OpenAI text request timed out'
+      );
 
-        if (!response.ok) {
-          throw new Error(`OpenAI API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const result = data.choices[0]?.message?.content || '';
-        console.log('✅ OpenAI text success');
-        return result;
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          throw new Error('OpenAI text request timed out');
-        }
-        throw fetchError;
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
       }
+
+      const data = await response.json();
+      const result = data.choices[0]?.message?.content || '';
+      console.log('✅ OpenAI text success');
+      return result;
     } catch (error) {
       console.error('❌ OpenAI text failed:', error);
       throw error;
