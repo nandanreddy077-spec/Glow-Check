@@ -13,7 +13,7 @@ import { useAnalysis, AnalysisResult } from '@/contexts/AnalysisContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
-import { generateObject } from '@rork/toolkit-sdk';
+import { generateObject } from '@/lib/ai-helpers';
 import { z } from 'zod';
 
 
@@ -488,12 +488,13 @@ Respond with ONLY a valid JSON object with this structure:
       try {
         const analysisResult = await generateObject({
           messages: messages,
-          schema: analysisSchema
+          schema: analysisSchema,
+          timeout: 25000
         });
         console.log('✅ AI analysis completed successfully');
         return analysisResult;
       } catch (error) {
-        console.log('🔄 AI API unavailable, using enhanced fallback analysis');
+        console.log('🔄 AI API failed, using enhanced fallback analysis:', error);
         return generateFallbackAnalysis(visionData);
       }
       

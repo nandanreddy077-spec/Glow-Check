@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { ProgressPhoto, ProgressComparison, WeeklyInsight, SkinJournalEntry } from '@/types/progress';
 import { Platform } from 'react-native';
-import { generateObject } from '@rork/toolkit-sdk';
+import { generateObject } from '@/lib/ai-helpers';
 import { z } from 'zod';
 
 const storage = {
@@ -135,7 +135,7 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
         },
       ];
 
-      const result = await generateObject({ messages, schema });
+      const result = await generateObject({ messages, schema, timeout: 20000 });
       return result;
     } catch (error) {
       console.error('AI photo analysis error:', error);
@@ -373,6 +373,7 @@ Make it personal, specific to their data, and motivating. Use their name if in n
       const aiResult = await generateObject({
         messages: [{ role: 'user', content: prompt }],
         schema,
+        timeout: 25000
       });
 
       const completionRate = weekJournal.length / 7;

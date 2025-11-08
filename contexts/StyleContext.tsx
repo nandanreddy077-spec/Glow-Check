@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { StyleAnalysisResult } from '@/types/user';
-import { generateObject } from '@rork/toolkit-sdk';
+import { generateObject } from '@/lib/ai-helpers';
 import { z } from 'zod';
 
 const OCCASIONS = [
@@ -244,10 +244,11 @@ Respond in this exact JSON format:
             }
           ],
           schema: StyleAnalysisSchema,
+          timeout: 25000
         });
         console.log('✅ Style AI response received');
-      } catch {
-        console.log('🔄 AI API unavailable, using fallback analysis');
+      } catch (error) {
+        console.log('🔄 AI API failed, using fallback analysis:', error);
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),
