@@ -409,6 +409,13 @@ export default function AnalysisLoadingScreen() {
     left: any;
     right: any;
   }) => {
+    const toolkitUrl = process.env['EXPO_PUBLIC_TOOLKIT_URL'];
+    
+    if (!toolkitUrl) {
+      console.log('⚠️ Toolkit URL not configured, using fallback analysis');
+      return generateFallbackAnalysis(visionData);
+    }
+
     const analysisType = images.isMultiAngle ? 'multi-angle professional' : 'single-angle';
     const prompt = `You are a board-certified dermatologist and facial aesthetics expert with 20+ years of experience. Perform a ${analysisType} comprehensive facial analysis using the provided Google Vision data.
 
@@ -486,14 +493,12 @@ Respond with ONLY a valid JSON object with this structure:
         console.log('✅ AI analysis completed successfully');
         return analysisResult;
       } catch (error) {
-        console.error('Analysis AI API failed, using fallback:', error);
-        console.log('🔄 Using enhanced fallback analysis due to API error...');
+        console.log('🔄 AI API unavailable, using enhanced fallback analysis');
         return generateFallbackAnalysis(visionData);
       }
       
     } catch (error) {
-      console.error('Advanced AI analysis error:', error);
-      console.log('🔄 Using enhanced fallback analysis due to API error...');
+      console.log('🔄 Using enhanced fallback analysis');
       return generateFallbackAnalysis(visionData);
     }
   };

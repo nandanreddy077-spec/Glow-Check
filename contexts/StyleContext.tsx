@@ -206,6 +206,24 @@ Respond in this exact JSON format:
         console.log('📸 Style image URI (not base64):', imageUri.substring(0, 50));
       }
 
+      const toolkitUrl = process.env['EXPO_PUBLIC_TOOLKIT_URL'];
+      
+      if (!toolkitUrl) {
+        console.log('⚠️ Toolkit URL not configured, using fallback analysis');
+        const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
+        const result: StyleAnalysisResult = {
+          id: Date.now().toString(),
+          image: imageUri,
+          occasion,
+          ...fallbackAnalysis,
+          timestamp: new Date()
+        };
+        
+        setAnalysisResult(result);
+        await saveAnalysisToHistory(result);
+        return result;
+      }
+
       console.log('🤖 Sending style AI request with image length:', imageBase64?.length || 0);
       let analysisData;
       try {
@@ -228,9 +246,8 @@ Respond in this exact JSON format:
           schema: StyleAnalysisSchema,
         });
         console.log('✅ Style AI response received');
-      } catch (error) {
-        console.error('Style AI API failed, using fallback:', error);
-        // Use fallback analysis immediately if AI fails
+      } catch {
+        console.log('🔄 AI API unavailable, using fallback analysis');
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),
