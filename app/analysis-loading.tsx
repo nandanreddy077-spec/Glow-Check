@@ -264,23 +264,46 @@ export default function AnalysisLoadingScreen() {
         return base64Data;
       }
       
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          const base64Data = result.split(',')[1];
-          console.log('✅ Image converted to base64, length:', base64Data?.length || 0);
-          resolve(base64Data);
-        };
-        reader.onerror = (error) => {
-          console.error('❌ FileReader error:', error);
-          reject(new Error('Failed to convert image to base64'));
-        };
-        reader.readAsDataURL(blob);
-      });
+      try {
+        const response = await fetch(imageUri, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            if (!result || typeof result !== 'string') {
+              reject(new Error('Invalid FileReader result'));
+              return;
+            }
+            const base64Data = result.split(',')[1];
+            if (!base64Data) {
+              reject(new Error('No base64 data in result'));
+              return;
+            }
+            console.log('✅ Image converted to base64, length:', base64Data.length);
+            resolve(base64Data);
+          };
+          reader.onerror = (error) => {
+            console.error('❌ FileReader error:', error);
+            reject(new Error('Failed to read image data'));
+          };
+          reader.readAsDataURL(blob);
+        });
+      } catch (fetchError) {
+        console.error('❌ Error fetching image, using URI directly:', fetchError);
+        return imageUri;
+      }
     } catch (error) {
       console.error('❌ Error converting image to base64:', error);
       throw error;
@@ -361,13 +384,17 @@ export default function AnalysisLoadingScreen() {
     const GOOGLE_VISION_API_KEY = 'AIzaSyBFOUmZkW1F8pFFFlGs0S-gKGaej74VROg';
     
     try {
-      console.log('Calling Google Vision API...');
+      console.log('📡 Calling Google Vision API with image length:', base64Image?.length || 0);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       
       const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         body: JSON.stringify({
           requests: [{
             image: {
@@ -381,20 +408,28 @@ export default function AnalysisLoadingScreen() {
           }]
         })
       });
+      
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Google Vision API error:', response.status, errorText);
+        console.error('❌ Google Vision API HTTP error:', response.status, errorText);
         throw new Error(`Vision API error: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Google Vision API response:', JSON.stringify(data, null, 2));
+      console.log('✅ Google Vision API response received');
       
       return data.responses[0];
       
     } catch (error) {
-      console.error('Google Vision API error:', error);
+      console.error('❌ Google Vision API error:', error);
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Google Vision API request timed out');
+        }
+        throw new Error(`Google Vision API error: ${error.message}`);
+      }
       throw error;
     }
   };
