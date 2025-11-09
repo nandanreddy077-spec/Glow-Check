@@ -258,53 +258,98 @@ export default function AnalysisLoadingScreen() {
 
   const convertImageToBase64 = async (imageUri: string): Promise<string> => {
     try {
-      console.log('📸 Converting image to base64:', imageUri.substring(0, 50));
+      console.log('📸 Converting image to base64:', imageUri.substring(0, 100));
       
+      // Check if image is already in base64 format
       if (imageUri.startsWith('data:image')) {
         const base64Data = imageUri.split(',')[1];
-        console.log('✅ Image already in base64 format, length:', base64Data?.length || 0);
+        if (!base64Data) {
+          throw new Error('Invalid base64 data URL format');
+        }
+        console.log('✅ Image already in base64 format, length:', base64Data.length);
         return base64Data;
       }
       
       // On mobile (iOS/Android), use expo-file-system to read local file URIs
-      if (Platform.OS !== 'web' && (imageUri.startsWith('file://') || imageUri.startsWith('content://'))) {
-        console.log('📱 Using expo-file-system for mobile file URI');
-        try {
-          const base64 = await FileSystem.readAsStringAsync(imageUri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          console.log('✅ Mobile image converted to base64, length:', base64?.length || 0);
-          return base64;
-        } catch (fsError) {
-          console.error('❌ FileSystem error:', fsError);
-          console.error('❌ FileSystem might not be properly loaded. This is a critical error.');
-          throw new Error('Failed to convert mobile image to base64: FileSystem unavailable');
+      if (Platform.OS !== 'web') {
+        console.log('📱 Mobile platform detected:', Platform.OS);
+        
+        // Verify FileSystem is available
+        if (!FileSystem || !FileSystem.readAsStringAsync) {
+          console.error('❌ FileSystem API not available!');
+          throw new Error('FileSystem module not loaded properly');
         }
+        
+        // Check if file exists
+        const fileInfo = await FileSystem.getInfoAsync(imageUri);
+        console.log('📁 File info:', JSON.stringify(fileInfo));
+        
+        if (!fileInfo.exists) {
+          console.error('❌ File does not exist:', imageUri);
+          throw new Error('Image file not found');
+        }
+        
+        console.log('📱 Reading file as base64...');
+        const startTime = Date.now();
+        
+        const base64 = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        const endTime = Date.now();
+        console.log(`✅ Mobile image converted in ${endTime - startTime}ms, length:`, base64.length);
+        
+        if (!base64 || base64.length === 0) {
+          throw new Error('Converted base64 is empty');
+        }
+        
+        return base64;
       }
       
-      // On web or for http URIs, use fetch + FileReader
-      console.log('🌐 Using fetch for web/http URI');
+      // On web, use fetch + FileReader
+      console.log('🌐 Web platform - using fetch');
       const response = await fetch(imageUri);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+      
       const blob = await response.blob();
+      console.log('📦 Blob size:', blob.size, 'type:', blob.type);
       
       return new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
+        
         reader.onloadend = () => {
-          const result = reader.result as string;
-          const base64Data = result.split(',')[1];
-          console.log('✅ Web image converted to base64, length:', base64Data?.length || 0);
-          resolve(base64Data);
+          try {
+            const result = reader.result as string;
+            if (!result || !result.includes(',')) {
+              reject(new Error('Invalid FileReader result'));
+              return;
+            }
+            const base64Data = result.split(',')[1];
+            console.log('✅ Web image converted to base64, length:', base64Data.length);
+            resolve(base64Data);
+          } catch (err) {
+            reject(err);
+          }
         };
-        reader.onerror = (error) => {
-          console.error('❌ FileReader error:', error);
-          reject(new Error('Failed to convert image to base64'));
+        
+        reader.onerror = () => {
+          console.error('❌ FileReader error:', reader.error);
+          reject(new Error('FileReader failed to read image'));
         };
+        
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error('❌ Error converting image to base64:', error);
-      console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
-      throw error;
+      console.error('❌ CRITICAL: Image conversion failed:', error);
+      if (error instanceof Error) {
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      throw new Error(`Failed to convert image: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

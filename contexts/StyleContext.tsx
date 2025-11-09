@@ -199,25 +199,86 @@ Respond in this exact JSON format:
   }
 }`;
 
-      // Convert image to base64 if needed
-      let imageBase64 = imageUri;
-      if (imageUri.startsWith('data:')) {
-        imageBase64 = imageUri.split(',')[1];
-        console.log('✅ Style image already in base64 format, length:', imageBase64?.length || 0);
-      } else if (Platform.OS !== 'web' && (imageUri.startsWith('file://') || imageUri.startsWith('content://'))) {
-        console.log('📱 Converting mobile file URI to base64 for style analysis');
-        try {
-          imageBase64 = await FileSystem.readAsStringAsync(imageUri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          console.log('✅ Mobile image converted, length:', imageBase64?.length || 0);
-        } catch (fsError) {
-          console.error('❌ FileSystem error:', fsError);
-          console.error('❌ FileSystem might not be properly loaded. This is a critical error.');
-          throw new Error('Failed to convert mobile image to base64: FileSystem unavailable');
+      // Convert image to base64 with comprehensive error handling
+      let imageBase64: string;
+      
+      console.log('📸 Converting style image to base64:', imageUri.substring(0, 100));
+      
+      if (imageUri.startsWith('data:image')) {
+        const base64Data = imageUri.split(',')[1];
+        if (!base64Data) {
+          throw new Error('Invalid base64 data URL format');
+        }
+        imageBase64 = base64Data;
+        console.log('✅ Style image already in base64 format, length:', imageBase64.length);
+      } else if (Platform.OS !== 'web') {
+        console.log('📱 Mobile platform - converting file URI to base64');
+        
+        // Verify FileSystem is available
+        if (!FileSystem || !FileSystem.readAsStringAsync) {
+          console.error('❌ FileSystem API not available!');
+          throw new Error('FileSystem module not loaded properly');
+        }
+        
+        // Check if file exists
+        const fileInfo = await FileSystem.getInfoAsync(imageUri);
+        console.log('📁 File info:', JSON.stringify(fileInfo));
+        
+        if (!fileInfo.exists) {
+          console.error('❌ File does not exist:', imageUri);
+          throw new Error('Image file not found');
+        }
+        
+        console.log('📱 Reading file as base64...');
+        const startTime = Date.now();
+        
+        imageBase64 = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        const endTime = Date.now();
+        console.log(`✅ Mobile style image converted in ${endTime - startTime}ms, length:`, imageBase64.length);
+        
+        if (!imageBase64 || imageBase64.length === 0) {
+          throw new Error('Converted base64 is empty');
         }
       } else {
-        console.log('📸 Style image URI (not base64):', imageUri.substring(0, 50));
+        // Web platform - fetch and convert
+        console.log('🌐 Web platform - fetching image');
+        const response = await fetch(imageUri);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        console.log('📦 Blob size:', blob.size, 'type:', blob.type);
+        
+        imageBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          
+          reader.onloadend = () => {
+            try {
+              const result = reader.result as string;
+              if (!result || !result.includes(',')) {
+                reject(new Error('Invalid FileReader result'));
+                return;
+              }
+              const base64Data = result.split(',')[1];
+              console.log('✅ Web style image converted, length:', base64Data.length);
+              resolve(base64Data);
+            } catch (err) {
+              reject(err);
+            }
+          };
+          
+          reader.onerror = () => {
+            console.error('❌ FileReader error:', reader.error);
+            reject(new Error('FileReader failed to read image'));
+          };
+          
+          reader.readAsDataURL(blob);
+        });
       }
 
       const toolkitUrl = process.env['EXPO_PUBLIC_TOOLKIT_URL'];
