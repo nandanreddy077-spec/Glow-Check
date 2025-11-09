@@ -245,7 +245,7 @@ export default function StyleResultsScreen() {
         {/* Color Harmony Section */}
         <View style={styles.section}>
           <BlurredContent
-            shouldBlur={isFreeUser && hasUsedFreeStyleScan}
+            shouldBlur={false}
             message="Unlock full analysis with your 7-day free trial"
           >
           <LinearGradient colors={gradient.lavender} style={styles.sectionCard}>
@@ -318,7 +318,7 @@ export default function StyleResultsScreen() {
         {/* Outfit Breakdown */}
         <View style={styles.section}>
           <BlurredContent
-            shouldBlur={isFreeUser && hasUsedFreeStyleScan}
+            shouldBlur={false}
             message="Start trial to see detailed outfit analysis"
           >
           <LinearGradient colors={gradient.mint} style={styles.sectionCard}>
@@ -402,7 +402,7 @@ export default function StyleResultsScreen() {
         {/* Occasion Match */}
         <View style={styles.section}>
           <BlurredContent
-            shouldBlur={isFreeUser && hasUsedFreeStyleScan}
+            shouldBlur={false}
             message="Unlock occasion-perfect tips"
           >
           <LinearGradient colors={gradient.rose} style={styles.sectionCard}>
@@ -452,7 +452,7 @@ export default function StyleResultsScreen() {
         {/* What Worked */}
         <View style={styles.section}>
           <BlurredContent
-            shouldBlur={isFreeUser && hasUsedFreeStyleScan}
+            shouldBlur={false}
             message="Start trial to see your strengths"
           >
           <LinearGradient colors={gradient.success} style={styles.sectionCard}>
@@ -476,7 +476,7 @@ export default function StyleResultsScreen() {
         {/* Improvements */}
         <View style={styles.section}>
           <BlurredContent
-            shouldBlur={isFreeUser && hasUsedFreeStyleScan}
+            shouldBlur={false}
             message="Unlock enhancement tips"
           >
           <LinearGradient colors={gradient.warning} style={styles.sectionCard}>
@@ -500,7 +500,7 @@ export default function StyleResultsScreen() {
         {/* Specific Suggestions */}
         <View style={styles.section}>
           <BlurredContent
-            shouldBlur={isFreeUser && hasUsedFreeStyleScan}
+            shouldBlur={false}
             message="Get full recommendations with trial"
           >
           <LinearGradient colors={gradient.card} style={styles.sectionCard}>
@@ -526,7 +526,7 @@ export default function StyleResultsScreen() {
         {/* Body Type Recommendations */}
         <View style={styles.section}>
           <BlurredContent
-            shouldBlur={isFreeUser && hasUsedFreeStyleScan}
+            shouldBlur={false}
             message="Unlock body type guide with trial"
           >
           <LinearGradient colors={gradient.aurora} style={styles.sectionCard}>
