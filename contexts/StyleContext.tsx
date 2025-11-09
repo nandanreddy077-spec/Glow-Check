@@ -206,10 +206,43 @@ Respond in this exact JSON format:
         console.log('✅ Style image already in base64 format, length:', imageBase64?.length || 0);
       } else if (Platform.OS !== 'web' && (imageUri.startsWith('file://') || imageUri.startsWith('content://'))) {
         console.log('📱 Converting mobile file URI to base64 for style analysis');
-        imageBase64 = await FileSystem.readAsStringAsync(imageUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        console.log('✅ Mobile image converted, length:', imageBase64?.length || 0);
+        try {
+          // Check if FileSystem.EncodingType exists
+          if (!FileSystem || !FileSystem.EncodingType || !FileSystem.EncodingType.Base64) {
+            throw new Error('FileSystem.EncodingType.Base64 is not available');
+          }
+          imageBase64 = await FileSystem.readAsStringAsync(imageUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          console.log('✅ Mobile image converted, length:', imageBase64?.length || 0);
+        } catch (fsError) {
+          console.error('❌ FileSystem error:', fsError);
+          console.log('🔄 Trying alternative base64 conversion method...');
+          
+          // Fallback: Use fetch with blob for mobile if FileSystem fails
+          try {
+            const response = await fetch(imageUri);
+            const blob = await response.blob();
+            
+            imageBase64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const result = reader.result as string;
+                const base64Data = result.split(',')[1];
+                console.log('✅ Mobile image converted using FileReader, length:', base64Data?.length || 0);
+                resolve(base64Data);
+              };
+              reader.onerror = (error) => {
+                console.error('❌ FileReader error:', error);
+                reject(new Error('Failed to convert image to base64'));
+              };
+              reader.readAsDataURL(blob);
+            });
+          } catch (fetchError) {
+            console.error('❌ Fetch fallback also failed:', fetchError);
+            throw new Error('All image conversion methods failed');
+          }
+        }
       } else {
         console.log('📸 Style image URI (not base64):', imageUri.substring(0, 50));
       }
