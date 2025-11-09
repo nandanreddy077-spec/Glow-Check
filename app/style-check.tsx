@@ -79,15 +79,11 @@ export default function StyleCheckScreen() {
         allowsEditing: true,
         aspect: [3, 4],
         quality: 0.8,
-        base64: true,
+        base64: false,
       });
 
       if (!result.canceled && result.assets[0]) {
-        const imageUri = result.assets[0].base64 
-          ? `data:image/jpeg;base64,${result.assets[0].base64}`
-          : result.assets[0].uri;
-        
-        setCurrentImage(imageUri);
+        setCurrentImage(result.assets[0].uri);
         router.push('/occasion-selection');
       }
     } catch (error) {
@@ -132,15 +128,11 @@ export default function StyleCheckScreen() {
         allowsEditing: true,
         aspect: [3, 4],
         quality: 0.8,
-        base64: true,
+        base64: false,
       });
 
       if (!result.canceled && result.assets[0]) {
-        const imageUri = result.assets[0].base64 
-          ? `data:image/jpeg;base64,${result.assets[0].base64}`
-          : result.assets[0].uri;
-        
-        setCurrentImage(imageUri);
+        setCurrentImage(result.assets[0].uri);
         router.push('/occasion-selection');
       }
     } catch (error) {
