@@ -152,6 +152,12 @@ export async function generateObject<T extends z.ZodType>(
 ): Promise<z.infer<T>> {
   const timeout = params.timeout || DEFAULT_TIMEOUT;
   
+  console.log('🐛 DEBUG: AI config check:', {
+    hasToolkitUrl: !!TOOLKIT_URL,
+    hasOpenAI: !!OPENAI_API_KEY,
+    timeout
+  });
+  
   if (TOOLKIT_URL) {
     try {
       console.log('🤖 Trying Rork Toolkit...');
@@ -161,24 +167,28 @@ export async function generateObject<T extends z.ZodType>(
         'Rork Toolkit request timed out'
       );
       console.log('✅ Rork Toolkit success');
+      console.log('🐛 Result sample:', JSON.stringify(result).substring(0, 200));
       return result;
     } catch (error) {
-      console.log('⚠️ Rork Toolkit failed:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ Rork Toolkit failed:', error instanceof Error ? error.message : 'Unknown error');
       
       if (OPENAI_API_KEY) {
         try {
+          console.log('🔄 Falling back to OpenAI...');
           const result = await withTimeout(
             generateObjectWithOpenAI(params),
             timeout,
             'OpenAI request timed out'
           );
           console.log('✅ OpenAI fallback success');
+          console.log('🐛 Result sample:', JSON.stringify(result).substring(0, 200));
           return result;
         } catch (openaiError) {
           console.error('❌ OpenAI fallback also failed:', openaiError);
           throw openaiError;
         }
       } else {
+        console.error('❌ No OpenAI key available for fallback');
         throw new Error('Both Rork Toolkit and OpenAI fallback unavailable');
       }
     }
@@ -191,12 +201,14 @@ export async function generateObject<T extends z.ZodType>(
         'OpenAI request timed out'
       );
       console.log('✅ OpenAI success');
+      console.log('🐛 Result sample:', JSON.stringify(result).substring(0, 200));
       return result;
     } catch (error) {
       console.error('❌ OpenAI failed:', error);
       throw error;
     }
   } else {
+    console.error('❌ No AI service configured!');
     throw new Error('No AI service configured (neither Rork Toolkit nor OpenAI)');
   }
 }

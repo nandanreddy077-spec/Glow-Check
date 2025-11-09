@@ -499,6 +499,9 @@ export default function AnalysisLoadingScreen() {
   }) => {
     const toolkitUrl = process.env['EXPO_PUBLIC_TOOLKIT_URL'];
     
+    console.log('🤖 Starting AI analysis, toolkit URL configured:', !!toolkitUrl);
+    console.log('📱 Platform:', Platform.OS);
+    
     if (!toolkitUrl) {
       console.log('⚠️ Toolkit URL not configured, using fallback analysis');
       return generateFallbackAnalysis(visionData);
@@ -573,16 +576,23 @@ Respond with ONLY a valid JSON object with this structure:
       ];
 
       console.log('🤖 Sending AI request with image length:', images.front?.length || 0);
+      console.log('⏱️ Starting AI analysis with 20s timeout...');
+      
       try {
         const analysisResult = await generateObject({
           messages: messages,
           schema: analysisSchema,
-          timeout: 25000
+          timeout: 20000
         });
-        console.log('✅ AI analysis completed successfully');
+        console.log('✅ AI analysis completed successfully!');
+        console.log('📊 Scores:', {
+          overall: analysisResult.beautyScores?.overallScore,
+          confidence: analysisResult.confidence
+        });
         return analysisResult;
       } catch (error) {
-        console.log('🔄 AI API failed, using enhanced fallback analysis:', error);
+        console.error('❌ AI API failed, using enhanced fallback analysis');
+        console.error('Error details:', error instanceof Error ? error.message : String(error));
         return generateFallbackAnalysis(visionData);
       }
       
@@ -634,8 +644,11 @@ Respond with ONLY a valid JSON object with this structure:
 
   const generateFallbackAnalysis = (visionData?: any) => {
     console.log('📊 Generating enhanced fallback analysis with feature-based scoring...');
+    console.log('🔍 Vision data available:', !!visionData?.front);
     
     const baseScore = generateConsistentScore(frontImage || '', visionData?.front);
+    console.log('📈 Generated base score:', baseScore);
+    
     const skinTypes = ['Normal', 'Dry', 'Oily', 'Combination', 'Sensitive'];
     const skinTones = ['Light Warm', 'Medium Neutral', 'Medium Warm', 'Dark Cool', 'Light Cool', 'Medium Cool', 'Dark Warm'];
 
@@ -679,6 +692,12 @@ Respond with ONLY a valid JSON object with this structure:
     }
     
     recommendations.push("Stay hydrated and maintain a balanced diet for optimal skin health");
+    
+    console.log('✅ Fallback analysis generated:', {
+      baseScore,
+      skinQuality,
+      recommendations: recommendations.length
+    });
     
     return {
       skinAnalysis: {
