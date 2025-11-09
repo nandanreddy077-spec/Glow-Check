@@ -102,6 +102,7 @@ export default function AnalysisLoadingScreen() {
   const [flowAnim] = useState(new Animated.Value(0));
   const [pulseAnim] = useState(new Animated.Value(1));
   const [flowAnimationRunning, setFlowAnimationRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isMultiAngle = multiAngle === 'true';
   
   const palette = getPalette(theme);
@@ -109,9 +110,16 @@ export default function AnalysisLoadingScreen() {
   const styles = createStyles(palette);
 
   const startAnalysis = async () => {
-    console.log('🔢 Incrementing glow scan count...');
-    await incrementGlowScan();
-    console.log('✅ Scan count incremented successfully');
+    try {
+      console.log('🔢 Incrementing glow scan count...');
+      await incrementGlowScan();
+      console.log('✅ Scan count incremented successfully');
+    } catch (err) {
+      console.error('❌ Failed to increment scan count:', err);
+      setError('Failed to start analysis. Please try again.');
+      setTimeout(() => router.back(), 2000);
+      return;
+    }
     
     setFlowAnimationRunning(true);
     const flowAnimation = Animated.loop(
@@ -170,20 +178,38 @@ export default function AnalysisLoadingScreen() {
     
     setIsAnalyzing(true);
     
-    const analysisResult = await performAIAnalysis();
-    
-    if (analysisResult) {
-      setCurrentResult(analysisResult);
-      await saveAnalysis(analysisResult);
-      refreshUserData();
+    try {
+      const analysisResult = await performAIAnalysis();
+      
+      if (analysisResult) {
+        setCurrentResult(analysisResult);
+        await saveAnalysis(analysisResult);
+        refreshUserData();
+        
+        setFlowAnimationRunning(false);
+        flowAnimation.stop();
+        pulseAnimation.stop();
+        setIsAnalyzing(false);
+        
+        router.replace('/analysis-results');
+      } else {
+        throw new Error('Analysis returned no results');
+      }
+    } catch (error) {
+      console.error('❌ Analysis failed in startAnalysis:', error);
+      setFlowAnimationRunning(false);
+      flowAnimation.stop();
+      pulseAnimation.stop();
+      setIsAnalyzing(false);
+      
+      setError('Analysis failed. Redirecting...');
+      setTimeout(() => {
+        router.replace({
+          pathname: '/glow-analysis',
+          params: { error: 'analysis_failed' }
+        });
+      }, 1500);
     }
-    
-    setFlowAnimationRunning(false);
-    flowAnimation.stop();
-    pulseAnimation.stop();
-    setIsAnalyzing(false);
-    
-    router.replace('/analysis-results');
   };
 
   useEffect(() => {
@@ -194,66 +220,62 @@ export default function AnalysisLoadingScreen() {
 
 
   const performAIAnalysis = async (): Promise<AnalysisResult | null> => {
-    if (!frontImage) return null;
-
-    try {
-      console.log('🚀 Starting', isMultiAngle ? 'multi-angle' : 'single-angle', 'analysis...');
-      
-      console.log('📸 Starting image conversion...');
-      const frontBase64 = await convertImageToBase64(frontImage);
-      console.log('✅ Front image converted, length:', frontBase64?.length || 0);
-      
-      let leftBase64: string | null = null;
-      let rightBase64: string | null = null;
-      
-      if (isMultiAngle && leftImage && rightImage) {
-        console.log('📸 Converting left profile...');
-        leftBase64 = await convertImageToBase64(leftImage);
-        console.log('✅ Left image converted, length:', leftBase64?.length || 0);
-        
-        console.log('📸 Converting right profile...');
-        rightBase64 = await convertImageToBase64(rightImage);
-        console.log('✅ Right image converted, length:', rightBase64?.length || 0);
-        
-        console.log('📸 All three angles converted to base64');
-      }
-
-      const analysisData = await performComprehensiveFaceAnalysis({
-        front: frontBase64,
-        left: leftBase64,
-        right: rightBase64,
-        isMultiAngle
-      });
-      
-      const analysisResult: AnalysisResult = {
-        ...analysisData,
-        imageUri: frontImage,
-        timestamp: Date.now(),
-      };
-      
-      console.log('✅ Analysis completed successfully:', {
-        overallScore: analysisResult.overallScore,
-        confidence: analysisResult.confidence,
-        multiAngle: isMultiAngle
-      });
-      return analysisResult;
-      
-    } catch (error) {
-      console.error('❌ Error during AI analysis:', error);
-      
-      if (error instanceof Error && error.message === 'NO_FACE_DETECTED') {
-        router.replace({
-          pathname: '/glow-analysis',
-          params: { error: 'no_face_detected' }
-        });
-      } else {
-        router.replace({
-          pathname: '/glow-analysis',
-          params: { error: 'analysis_failed' }
-        });
-      }
-      return null;
+    if (!frontImage) {
+      console.error('❌ No frontImage provided');
+      throw new Error('No image provided for analysis');
     }
+
+    console.log('🚀 Starting', isMultiAngle ? 'multi-angle' : 'single-angle', 'analysis...');
+    
+    console.log('📸 Starting image conversion...');
+    const frontBase64 = await convertImageToBase64(frontImage);
+    console.log('✅ Front image converted, length:', frontBase64?.length || 0);
+    
+    if (!frontBase64 || frontBase64.length === 0) {
+      console.error('❌ Front image conversion resulted in empty string');
+      throw new Error('Image conversion failed');
+    }
+    
+    let leftBase64: string | null = null;
+    let rightBase64: string | null = null;
+    
+    if (isMultiAngle && leftImage && rightImage) {
+      console.log('📸 Converting left profile...');
+      leftBase64 = await convertImageToBase64(leftImage);
+      console.log('✅ Left image converted, length:', leftBase64?.length || 0);
+      
+      console.log('📸 Converting right profile...');
+      rightBase64 = await convertImageToBase64(rightImage);
+      console.log('✅ Right image converted, length:', rightBase64?.length || 0);
+      
+      console.log('📸 All three angles converted to base64');
+    }
+
+    console.log('🧠 Starting comprehensive face analysis...');
+    const analysisData = await performComprehensiveFaceAnalysis({
+      front: frontBase64,
+      left: leftBase64,
+      right: rightBase64,
+      isMultiAngle
+    });
+    
+    if (!analysisData) {
+      console.error('❌ Analysis data is null');
+      throw new Error('Analysis failed to produce results');
+    }
+    
+    const analysisResult: AnalysisResult = {
+      ...analysisData,
+      imageUri: frontImage,
+      timestamp: Date.now(),
+    };
+    
+    console.log('✅ Analysis completed successfully:', {
+      overallScore: analysisResult.overallScore,
+      confidence: analysisResult.confidence,
+      multiAngle: isMultiAngle
+    });
+    return analysisResult;
   };
 
   const convertImageToBase64 = async (imageUri: string): Promise<string> => {
@@ -1110,7 +1132,9 @@ Respond with ONLY a valid JSON object with this structure:
           </View>
 
           <View style={styles.bottomTip}>
-            <Text style={styles.tipText}>✨ This may take a few moments</Text>
+            <Text style={styles.tipText}>
+              {error || '✨ This may take a few moments'}
+            </Text>
           </View>
 
         </View>
