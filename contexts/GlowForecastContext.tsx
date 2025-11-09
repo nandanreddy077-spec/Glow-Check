@@ -3,7 +3,7 @@ import createContextHook from "@nkzw/create-context-hook";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "./AuthContext";
-import { generateObject } from "@rork/toolkit-sdk";
+import { generateObject } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
 import type {
   GlowForecast,
