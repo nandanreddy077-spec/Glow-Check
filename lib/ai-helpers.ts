@@ -1,4 +1,4 @@
-import { generateObject as rorkGenerateObject, generateText as rorkGenerateText } from '@rork/toolkit-sdk';
+import { generateObject as rorkGenerateObject, generateText as rorkGenerateText } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 
 type ImagePart = { type: 'image'; image: string };
