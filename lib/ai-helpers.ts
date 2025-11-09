@@ -152,39 +152,9 @@ export async function generateObject<T extends z.ZodType>(
 ): Promise<z.infer<T>> {
   const timeout = params.timeout || DEFAULT_TIMEOUT;
   
-  if (TOOLKIT_URL) {
+  if (OPENAI_API_KEY) {
     try {
-      console.log('🤖 Trying Rork Toolkit...');
-      const result = await withTimeout(
-        rorkGenerateObject(params),
-        timeout,
-        'Rork Toolkit request timed out'
-      );
-      console.log('✅ Rork Toolkit success');
-      return result;
-    } catch (error) {
-      console.log('⚠️ Rork Toolkit failed:', error instanceof Error ? error.message : 'Unknown error');
-      
-      if (OPENAI_API_KEY) {
-        try {
-          const result = await withTimeout(
-            generateObjectWithOpenAI(params),
-            timeout,
-            'OpenAI request timed out'
-          );
-          console.log('✅ OpenAI fallback success');
-          return result;
-        } catch (openaiError) {
-          console.error('❌ OpenAI fallback also failed:', openaiError);
-          throw openaiError;
-        }
-      } else {
-        throw new Error('Both Rork Toolkit and OpenAI fallback unavailable');
-      }
-    }
-  } else if (OPENAI_API_KEY) {
-    try {
-      console.log('🤖 Using OpenAI directly (no toolkit URL)...');
+      console.log('🤖 Using OpenAI directly...');
       const result = await withTimeout(
         generateObjectWithOpenAI(params),
         timeout,
@@ -194,10 +164,40 @@ export async function generateObject<T extends z.ZodType>(
       return result;
     } catch (error) {
       console.error('❌ OpenAI failed:', error);
+      
+      if (TOOLKIT_URL) {
+        try {
+          console.log('🔄 Trying Rork Toolkit as fallback...');
+          const result = await withTimeout(
+            rorkGenerateObject(params),
+            timeout,
+            'Rork Toolkit request timed out'
+          );
+          console.log('✅ Rork Toolkit fallback success');
+          return result;
+        } catch (toolkitError) {
+          console.error('❌ Rork Toolkit fallback also failed:', toolkitError);
+          throw error;
+        }
+      }
+      throw error;
+    }
+  } else if (TOOLKIT_URL) {
+    try {
+      console.log('🤖 Using Rork Toolkit (no OpenAI key)...');
+      const result = await withTimeout(
+        rorkGenerateObject(params),
+        timeout,
+        'Rork Toolkit request timed out'
+      );
+      console.log('✅ Rork Toolkit success');
+      return result;
+    } catch (error) {
+      console.error('❌ Rork Toolkit failed:', error);
       throw error;
     }
   } else {
-    throw new Error('No AI service configured (neither Rork Toolkit nor OpenAI)');
+    throw new Error('No AI service configured (neither OpenAI nor Rork Toolkit)');
   }
 }
 
@@ -208,62 +208,7 @@ export async function generateText(params: GenerateTextParams | string): Promise
   
   const timeout = typeof params === 'object' ? (params.timeout || DEFAULT_TIMEOUT) : DEFAULT_TIMEOUT;
 
-  if (TOOLKIT_URL) {
-    try {
-      console.log('🤖 Trying Rork Toolkit text generation...');
-      const result = await withTimeout(
-        rorkGenerateText({ messages }),
-        timeout,
-        'Rork Toolkit text request timed out'
-      );
-      console.log('✅ Rork Toolkit text success');
-      return result;
-    } catch (error) {
-      console.log('⚠️ Rork Toolkit text failed:', error instanceof Error ? error.message : 'Unknown error');
-      
-      if (OPENAI_API_KEY) {
-        try {
-          const openaiMessages = messages.map(msg => ({
-            role: msg.role,
-            content: typeof msg.content === 'string' ? msg.content : 
-              msg.content.filter(p => p.type === 'text').map(p => (p as TextPart).text).join('\n')
-          }));
-
-          const response = await withTimeout(
-            fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: openaiMessages,
-                temperature: 0.7,
-                max_tokens: 1000
-              })
-            }),
-            timeout,
-            'OpenAI text request timed out'
-          );
-
-          if (!response.ok) {
-            throw new Error(`OpenAI API error: ${response.status}`);
-          }
-
-          const data = await response.json();
-          const result = data.choices[0]?.message?.content || '';
-          console.log('✅ OpenAI text fallback success');
-          return result;
-        } catch (openaiError) {
-          console.error('❌ OpenAI text fallback failed:', openaiError);
-          throw openaiError;
-        }
-      } else {
-        throw new Error('Both Rork Toolkit and OpenAI fallback unavailable');
-      }
-    }
-  } else if (OPENAI_API_KEY) {
+  if (OPENAI_API_KEY) {
     try {
       console.log('🤖 Using OpenAI text directly...');
       const openaiMessages = messages.map(msg => ({
@@ -300,10 +245,40 @@ export async function generateText(params: GenerateTextParams | string): Promise
       return result;
     } catch (error) {
       console.error('❌ OpenAI text failed:', error);
+      
+      if (TOOLKIT_URL) {
+        try {
+          console.log('🔄 Trying Rork Toolkit text as fallback...');
+          const result = await withTimeout(
+            rorkGenerateText({ messages }),
+            timeout,
+            'Rork Toolkit text request timed out'
+          );
+          console.log('✅ Rork Toolkit text fallback success');
+          return result;
+        } catch (toolkitError) {
+          console.error('❌ Rork Toolkit text fallback also failed:', toolkitError);
+          throw error;
+        }
+      }
+      throw error;
+    }
+  } else if (TOOLKIT_URL) {
+    try {
+      console.log('🤖 Using Rork Toolkit text (no OpenAI key)...');
+      const result = await withTimeout(
+        rorkGenerateText({ messages }),
+        timeout,
+        'Rork Toolkit text request timed out'
+      );
+      console.log('✅ Rork Toolkit text success');
+      return result;
+    } catch (error) {
+      console.error('❌ Rork Toolkit text failed:', error);
       throw error;
     }
   } else {
-    throw new Error('No AI service configured (neither Rork Toolkit nor OpenAI)');
+    throw new Error('No AI service configured (neither OpenAI nor Rork Toolkit)');
   }
 }
 
