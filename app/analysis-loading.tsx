@@ -5,7 +5,9 @@ import {
   StyleSheet,
   Image,
   Animated,
+  Platform,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useUser } from '@/contexts/UserContext';
@@ -260,10 +262,22 @@ export default function AnalysisLoadingScreen() {
       
       if (imageUri.startsWith('data:image')) {
         const base64Data = imageUri.split(',')[1];
-        console.log('✅ Image already in base64 format');
+        console.log('✅ Image already in base64 format, length:', base64Data?.length || 0);
         return base64Data;
       }
       
+      // On mobile (iOS/Android), use expo-file-system to read local file URIs
+      if (Platform.OS !== 'web' && (imageUri.startsWith('file://') || imageUri.startsWith('content://'))) {
+        console.log('📱 Using expo-file-system for mobile file URI');
+        const base64 = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        console.log('✅ Mobile image converted to base64, length:', base64?.length || 0);
+        return base64;
+      }
+      
+      // On web or for http URIs, use fetch + FileReader
+      console.log('🌐 Using fetch for web/http URI');
       const response = await fetch(imageUri);
       const blob = await response.blob();
       
@@ -272,7 +286,7 @@ export default function AnalysisLoadingScreen() {
         reader.onloadend = () => {
           const result = reader.result as string;
           const base64Data = result.split(',')[1];
-          console.log('✅ Image converted to base64, length:', base64Data?.length || 0);
+          console.log('✅ Web image converted to base64, length:', base64Data?.length || 0);
           resolve(base64Data);
         };
         reader.onerror = (error) => {
@@ -283,6 +297,7 @@ export default function AnalysisLoadingScreen() {
       });
     } catch (error) {
       console.error('❌ Error converting image to base64:', error);
+      console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   };

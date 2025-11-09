@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import createContextHook from '@nkzw/create-context-hook';
 import { StyleAnalysisResult } from '@/types/user';
 import { generateObject } from '@/lib/ai-helpers';
@@ -202,6 +204,12 @@ Respond in this exact JSON format:
       if (imageUri.startsWith('data:')) {
         imageBase64 = imageUri.split(',')[1];
         console.log('✅ Style image already in base64 format, length:', imageBase64?.length || 0);
+      } else if (Platform.OS !== 'web' && (imageUri.startsWith('file://') || imageUri.startsWith('content://'))) {
+        console.log('📱 Converting mobile file URI to base64 for style analysis');
+        imageBase64 = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        console.log('✅ Mobile image converted, length:', imageBase64?.length || 0);
       } else {
         console.log('📸 Style image URI (not base64):', imageUri.substring(0, 50));
       }
