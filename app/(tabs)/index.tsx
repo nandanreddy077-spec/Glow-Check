@@ -19,6 +19,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useProgressTracking } from "@/contexts/ProgressTrackingContext";
 import { useProductTracking } from "@/contexts/ProductTrackingContext";
 import { useSeasonalAdvisor } from "@/contexts/SeasonalAdvisorContext";
+import { useGamification } from "@/contexts/GamificationContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import Logo from "@/components/Logo";
 import { getPalette, getGradient, shadow, spacing, radii, typography } from "@/constants/theme";
@@ -88,6 +89,7 @@ export default function HomeScreen() {
   const { progressPhotos } = useProgressTracking();
   const { products, alerts } = useProductTracking();
   const { recommendations, currentSeason, dismissRecommendation, getSeasonalTip } = useSeasonalAdvisor();
+  const { unreadGlowBoosts } = useGamification();
   const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
@@ -183,6 +185,10 @@ export default function HomeScreen() {
     router.push("/glow-coach");
   };
 
+  const handlePointsBadgePress = () => {
+    router.push('/rewards');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={getGradient(theme).hero} style={StyleSheet.absoluteFillObject} />
@@ -237,12 +243,15 @@ export default function HomeScreen() {
             <Text style={styles.brandingName}>GlowCheck</Text>
           </View>
           <TouchableOpacity 
-            onPress={() => router.push('/profile')} 
+            onPress={handlePointsBadgePress} 
             activeOpacity={0.8}
             style={styles.pointsBadge}
           >
             <Flame color={palette.gold} size={14} fill={palette.gold} />
             <Text style={styles.pointsText}>{user.stats.totalPoints || 0}</Text>
+            {unreadGlowBoosts.length > 0 && (
+              <View style={styles.notificationDot} />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -604,6 +613,17 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     fontWeight: '700' as const,
     color: palette.gold,
     letterSpacing: 0.3,
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F44336',
+    borderWidth: 1.5,
+    borderColor: palette.pearl,
   },
   scrollContent: {
     paddingBottom: 40,
