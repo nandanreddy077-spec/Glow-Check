@@ -376,34 +376,55 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
         photoAnalysis: recentPhotosData,
       };
 
-      const prompt = `You are an expert skincare coach analyzing progress data from a user who has been consistently tracking for ${consistentDays} days. Generate highly personalized, trustworthy insights that show REAL transformation.
+      const prompt = `You are an expert beauty and psychology coach analyzing ${consistentDays} days of a woman's glow transformation journey. Your role is to make her BELIEVE in her progress and trust this app is tracking REAL, visible changes.
 
-IMPORTANT: Base your insights on actual data changes. Be specific about:
-- Visible skin improvements in the photos (texture, brightness, hydration, acne changes)
-- How their habits (sleep, water, mood) correlate with skin changes
-- Day-to-day patterns you observe
-- Give them confidence that this tracking IS working and creating real results
+Psychological Principles:
+- Women need to SEE their transformation validated with specific evidence
+- Connect internal habits (sleep, water, mood) to external beauty outcomes
+- Use emotional, personal language while being data-driven
+- Build confidence by highlighting measurable improvements
+- Make her feel SEEN and understood in her journey
 
-Data:
-- Total tracking days: ${contextData.totalConsistentDays}
-- Photos this week: ${contextData.weekPhotosCount}
-- Journal entries: ${contextData.weekJournalCount}/7
-- Sleep average: ${contextData.averageSleep}h
-- Water average: ${contextData.averageWater} glasses/day
-- Stress average: ${contextData.averageStress}/5
-- Mood distribution: ${JSON.stringify(contextData.moodDistribution)}
+Photo Analysis Data:
+${JSON.stringify(contextData.photoAnalysis, null, 2)}
+
+Lifestyle & Journal Data:
+- Total consistent tracking days: ${contextData.totalConsistentDays}
+- Photos taken this week: ${contextData.weekPhotosCount}
+- Journal entries: ${contextData.weekJournalCount}/7 days
+- Sleep average: ${contextData.averageSleep} hours (${parseFloat(contextData.averageSleep) >= 7 ? 'optimal' : 'needs improvement'})
+- Daily water intake: ${contextData.averageWater} glasses (${parseFloat(contextData.averageWater) >= 8 ? 'excellent' : 'increase more'})
+- Stress level: ${contextData.averageStress}/5 (${parseFloat(contextData.averageStress) <= 2 ? 'low' : parseFloat(contextData.averageStress) >= 4 ? 'high' : 'moderate'})
+- Mood patterns: ${JSON.stringify(contextData.moodDistribution)}
 - Overall skin trend: ${contextData.skinTrend}
-- Measured improvements: ${JSON.stringify(contextData.improvements)}
-- Recent photo analysis: ${JSON.stringify(contextData.photoAnalysis)}
-- Journal notes: ${JSON.stringify(contextData.recentNotes)}
+- Measured changes: ${JSON.stringify(contextData.improvements)}
+- Personal notes: ${JSON.stringify(contextData.recentNotes)}
 
-Provide:
-1. A personalized summary (2-3 sentences) that references SPECIFIC changes you see in their data - make them feel like real progress is happening
-2. 3-5 specific highlights that connect their habits to visible results (e.g., "Your 8h+ sleep on Tuesday-Thursday matches the 15% brightness improvement we measured")
-3. 1-3 concerns only if critical patterns emerge
-4. 3-5 actionable, data-driven recommendations
+Your Task - Generate insights that make her trust this app:
 
-Make it personal, evidence-based, and build trust that this app tracks REAL transformation. Reference specific numbers and dates.`;
+1. SUMMARY (2-3 sentences):
+   - Open with validation of her commitment ("${consistentDays} days of dedication...")
+   - Reference SPECIFIC measured changes from photo analysis (e.g., "Your hydration increased from 45 to 62")
+   - Connect a habit to a visible result (e.g., "Those 8-hour sleep nights directly improved your skin brightness")
+   - Make it emotional and personal
+
+2. HIGHLIGHTS (3-5 specific wins):
+   - Each must connect a HABIT to a VISIBLE RESULT with numbers
+   - Example: "Your commitment to 8+ glasses of water on Jan 15-17 matches your 18% hydration boost we measured in photos"
+   - Example: "That 'great' mood streak from Jan 20-22? Your skin brightness jumped 12% during those exact days"
+   - Use dates, percentages, and specific correlations
+   - Make her feel like THIS APP is what's tracking her real transformation
+
+3. CONCERNS (0-2 only if critical):
+   - Only mention if there's a clear negative pattern
+   - Frame constructively: "When your sleep dropped below 6h on [dates], we noticed a 10% decline in texture"
+
+4. RECOMMENDATIONS (3-5 actionable tips):
+   - Based on what's WORKING in her data
+   - Specific and personal: "Keep up those 8h sleep nights - they're directly improving your brightness"
+   - Give her confidence that small changes = big results
+
+CRITICAL: Use actual numbers from the data. Reference specific dates when possible. Make correlations between habits and skin metrics. Build TRUST that this app sees her real transformation.`,
 
       const insightSchema = z.object({
         summary: z.string(),
