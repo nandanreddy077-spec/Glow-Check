@@ -424,7 +424,9 @@ Your Task - Generate insights that make her trust this app:
    - Specific and personal: "Keep up those 8h sleep nights - they're directly improving your brightness"
    - Give her confidence that small changes = big results
 
-CRITICAL: Use actual numbers from the data. Reference specific dates when possible. Make correlations between habits and skin metrics. Build TRUST that this app sees her real transformation.`,
+CRITICAL: Use actual numbers from the data. Reference specific dates when possible. Make correlations between habits and skin metrics. Build TRUST that this app sees her real transformation.
+
+Make it personal, evidence-based, and build trust that this app tracks REAL transformation. Reference specific numbers and dates.`;
 
       const insightSchema = z.object({
         summary: z.string(),
