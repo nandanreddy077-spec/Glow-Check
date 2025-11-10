@@ -39,7 +39,7 @@ interface GenerateTextParams {
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 const TOOLKIT_URL = process.env.EXPO_PUBLIC_TOOLKIT_URL;
-const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_TIMEOUT = 45000;
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
@@ -186,6 +186,7 @@ export async function generateObject<T extends z.ZodType>(
   console.log('🐛 DEBUG: AI config check:', {
     hasToolkitUrl: !!TOOLKIT_URL,
     hasOpenAI: !!OPENAI_API_KEY,
+    openAIKeyLength: OPENAI_API_KEY?.length || 0,
     timeout
   });
   
