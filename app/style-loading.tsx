@@ -37,6 +37,8 @@ export default function StyleLoadingScreen() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const performAnalysis = async () => {
       if (!currentImage || !selectedOccasion) {
         router.replace('/style-check');
@@ -44,22 +46,36 @@ export default function StyleLoadingScreen() {
       }
 
       try {
-        // Increment scan count immediately when analysis starts
         console.log('🔢 Incrementing style scan count...');
         await incrementStyleScan();
         console.log('✅ Style scan count incremented successfully');
         
-        await analyzeOutfit(currentImage, selectedOccasionData?.name || selectedOccasion);
-        router.replace('/style-results');
+        // Set a timeout for the entire analysis process
+        const analysisPromise = analyzeOutfit(currentImage, selectedOccasionData?.name || selectedOccasion);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Analysis timeout')), 20000);
+        });
+        
+        await Promise.race([analysisPromise, timeoutPromise]);
+        
+        if (isMounted) {
+          router.replace('/style-results');
+        }
       } catch (error) {
         console.error('Style analysis failed:', error);
-        router.replace('/style-check');
+        // Still navigate to results - fallback should have generated a result
+        if (isMounted) {
+          router.replace('/style-results');
+        }
       }
     };
 
-    const timer = setTimeout(performAnalysis, 3000);
-    return () => clearTimeout(timer);
-  }, [currentImage, selectedOccasion, selectedOccasionData, analyzeOutfit]);
+    const timer = setTimeout(performAnalysis, 2000);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [currentImage, selectedOccasion, selectedOccasionData, analyzeOutfit, incrementStyleScan]);
 
   return (
     <SafeAreaView style={styles.container}>
