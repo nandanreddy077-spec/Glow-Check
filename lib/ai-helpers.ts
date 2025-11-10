@@ -1,6 +1,26 @@
 import { generateObject as rorkGenerateObject, generateText as rorkGenerateText } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 
+async function safeRorkGenerateObject<T extends z.ZodType>(params: GenerateObjectParams<T>): Promise<z.infer<T>> {
+  try {
+    const result = await rorkGenerateObject(params);
+    return result;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('🔴 Rork SDK Error Details:', {
+      message: errorMessage,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+      stack: error instanceof Error ? error.stack?.substring(0, 200) : undefined
+    });
+    
+    if (errorMessage.includes('JSON Parse') || errorMessage.includes('Unexpected character')) {
+      throw new Error('Rork Toolkit returned invalid response - server may be experiencing issues');
+    }
+    
+    throw error;
+  }
+}
+
 type ImagePart = { type: 'image'; image: string };
 type TextPart = { type: 'text'; text: string };
 type UserMessage = { role: 'user'; content: string | (TextPart | ImagePart)[] };
@@ -173,7 +193,7 @@ export async function generateObject<T extends z.ZodType>(
     try {
       console.log('🤖 Trying Rork Toolkit...');
       const result = await withTimeout(
-        rorkGenerateObject(params),
+        safeRorkGenerateObject(params),
         timeout,
         'Rork Toolkit request timed out'
       );
@@ -181,7 +201,12 @@ export async function generateObject<T extends z.ZodType>(
       console.log('🐛 Result sample:', JSON.stringify(result).substring(0, 200));
       return result;
     } catch (error) {
-      console.error('❌ Rork Toolkit failed:', error instanceof Error ? error.message : 'Unknown error');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Rork Toolkit failed:', errorMessage);
+      
+      if (errorMessage.includes('JSON Parse') || errorMessage.includes('Unexpected') || errorMessage.includes('invalid response')) {
+        console.error('⚠️ Rork Toolkit returned invalid response - falling back to OpenAI');
+      }
       
       if (OPENAI_API_KEY) {
         try {
