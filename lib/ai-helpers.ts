@@ -128,7 +128,18 @@ async function generateObjectWithOpenAI<T extends z.ZodType>(
     throw new Error(`OpenAI API error: ${response.status}`);
   }
 
-  const data = await response.json();
+  const responseText = await response.text();
+  console.log('📦 OpenAI raw response (first 100 chars):', responseText.substring(0, 100));
+  
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (parseError) {
+    console.error('❌ Failed to parse OpenAI response as JSON');
+    console.error('Response text:', responseText.substring(0, 500));
+    throw new Error('Invalid JSON response from OpenAI API');
+  }
+  
   const content = data.choices[0]?.message?.content;
   
   if (!content) {
@@ -260,10 +271,20 @@ export async function generateText(params: GenerateTextParams | string): Promise
           );
 
           if (!response.ok) {
+            const errorText = await response.text();
+            console.error('OpenAI text API error:', response.status, errorText.substring(0, 200));
             throw new Error(`OpenAI API error: ${response.status}`);
           }
 
-          const data = await response.json();
+          const responseText = await response.text();
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('❌ Failed to parse OpenAI text response as JSON');
+            console.error('Response text:', responseText.substring(0, 500));
+            throw new Error('Invalid JSON response from OpenAI API');
+          }
           const result = data.choices[0]?.message?.content || '';
           console.log('✅ OpenAI text fallback success');
           return result;
@@ -303,10 +324,20 @@ export async function generateText(params: GenerateTextParams | string): Promise
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI direct text API error:', response.status, errorText.substring(0, 200));
         throw new Error(`OpenAI API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ Failed to parse OpenAI direct text response as JSON');
+        console.error('Response text:', responseText.substring(0, 500));
+        throw new Error('Invalid JSON response from OpenAI API');
+      }
       const result = data.choices[0]?.message?.content || '';
       console.log('✅ OpenAI text success');
       return result;

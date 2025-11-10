@@ -333,11 +333,25 @@ export default function AnalysisLoadingScreen() {
       const response = await fetch(imageUri);
       
       if (!response.ok) {
+        console.error('❌ Failed to fetch image, status:', response.status);
         throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      console.log('📦 Response content-type:', contentType);
+      
+      if (!contentType || !contentType.startsWith('image/')) {
+        console.error('❌ Response is not an image:', contentType);
+        throw new Error('Response is not an image');
       }
       
       const blob = await response.blob();
       console.log('📦 Blob size:', blob.size, 'type:', blob.type);
+      
+      if (blob.size === 0) {
+        console.error('❌ Blob is empty');
+        throw new Error('Image blob is empty');
+      }
       
       return new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -476,8 +490,19 @@ export default function AnalysisLoadingScreen() {
         throw new Error(`Vision API error: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log('Google Vision API response:', JSON.stringify(data, null, 2));
+      const responseText = await response.text();
+      console.log('📦 Google Vision raw response (first 200 chars):', responseText.substring(0, 200));
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ Failed to parse Google Vision response as JSON');
+        console.error('Response text:', responseText.substring(0, 500));
+        throw new Error('Invalid JSON response from Google Vision API');
+      }
+      
+      console.log('✅ Google Vision API response parsed successfully');
       
       return data.responses[0];
       
