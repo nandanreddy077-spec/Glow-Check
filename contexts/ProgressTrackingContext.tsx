@@ -60,6 +60,7 @@ interface ProgressTrackingContextType {
     concerns: string[];
     improvements: string[];
   }>;
+  getConsistentDaysCount: () => number;
 }
 
 const STORAGE_KEYS = {
@@ -296,6 +297,22 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
     };
   }, [journalEntries]);
 
+  const getConsistentDaysCount = useCallback(() => {
+    const uniqueDates = new Set<string>();
+    
+    progressPhotos.forEach(photo => {
+      const date = new Date(photo.timestamp).toDateString();
+      uniqueDates.add(date);
+    });
+    
+    journalEntries.forEach(entry => {
+      const date = new Date(entry.date).toDateString();
+      uniqueDates.add(date);
+    });
+    
+    return uniqueDates.size;
+  }, [progressPhotos, journalEntries]);
+
   const getCurrentWeekInsight = useCallback(() => {
     const now = new Date();
     const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
@@ -308,6 +325,13 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
 
   const generateWeeklyInsight = useCallback(async (): Promise<WeeklyInsight | null> => {
     try {
+      const consistentDays = getConsistentDaysCount();
+      
+      if (consistentDays < 5) {
+        console.log('Not enough consistent days for insights. Current:', consistentDays, 'Required: 5');
+        return null;
+      }
+
       const now = new Date();
       const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
       const weekEnd = new Date(weekStart);
@@ -330,7 +354,16 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
       const stats = getJournalStats();
       const comparison = getProgressComparison(7);
 
+      const allPhotos = progressPhotos.slice(0, 10);
+      const recentPhotosData = allPhotos.map(p => ({
+        date: new Date(p.timestamp).toLocaleDateString(),
+        skinCondition: p.skinCondition,
+        concerns: p.concerns,
+        mood: p.mood,
+      }));
+
       const contextData = {
+        totalConsistentDays: consistentDays,
         weekPhotosCount: weekPhotos.length,
         weekJournalCount: weekJournal.length,
         averageSleep: stats.averageSleep.toFixed(1),
@@ -340,28 +373,37 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
         skinTrend: comparison?.overallTrend || 'stable',
         improvements: comparison?.improvements || [],
         recentNotes: weekJournal.map(e => e.notes).filter(Boolean).slice(0, 3),
+        photoAnalysis: recentPhotosData,
       };
 
-      const prompt = `You are an expert skincare coach analyzing a week of progress data. Generate highly personalized, motivating insights.
+      const prompt = `You are an expert skincare coach analyzing progress data from a user who has been consistently tracking for ${consistentDays} days. Generate highly personalized, trustworthy insights that show REAL transformation.
+
+IMPORTANT: Base your insights on actual data changes. Be specific about:
+- Visible skin improvements in the photos (texture, brightness, hydration, acne changes)
+- How their habits (sleep, water, mood) correlate with skin changes
+- Day-to-day patterns you observe
+- Give them confidence that this tracking IS working and creating real results
 
 Data:
-- Photos taken: ${contextData.weekPhotosCount}
+- Total tracking days: ${contextData.totalConsistentDays}
+- Photos this week: ${contextData.weekPhotosCount}
 - Journal entries: ${contextData.weekJournalCount}/7
 - Sleep average: ${contextData.averageSleep}h
 - Water average: ${contextData.averageWater} glasses/day
 - Stress average: ${contextData.averageStress}/5
-- Mood: ${JSON.stringify(contextData.moodDistribution)}
-- Skin trend: ${contextData.skinTrend}
-- Improvements: ${JSON.stringify(contextData.improvements)}
-- Recent journal notes: ${JSON.stringify(contextData.recentNotes)}
+- Mood distribution: ${JSON.stringify(contextData.moodDistribution)}
+- Overall skin trend: ${contextData.skinTrend}
+- Measured improvements: ${JSON.stringify(contextData.improvements)}
+- Recent photo analysis: ${JSON.stringify(contextData.photoAnalysis)}
+- Journal notes: ${JSON.stringify(contextData.recentNotes)}
 
 Provide:
-1. A warm, personalized summary (2-3 sentences) acknowledging their effort
-2. 3-5 specific highlights (achievements, improvements noticed)
-3. 1-3 concerns (if any lifestyle factors need attention)
-4. 3-5 actionable recommendations (specific to their data)
+1. A personalized summary (2-3 sentences) that references SPECIFIC changes you see in their data - make them feel like real progress is happening
+2. 3-5 specific highlights that connect their habits to visible results (e.g., "Your 8h+ sleep on Tuesday-Thursday matches the 15% brightness improvement we measured")
+3. 1-3 concerns only if critical patterns emerge
+4. 3-5 actionable, data-driven recommendations
 
-Make it personal, specific to their data, and motivating. Use their name if in notes, reference specific habits.`;
+Make it personal, evidence-based, and build trust that this app tracks REAL transformation. Reference specific numbers and dates.`,
 
       const schema = z.object({
         summary: z.string(),
@@ -420,6 +462,7 @@ Make it personal, specific to their data, and motivating. Use their name if in n
     deleteProgressPhoto,
     deleteJournalEntry,
     analyzePhotoWithAI,
+    getConsistentDaysCount,
   }), [
     progressPhotos,
     journalEntries,
@@ -434,5 +477,6 @@ Make it personal, specific to their data, and motivating. Use their name if in n
     deleteProgressPhoto,
     deleteJournalEntry,
     analyzePhotoWithAI,
+    getConsistentDaysCount,
   ]);
 });

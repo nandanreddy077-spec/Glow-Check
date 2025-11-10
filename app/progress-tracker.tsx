@@ -62,6 +62,7 @@ export default function ProgressTrackerScreen() {
     deleteProgressPhoto,
     getCurrentWeekInsight,
     generateWeeklyInsight,
+    getConsistentDaysCount,
   } = useProgressTracking();
   
   const { state } = useSubscription();
@@ -76,6 +77,7 @@ export default function ProgressTrackerScreen() {
   const trendData = getTrendData();
   const journalStats = getJournalStats();
   const weekInsight = getCurrentWeekInsight();
+  const consistentDays = getConsistentDaysCount();
 
   useEffect(() => {
     if (!state.isPremium && !state.hasStartedTrial) {
@@ -359,9 +361,38 @@ export default function ProgressTrackerScreen() {
   };
 
   const renderInsightsTab = () => {
+    const needsMoreDays = consistentDays < 5;
+
     return (
       <View style={styles.tabContent}>
-        {weekInsight ? (
+        {needsMoreDays ? (
+          <View style={styles.emptyState}>
+            <Sparkles color={palette.textSecondary} size={64} strokeWidth={1.5} />
+            <Text style={styles.emptyTitle}>Almost There!</Text>
+            <Text style={styles.emptyText}>
+              Track consistently for {5 - consistentDays} more {5 - consistentDays === 1 ? 'day' : 'days'} to unlock AI-powered insights that analyze your transformation
+            </Text>
+            <View style={styles.progressTracker}>
+              <View style={styles.progressTrackerDots}>
+                {[...Array(5)].map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.progressDot,
+                      i < consistentDays && styles.progressDotActive,
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.progressTrackerText}>
+                {consistentDays}/5 days tracked
+              </Text>
+            </View>
+            <Text style={styles.encouragementText}>
+              💡 Keep taking photos and journaling daily. Our AI will analyze your progress and show you real results!
+            </Text>
+          </View>
+        ) : weekInsight ? (
           <View style={styles.insightsContainer}>
             <View style={[styles.insightCard, shadow.card]}>
               <View style={styles.insightHeader}>
@@ -463,14 +494,14 @@ export default function ProgressTrackerScreen() {
         ) : (
           <View style={styles.emptyState}>
             <Sparkles color={palette.textSecondary} size={64} strokeWidth={1.5} />
-            <Text style={styles.emptyTitle}>Start Your Glow Journey</Text>
+            <Text style={styles.emptyTitle}>Ready for Insights!</Text>
             <Text style={styles.emptyText}>
-              Take progress photos and journal daily to unlock AI-powered insights that track your transformation
+              You've tracked for {consistentDays} days. Generate your personalized AI insights now!
             </Text>
             <TouchableOpacity 
               onPress={handleGenerateInsight}
-              disabled={isGeneratingInsight || (progressPhotos.length === 0 && journalEntries.length === 0)}
-              style={[styles.emptyButton, (progressPhotos.length === 0 && journalEntries.length === 0) && { opacity: 0.5 }]}
+              disabled={isGeneratingInsight}
+              style={styles.emptyButton}
             >
               <LinearGradient colors={['#E8D5F0', '#D4A574']} style={styles.emptyButtonGradient}>
                 <Sparkles color={palette.textLight} size={20} strokeWidth={2.5} />
@@ -1227,6 +1258,41 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     fontSize: 16,
     color: palette.textSecondary,
     fontWeight: '600',
+  },
+  progressTracker: {
+    alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 24,
+  },
+  progressTrackerDots: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  progressDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: palette.divider,
+    borderWidth: 2,
+    borderColor: palette.divider,
+  },
+  progressDotActive: {
+    backgroundColor: palette.gold,
+    borderColor: palette.gold,
+  },
+  progressTrackerText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: palette.textPrimary,
+  },
+  encouragementText: {
+    fontSize: 14,
+    color: palette.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 20,
+    fontStyle: 'italic',
   },
 });
 
