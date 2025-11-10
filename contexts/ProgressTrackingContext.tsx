@@ -403,7 +403,7 @@ Provide:
 3. 1-3 concerns only if critical patterns emerge
 4. 3-5 actionable, data-driven recommendations
 
-Make it personal, evidence-based, and build trust that this app tracks REAL transformation. Reference specific numbers and dates.`,
+Make it personal, evidence-based, and build trust that this app tracks REAL transformation. Reference specific numbers and dates.`;
 
       const schema = z.object({
         summary: z.string(),
