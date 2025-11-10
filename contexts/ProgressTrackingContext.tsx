@@ -271,6 +271,22 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
     };
   }, [progressPhotos]);
 
+  const getConsistentDaysCount = useCallback(() => {
+    const uniqueDates = new Set<string>();
+    
+    progressPhotos.forEach(photo => {
+      const date = new Date(photo.timestamp).toDateString();
+      uniqueDates.add(date);
+    });
+    
+    journalEntries.forEach(entry => {
+      const date = new Date(entry.date).toDateString();
+      uniqueDates.add(date);
+    });
+    
+    return uniqueDates.size;
+  }, [progressPhotos, journalEntries]);
+
   const getJournalStats = useCallback(() => {
     const recentEntries = journalEntries.slice(0, 30);
 
@@ -296,22 +312,6 @@ export const [ProgressTrackingProvider, useProgressTracking] = createContextHook
       moodDistribution,
     };
   }, [journalEntries]);
-
-  const getConsistentDaysCount = useCallback(() => {
-    const uniqueDates = new Set<string>();
-    
-    progressPhotos.forEach(photo => {
-      const date = new Date(photo.timestamp).toDateString();
-      uniqueDates.add(date);
-    });
-    
-    journalEntries.forEach(entry => {
-      const date = new Date(entry.date).toDateString();
-      uniqueDates.add(date);
-    });
-    
-    return uniqueDates.size;
-  }, [progressPhotos, journalEntries]);
 
   const getCurrentWeekInsight = useCallback(() => {
     const now = new Date();
@@ -405,7 +405,7 @@ Provide:
 
 Make it personal, evidence-based, and build trust that this app tracks REAL transformation. Reference specific numbers and dates.`;
 
-      const schema = z.object({
+      const insightSchema = z.object({
         summary: z.string(),
         highlights: z.array(z.string()).min(3).max(5),
         concerns: z.array(z.string()).max(3),
@@ -414,7 +414,7 @@ Make it personal, evidence-based, and build trust that this app tracks REAL tran
 
       const aiResult = await generateObject({
         messages: [{ role: 'user', content: prompt }],
-        schema,
+        schema: insightSchema,
         timeout: 25000
       });
 
@@ -446,7 +446,7 @@ Make it personal, evidence-based, and build trust that this app tracks REAL tran
       console.error('Error generating weekly insight:', error);
       return null;
     }
-  }, [progressPhotos, journalEntries, weeklyInsights, getJournalStats, getProgressComparison]);
+  }, [progressPhotos, journalEntries, weeklyInsights, getJournalStats, getProgressComparison, getConsistentDaysCount]);
 
   return useMemo(() => ({
     progressPhotos,
@@ -473,10 +473,10 @@ Make it personal, evidence-based, and build trust that this app tracks REAL tran
     getCurrentWeekInsight,
     generateWeeklyInsight,
     getTrendData,
+    getConsistentDaysCount,
     getJournalStats,
     deleteProgressPhoto,
     deleteJournalEntry,
     analyzePhotoWithAI,
-    getConsistentDaysCount,
   ]);
 });
