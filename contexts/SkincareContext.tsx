@@ -4,6 +4,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { SkincarePlan, PlanTemplate } from '@/types/skincare';
 import { AnalysisResult } from './AnalysisContext';
 import { Platform } from 'react-native';
+import { generateText } from '@/lib/ai-helpers';
 
 // Web-compatible storage wrapper
 const storage = {
@@ -152,84 +153,31 @@ export const [SkincareProvider, useSkincare] = createContextHook((): SkincareCon
     }
   }, [planHistory, currentPlan, activePlans]);
 
-  // Utility function for making AI API calls with retry logic
-  const makeAIRequest = async (messages: any[], maxRetries = 2): Promise<any> => {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`AI API attempt ${attempt + 1}/${maxRetries + 1}`);
-        
-        // Try the original API first
-        try {
-          const response = await fetch(`${(process.env.EXPO_PUBLIC_TOOLKIT_URL ?? 'https://toolkit.rork.com').replace(/\/$/, '')}/text/llm/`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ messages })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.completion) {
-              return data.completion;
-            }
-          }
-        } catch (error) {
-          console.log('Primary API failed, trying fallback...');
-        }
-        
-        // Fallback to OpenAI API (only if a key is provided)
-        const fallbackKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
-        if (!fallbackKey) {
-          throw new Error('OpenAI key not configured');
-        }
-        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${fallbackKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: messages,
-            max_tokens: 2000,
-            temperature: 0.7
-          })
-        });
-
-        if (!openaiResponse.ok) {
-          const errorText = await openaiResponse.text().catch(() => 'Unknown error');
-          console.error(`OpenAI API Response not OK (attempt ${attempt + 1}):`, openaiResponse.status, errorText);
-          
-          if (openaiResponse.status === 500 && attempt < maxRetries) {
-            lastError = new Error(`AI API error: ${openaiResponse.status}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            continue;
-          }
-          
-          throw new Error(`AI API error: ${openaiResponse.status}`);
-        }
-
-        const openaiData = await openaiResponse.json();
-        if (!openaiData.choices?.[0]?.message?.content) {
-          throw new Error('No completion in AI response');
-        }
-        
-        return openaiData.choices[0].message.content;
-      } catch (error) {
-        console.error(`AI API error (attempt ${attempt + 1}):`, error);
-        lastError = error instanceof Error ? error : new Error('Unknown error');
-        
-        if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-          continue;
-        }
+  // Utility function for making AI text generation calls using Rork toolkit
+  const makeAIRequest = async (messages: any[]): Promise<string> => {
+    try {
+      console.log('🤖 Calling Rork Toolkit generateText...');
+      
+      const toolkitUrl = process.env['EXPO_PUBLIC_TOOLKIT_URL'];
+      if (!toolkitUrl) {
+        console.log('⚠️ Toolkit URL not configured');
+        throw new Error('Toolkit URL not configured');
       }
+      
+      const completion = await generateText({ messages });
+      
+      console.log('✅ Rork generateText success, response length:', completion?.length || 0);
+      
+      if (!completion || typeof completion !== 'string') {
+        console.error('❌ Invalid completion type:', typeof completion);
+        throw new Error('Invalid completion response');
+      }
+      
+      return completion;
+    } catch (error) {
+      console.error('❌ AI request failed:', error);
+      throw error;
     }
-    
-    throw lastError || new Error('AI API request failed after all retries');
   };
 
   const generateCustomPlan = useCallback(async (analysisResult: AnalysisResult, customGoal?: string): Promise<SkincarePlan> => {
@@ -318,9 +266,9 @@ Create a progressive 30-day plan with 4 weekly phases. Focus on the lowest scori
       let completion;
       try {
         completion = await makeAIRequest(messages);
-        console.log('Raw AI response:', completion);
+        console.log('✅ AI response received, length:', completion?.length || 0);
       } catch (error) {
-        console.error('AI API failed after retries, using fallback:', error);
+        console.error('❌ AI request failed, using fallback:', error);
         // Use fallback plan immediately if AI fails
         const plan = createFallbackPlan(analysisResult, customGoal);
         await savePlan(plan);
@@ -617,9 +565,9 @@ Create a customized 30-day plan with 4 weekly phases following the template focu
       let completion;
       try {
         completion = await makeAIRequest(messages);
-        console.log('Raw AI response for template:', completion);
+        console.log('✅ AI response for template received, length:', completion?.length || 0);
       } catch (error) {
-        console.error('AI API failed for template, using fallback:', error);
+        console.error('❌ AI request for template failed, using fallback:', error);
         // Use fallback plan immediately if AI fails
         const plan = createFallbackTemplatePlan(template, analysisResult);
         await savePlan(plan);

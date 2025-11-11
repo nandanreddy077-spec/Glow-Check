@@ -318,10 +318,22 @@ Respond in this exact JSON format:
               ]
             }
           ],
-          schema: StyleAnalysisSchema,
-          timeout: 25000
+          schema: StyleAnalysisSchema
         });
+        
         console.log('✅ Style AI response received');
+        console.log('📊 Result type:', typeof analysisData);
+        
+        // Validate the result structure
+        if (!analysisData || typeof analysisData !== 'object') {
+          console.error('❌ Invalid analysis data type:', typeof analysisData);
+          throw new Error('Invalid analysis data');
+        }
+        
+        if (!analysisData.outfitBreakdown || !analysisData.colorAnalysis) {
+          console.error('❌ Missing required fields in analysis data');
+          throw new Error('Incomplete analysis data');
+        }
       } catch (error) {
         console.log('🔄 AI API failed, using fallback analysis:', error);
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);

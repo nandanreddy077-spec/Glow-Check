@@ -631,18 +631,31 @@ Respond with ONLY a valid JSON object with this structure:
       ];
 
       console.log('🤖 Sending AI request with image length:', images.front?.length || 0);
-      console.log('⏱️ Starting AI analysis with 10s timeout...');
+      console.log('⏱️ Starting AI analysis...');
       
       const analysisResult = await generateObject({
         messages: messages,
-        schema: analysisSchema,
-        timeout: 30000
+        schema: analysisSchema
       });
+      
       console.log('✅ AI analysis completed successfully!');
+      console.log('📊 Result type:', typeof analysisResult);
       console.log('📊 Scores:', {
         overall: analysisResult.beautyScores?.overallScore,
         confidence: analysisResult.confidence
       });
+      
+      // Validate the result structure
+      if (!analysisResult || typeof analysisResult !== 'object') {
+        console.error('❌ Invalid analysis result type:', typeof analysisResult);
+        throw new Error('Invalid analysis result');
+      }
+      
+      if (!analysisResult.beautyScores || !analysisResult.skinAnalysis) {
+        console.error('❌ Missing required fields in analysis result');
+        throw new Error('Incomplete analysis result');
+      }
+      
       return analysisResult;
     } catch (error) {
       console.error('❌ AI analysis failed, using fallback:', error instanceof Error ? error.message : String(error));
