@@ -1,25 +1,4 @@
-import { generateObject as rorkGenerateObject, generateText as rorkGenerateText } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
-
-async function safeRorkGenerateObject<T extends z.ZodType>(params: GenerateObjectParams<T>): Promise<z.infer<T>> {
-  try {
-    const result = await rorkGenerateObject(params);
-    return result;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('🔴 Rork SDK Error Details:', {
-      message: errorMessage,
-      type: error instanceof Error ? error.constructor.name : typeof error,
-      stack: error instanceof Error ? error.stack?.substring(0, 200) : undefined
-    });
-    
-    if (errorMessage.includes('JSON Parse') || errorMessage.includes('Unexpected character')) {
-      throw new Error('Rork Toolkit returned invalid response - server may be experiencing issues');
-    }
-    
-    throw error;
-  }
-}
 
 type ImagePart = { type: 'image'; image: string };
 type TextPart = { type: 'text'; text: string };
@@ -37,9 +16,9 @@ interface GenerateTextParams {
   timeout?: number;
 }
 
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
-const TOOLKIT_URL = process.env.EXPO_PUBLIC_TOOLKIT_URL;
-const DEFAULT_TIMEOUT = 45000;
+const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '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';
+const TOOLKIT_URL = process.env.EXPO_PUBLIC_TOOLKIT_URL || 'https://toolkit.rork.com';
+const DEFAULT_TIMEOUT = 60000;
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
@@ -154,7 +133,7 @@ async function generateObjectWithOpenAI<T extends z.ZodType>(
   let data;
   try {
     data = JSON.parse(responseText);
-  } catch (parseError) {
+  } catch {
     console.error('❌ Failed to parse OpenAI response as JSON');
     console.error('Response text:', responseText.substring(0, 500));
     throw new Error('Invalid JSON response from OpenAI API');
@@ -187,51 +166,16 @@ export async function generateObject<T extends z.ZodType>(
     hasToolkitUrl: !!TOOLKIT_URL,
     hasOpenAI: !!OPENAI_API_KEY,
     openAIKeyLength: OPENAI_API_KEY?.length || 0,
+    toolkitUrl: TOOLKIT_URL,
     timeout
   });
   
-  if (TOOLKIT_URL) {
+  console.log('✅ Using OpenAI directly - bypassing Rork Toolkit for stability');
+  
+  // Always use OpenAI directly for better reliability
+  if (OPENAI_API_KEY) {
     try {
-      console.log('🤖 Trying Rork Toolkit...');
-      const result = await withTimeout(
-        safeRorkGenerateObject(params),
-        timeout,
-        'Rork Toolkit request timed out'
-      );
-      console.log('✅ Rork Toolkit success');
-      console.log('🐛 Result sample:', JSON.stringify(result).substring(0, 200));
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('❌ Rork Toolkit failed:', errorMessage);
-      
-      if (errorMessage.includes('JSON Parse') || errorMessage.includes('Unexpected') || errorMessage.includes('invalid response')) {
-        console.error('⚠️ Rork Toolkit returned invalid response - falling back to OpenAI');
-      }
-      
-      if (OPENAI_API_KEY) {
-        try {
-          console.log('🔄 Falling back to OpenAI...');
-          const result = await withTimeout(
-            generateObjectWithOpenAI(params),
-            timeout,
-            'OpenAI request timed out'
-          );
-          console.log('✅ OpenAI fallback success');
-          console.log('🐛 Result sample:', JSON.stringify(result).substring(0, 200));
-          return result;
-        } catch (openaiError) {
-          console.error('❌ OpenAI fallback also failed:', openaiError);
-          throw openaiError;
-        }
-      } else {
-        console.error('❌ No OpenAI key available for fallback');
-        throw new Error('Both Rork Toolkit and OpenAI fallback unavailable');
-      }
-    }
-  } else if (OPENAI_API_KEY) {
-    try {
-      console.log('🤖 Using OpenAI directly (no toolkit URL)...');
+      console.log('🤖 Using OpenAI directly (reliable path)...');
       const result = await withTimeout(
         generateObjectWithOpenAI(params),
         timeout,
@@ -244,10 +188,10 @@ export async function generateObject<T extends z.ZodType>(
       console.error('❌ OpenAI failed:', error);
       throw error;
     }
-  } else {
-    console.error('❌ No AI service configured!');
-    throw new Error('No AI service configured (neither Rork Toolkit nor OpenAI)');
   }
+  
+  console.error('❌ No AI service configured!');
+  throw new Error('No AI service configured (OpenAI key not found)');
 }
 
 export async function generateText(params: GenerateTextParams | string): Promise<string> {
@@ -257,122 +201,57 @@ export async function generateText(params: GenerateTextParams | string): Promise
   
   const timeout = typeof params === 'object' ? (params.timeout || DEFAULT_TIMEOUT) : DEFAULT_TIMEOUT;
 
-  if (TOOLKIT_URL) {
-    try {
-      console.log('🤖 Trying Rork Toolkit text generation...');
-      const result = await withTimeout(
-        rorkGenerateText({ messages }),
-        timeout,
-        'Rork Toolkit text request timed out'
-      );
-      console.log('✅ Rork Toolkit text success');
-      return result;
-    } catch (error) {
-      console.log('⚠️ Rork Toolkit text failed:', error instanceof Error ? error.message : 'Unknown error');
-      
-      if (OPENAI_API_KEY) {
-        try {
-          const openaiMessages = messages.map(msg => ({
-            role: msg.role,
-            content: typeof msg.content === 'string' ? msg.content : 
-              msg.content.filter(p => p.type === 'text').map(p => (p as TextPart).text).join('\n')
-          }));
+  if (!OPENAI_API_KEY) {
+    throw new Error('No AI service configured (OpenAI key not found)');
+  }
 
-          const response = await withTimeout(
-            fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: openaiMessages,
-                temperature: 0.7,
-                max_tokens: 1000
-              })
-            }),
-            timeout,
-            'OpenAI text request timed out'
-          );
+  try {
+    console.log('🤖 Using OpenAI text directly...');
+    const openaiMessages = messages.map(msg => ({
+      role: msg.role,
+      content: typeof msg.content === 'string' ? msg.content : 
+        msg.content.filter(p => p.type === 'text').map(p => (p as TextPart).text).join('\n')
+    }));
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('OpenAI text API error:', response.status, errorText.substring(0, 200));
-            throw new Error(`OpenAI API error: ${response.status}`);
-          }
+    const response = await withTimeout(
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: openaiMessages,
+          temperature: 0.7,
+          max_tokens: 1000
+        })
+      }),
+      timeout,
+      'OpenAI text request timed out'
+    );
 
-          const responseText = await response.text();
-          let data;
-          try {
-            data = JSON.parse(responseText);
-          } catch (parseError) {
-            console.error('❌ Failed to parse OpenAI text response as JSON');
-            console.error('Response text:', responseText.substring(0, 500));
-            throw new Error('Invalid JSON response from OpenAI API');
-          }
-          const result = data.choices[0]?.message?.content || '';
-          console.log('✅ OpenAI text fallback success');
-          return result;
-        } catch (openaiError) {
-          console.error('❌ OpenAI text fallback failed:', openaiError);
-          throw openaiError;
-        }
-      } else {
-        throw new Error('Both Rork Toolkit and OpenAI fallback unavailable');
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI text API error:', response.status, errorText.substring(0, 200));
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
-  } else if (OPENAI_API_KEY) {
+
+    const responseText = await response.text();
+    let data;
     try {
-      console.log('🤖 Using OpenAI text directly...');
-      const openaiMessages = messages.map(msg => ({
-        role: msg.role,
-        content: typeof msg.content === 'string' ? msg.content : 
-          msg.content.filter(p => p.type === 'text').map(p => (p as TextPart).text).join('\n')
-      }));
-
-      const response = await withTimeout(
-        fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: openaiMessages,
-            temperature: 0.7,
-            max_tokens: 1000
-          })
-        }),
-        timeout,
-        'OpenAI text request timed out'
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OpenAI direct text API error:', response.status, errorText.substring(0, 200));
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const responseText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('❌ Failed to parse OpenAI direct text response as JSON');
-        console.error('Response text:', responseText.substring(0, 500));
-        throw new Error('Invalid JSON response from OpenAI API');
-      }
-      const result = data.choices[0]?.message?.content || '';
-      console.log('✅ OpenAI text success');
-      return result;
-    } catch (error) {
-      console.error('❌ OpenAI text failed:', error);
-      throw error;
+      data = JSON.parse(responseText);
+    } catch {
+      console.error('❌ Failed to parse OpenAI text response as JSON');
+      console.error('Response text:', responseText.substring(0, 500));
+      throw new Error('Invalid JSON response from OpenAI API');
     }
-  } else {
-    throw new Error('No AI service configured (neither Rork Toolkit nor OpenAI)');
+    const result = data.choices[0]?.message?.content || '';
+    console.log('✅ OpenAI text success');
+    return result;
+  } catch (error) {
+    console.error('❌ OpenAI text failed:', error);
+    throw error;
   }
 }
 
