@@ -29,9 +29,21 @@ export async function generateObject<T extends z.ZodType>(
     });
     
     console.log('✅ Rork Toolkit success');
+    console.log('📦 Result type:', typeof result);
+    
+    // Validate the result is an object, not a string
+    if (typeof result === 'string') {
+      console.error('❌ Rork returned string instead of object:', result.substring(0, 100));
+      throw new Error('Invalid response format: expected object, got string');
+    }
+    
     return result;
   } catch (error) {
     console.error('❌ Rork Toolkit failed:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     throw error;
   }
 }
@@ -49,9 +61,21 @@ export async function generateText(params: GenerateTextParams | string): Promise
     });
     
     console.log('✅ Rork Toolkit text success');
+    console.log('📦 Result length:', result?.length || 0);
+    
+    // Validate result is a string
+    if (typeof result !== 'string') {
+      console.error('❌ Rork returned non-string:', typeof result);
+      throw new Error('Invalid response format: expected string');
+    }
+    
     return result;
   } catch (error) {
     console.error('❌ Rork Toolkit text failed:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     throw error;
   }
 }
