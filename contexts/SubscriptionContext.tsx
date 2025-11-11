@@ -312,6 +312,13 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
               .eq('id', user.id);
             
             console.log('Premium status synced with backend');
+            
+            try {
+              await supabase.rpc('mark_referral_converted', { referred_user_uuid: user.id });
+              console.log('Referral conversion tracked');
+            } catch (referralError) {
+              console.error('Failed to track referral conversion:', referralError);
+            }
           } catch (backendError) {
             console.error('Failed to update backend subscription status:', backendError);
           }

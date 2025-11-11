@@ -28,6 +28,7 @@ import {
   Moon,
   Heart,
   Flower2,
+  Gift,
 } from "lucide-react-native";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -442,6 +443,22 @@ export default function ProfileScreen() {
                 ) : (
                   <Text style={styles.subscriptionStatus}>Free • Upgrade to Premium</Text>
                 )}
+              </View>
+              <ChevronRight color={palette.gold} size={22} strokeWidth={2.5} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => router.push('/referral-rewards')}
+              activeOpacity={0.7}
+              testID="referralRewardsBtn"
+            >
+              <View style={styles.settingIconContainer}>
+                <Gift color={palette.success} size={22} strokeWidth={2} />
+              </View>
+              <View style={styles.subscriptionInfo}>
+                <Text style={styles.settingText}>Earn Rewards</Text>
+                <Text style={styles.subscriptionStatus}>$1 per friend who subscribes</Text>
               </View>
               <ChevronRight color={palette.gold} size={22} strokeWidth={2.5} />
             </TouchableOpacity>
