@@ -16,7 +16,7 @@ interface GenerateTextParams {
   timeout?: number;
 }
 
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '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';
+const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 const TOOLKIT_URL = process.env.EXPO_PUBLIC_TOOLKIT_URL || 'https://toolkit.rork.com';
 const DEFAULT_TIMEOUT = 60000;
 
@@ -66,6 +66,9 @@ async function generateObjectWithOpenAI<T extends z.ZodType>(
 ): Promise<z.infer<T>> {
   if (!OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured');
+  }
+  if (!OPENAI_API_KEY.startsWith('sk-') || OPENAI_API_KEY.length < 40) {
+    throw new Error('Invalid OpenAI API key format');
   }
 
   console.log('🔄 Using OpenAI fallback...');
