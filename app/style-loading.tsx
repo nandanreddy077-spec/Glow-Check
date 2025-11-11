@@ -216,7 +216,12 @@ export default function StyleLoadingScreen() {
               {[0, 1, 2].map((index) => {
                 const orbit = orbitAnims[index].interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0, 360],
+                  outputRange: ['0deg', '360deg'],
+                });
+                
+                const orbitReverse = orbitAnims[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '-360deg'],
                 });
                 
                 return (
@@ -226,9 +231,9 @@ export default function StyleLoadingScreen() {
                       styles.orbitDot,
                       {
                         transform: [
-                          { rotate: orbit.interpolate(value => `${value}deg`) },
+                          { rotate: orbit },
                           { translateX: 80 + index * 20 },
-                          { rotate: orbit.interpolate(value => `${-value}deg`) },
+                          { rotate: orbitReverse },
                         ],
                       },
                     ]}
