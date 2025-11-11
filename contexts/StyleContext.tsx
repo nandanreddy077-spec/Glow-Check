@@ -20,7 +20,6 @@ const OCCASIONS = [
   { id: 'brunch', name: 'Brunch/Lunch', icon: '🥂' },
 ];
 
-// Zod schema for style analysis
 const StyleAnalysisSchema = z.object({
   overallScore: z.number(),
   vibe: z.string(),
@@ -118,7 +117,71 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
     }
   }, [analysisHistory]);
 
+  const createFallbackStyleAnalysis = (occasion: string) => {
+    return {
+      overallScore: 75,
+      vibe: 'Stylish and put-together',
+      colorAnalysis: {
+        dominantColors: ['Black', 'White', 'Blue'],
+        colorHarmony: 80,
+        seasonalMatch: 'Autumn',
+        recommendedColors: ['Navy', 'Burgundy', 'Cream']
+      },
+      outfitBreakdown: {
+        top: {
+          item: 'Casual top',
+          fit: 85,
+          color: 'Neutral',
+          style: 'Classic',
+          rating: 80,
+          feedback: 'Good fit and style choice'
+        },
+        bottom: {
+          item: 'Casual bottom',
+          fit: 80,
+          color: 'Neutral',
+          style: 'Classic',
+          rating: 75,
+          feedback: 'Complements the overall look'
+        },
+        accessories: {
+          jewelry: {
+            items: ['Watch', 'Ring'],
+            appropriateness: 85,
+            feedback: 'Well-chosen accessories'
+          },
+          shoes: {
+            style: 'Casual',
+            match: 80,
+            feedback: 'Good match for the outfit'
+          },
+          bag: {
+            style: 'Casual',
+            match: 75,
+            feedback: 'Functional and stylish'
+          }
+        }
+      },
+      occasionMatch: {
+        appropriateness: 85,
+        formalityLevel: 'Casual',
+        suggestions: ['Consider adding a statement piece', `Great for ${occasion.toLowerCase()}`]
+      },
+      bodyTypeRecommendations: {
+        strengths: ['Good proportions', 'Flattering fit'],
+        improvements: ['Try different silhouettes', 'Experiment with colors'],
+        stylesThatSuit: ['Classic', 'Casual', 'Smart casual']
+      },
+      overallFeedback: {
+        whatWorked: ['Good color coordination', 'Appropriate for occasion'],
+        improvements: ['Add more personality', 'Try bolder accessories'],
+        specificSuggestions: ['Consider layering', 'Experiment with textures']
+      }
+    };
+  };
+
   const analyzeOutfit = useCallback(async (imageUri: string, occasion: string): Promise<StyleAnalysisResult> => {
+    console.log('🎨 analyzeOutfit called with:', { imageUri: imageUri.substring(0, 50), occasion });
     setIsAnalyzing(true);
     
     try {
@@ -199,7 +262,6 @@ Respond in this exact JSON format:
   }
 }`;
 
-      // Convert image to base64 with comprehensive error handling
       let imageBase64: string;
       
       console.log('📸 Converting style image to base64:', imageUri.substring(0, 100));
@@ -214,13 +276,11 @@ Respond in this exact JSON format:
       } else if (Platform.OS !== 'web') {
         console.log('📱 Mobile platform - converting file URI to base64');
         
-        // Verify FileSystem is available
         if (!FileSystem || !FileSystem.readAsStringAsync) {
           console.error('❌ FileSystem API not available!');
           throw new Error('FileSystem module not loaded properly');
         }
         
-        // Check if file exists
         const fileInfo = await FileSystem.getInfoAsync(imageUri);
         console.log('📁 File info:', JSON.stringify(fileInfo));
         
@@ -243,7 +303,6 @@ Respond in this exact JSON format:
           throw new Error('Converted base64 is empty');
         }
       } else {
-        // Web platform - fetch and convert
         console.log('🌐 Web platform - fetching image');
         const response = await fetch(imageUri);
         
@@ -282,6 +341,7 @@ Respond in this exact JSON format:
       }
 
       const toolkitUrl = process.env['EXPO_PUBLIC_TOOLKIT_URL'];
+      console.log('🔧 Toolkit URL:', toolkitUrl);
       
       if (!toolkitUrl) {
         console.log('⚠️ Toolkit URL not configured, using fallback analysis');
@@ -296,13 +356,18 @@ Respond in this exact JSON format:
         
         setAnalysisResult(result);
         await saveAnalysisToHistory(result);
+        setIsAnalyzing(false);
         return result;
       }
 
       console.log('🤖 Sending style AI request with image length:', imageBase64?.length || 0);
+      console.log('⏱️ Starting AI analysis at:', new Date().toISOString());
+      
       let analysisData;
       try {
-        analysisData = await generateObject({
+        const startTime = Date.now();
+        
+        const analysisPromise = generateObject({
           messages: [
             {
               role: 'user',
@@ -321,10 +386,16 @@ Respond in this exact JSON format:
           schema: StyleAnalysisSchema
         });
         
-        console.log('✅ Style AI response received');
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('AI request timeout after 30s')), 30000);
+        });
+        
+        analysisData = await Promise.race([analysisPromise, timeoutPromise]) as z.infer<typeof StyleAnalysisSchema>;
+        
+        const endTime = Date.now();
+        console.log(`✅ Style AI response received in ${endTime - startTime}ms`);
         console.log('📊 Result type:', typeof analysisData);
         
-        // Validate the result structure
         if (!analysisData || typeof analysisData !== 'object') {
           console.error('❌ Invalid analysis data type:', typeof analysisData);
           throw new Error('Invalid analysis data');
@@ -336,6 +407,7 @@ Respond in this exact JSON format:
         }
       } catch (error) {
         console.log('🔄 AI API failed, using fallback analysis:', error);
+        console.log('⏱️ Fallback triggered at:', new Date().toISOString());
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),
@@ -347,9 +419,11 @@ Respond in this exact JSON format:
         
         setAnalysisResult(result);
         await saveAnalysisToHistory(result);
+        setIsAnalyzing(false);
         return result;
       }
 
+      console.log('✅ AI analysis successful, creating result object');
       const result: StyleAnalysisResult = {
         id: Date.now().toString(),
         image: imageUri,
@@ -360,11 +434,14 @@ Respond in this exact JSON format:
 
       setAnalysisResult(result);
       await saveAnalysisToHistory(result);
+      setIsAnalyzing(false);
       
+      console.log('✅ Style analysis complete, result saved');
       return result;
     } catch (error) {
-      console.error('Error analyzing outfit:', error);
-      // Create fallback analysis on any error
+      console.error('❌ Outer catch - Error analyzing outfit:', error);
+      console.log('⏱️ Error occurred at:', new Date().toISOString());
+      
       const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
       const result: StyleAnalysisResult = {
         id: Date.now().toString(),
@@ -376,75 +453,12 @@ Respond in this exact JSON format:
       
       setAnalysisResult(result);
       await saveAnalysisToHistory(result);
-      return result;
-    } finally {
       setIsAnalyzing(false);
+      
+      console.log('✅ Fallback result created and saved');
+      return result;
     }
   }, [saveAnalysisToHistory]);
-
-  // Helper function to create fallback style analysis
-  const createFallbackStyleAnalysis = (occasion: string) => {
-    return {
-      overallScore: 75,
-      vibe: 'Stylish and put-together',
-      colorAnalysis: {
-        dominantColors: ['Black', 'White', 'Blue'],
-        colorHarmony: 80,
-        seasonalMatch: 'Autumn',
-        recommendedColors: ['Navy', 'Burgundy', 'Cream']
-      },
-      outfitBreakdown: {
-        top: {
-          item: 'Casual top',
-          fit: 85,
-          color: 'Neutral',
-          style: 'Classic',
-          rating: 80,
-          feedback: 'Good fit and style choice'
-        },
-        bottom: {
-          item: 'Casual bottom',
-          fit: 80,
-          color: 'Neutral',
-          style: 'Classic',
-          rating: 75,
-          feedback: 'Complements the overall look'
-        },
-        accessories: {
-          jewelry: {
-            items: ['Watch', 'Ring'],
-            appropriateness: 85,
-            feedback: 'Well-chosen accessories'
-          },
-          shoes: {
-            style: 'Casual',
-            match: 80,
-            feedback: 'Good match for the outfit'
-          },
-          bag: {
-            style: 'Casual',
-            match: 75,
-            feedback: 'Functional and stylish'
-          }
-        }
-      },
-      occasionMatch: {
-        appropriateness: 85,
-        formalityLevel: 'Casual',
-        suggestions: ['Consider adding a statement piece', `Great for ${occasion.toLowerCase()}`]
-      },
-      bodyTypeRecommendations: {
-        strengths: ['Good proportions', 'Flattering fit'],
-        improvements: ['Try different silhouettes', 'Experiment with colors'],
-        stylesThatSuit: ['Classic', 'Casual', 'Smart casual']
-      },
-      overallFeedback: {
-        whatWorked: ['Good color coordination', 'Appropriate for occasion'],
-        improvements: ['Add more personality', 'Try bolder accessories'],
-        specificSuggestions: ['Consider layering', 'Experiment with textures']
-      }
-    };
-  };
 
   const resetAnalysis = useCallback(() => {
     setCurrentImage(null);
@@ -463,7 +477,5 @@ Respond in this exact JSON format:
     analysisHistory,
     analyzeOutfit,
     resetAnalysis
-    // Note: analyzeOutfit is intentionally excluded from deps to avoid circular dependency
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [currentImage, selectedOccasion, isAnalyzing, analysisResult, analysisHistory, resetAnalysis]);
+  }), [currentImage, selectedOccasion, isAnalyzing, analysisResult, analysisHistory, analyzeOutfit, resetAnalysis]);
 });

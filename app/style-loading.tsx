@@ -142,21 +142,18 @@ export default function StyleLoadingScreen() {
         await incrementStyleScan();
         console.log('✅ Style scan count incremented successfully');
         
-        // Set a timeout for the entire analysis process
-        const analysisPromise = analyzeOutfit(currentImage, selectedOccasionData?.name || selectedOccasion);
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Analysis timeout')), 20000);
-        });
-        
-        await Promise.race([analysisPromise, timeoutPromise]);
+        console.log('🎨 Starting outfit analysis...');
+        await analyzeOutfit(currentImage, selectedOccasionData?.name || selectedOccasion);
+        console.log('✅ Analysis completed successfully');
         
         if (isMounted) {
           router.replace('/style-results');
         }
       } catch (error) {
-        console.error('Style analysis failed:', error);
-        // Still navigate to results - fallback should have generated a result
+        console.error('❌ Style analysis error:', error);
+        // The analyzeOutfit function has built-in fallback, so we can still navigate
         if (isMounted) {
+          console.log('➡️ Navigating to results with fallback data');
           router.replace('/style-results');
         }
       }
