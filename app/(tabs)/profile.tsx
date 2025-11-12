@@ -29,11 +29,13 @@ import {
   Heart,
   Flower2,
   Gift,
+  Palette,
 } from "lucide-react-native";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAnalysis } from "@/contexts/AnalysisContext";
+import { useStyle } from "@/contexts/StyleContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import Logo from "@/components/Logo";
@@ -66,6 +68,7 @@ export default function ProfileScreen() {
   const { user: authUser, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { analysisHistory } = useAnalysis();
+  const { analysisHistory: styleHistory } = useStyle();
   const { state: subscriptionState, inTrial, daysLeft, scansLeft, setPremium, setSubscriptionData } = useSubscription();
   const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
@@ -222,16 +225,34 @@ export default function ProfileScreen() {
   }, [authUser?.email, user?.email]);
 
   const recentActivities = useMemo(() => {
-    return analysisHistory.slice(0, 3).map((analysis, index) => ({
+    const glowActivities = analysisHistory.map((analysis) => ({
       id: analysis.timestamp,
-      type: 'glow',
+      type: 'glow' as const,
       title: 'Glow Analysis',
       time: formatAnalysisTime(analysis.timestamp),
       score: Math.round(analysis.overallScore),
       icon: Camera,
       rating: analysis.rating,
+      timestamp: analysis.timestamp,
     }));
-  }, [analysisHistory]);
+
+    const styleActivities = styleHistory.map((analysis) => ({
+      id: analysis.timestamp.getTime(),
+      type: 'style' as const,
+      title: 'Style Check',
+      time: formatAnalysisTime(analysis.timestamp.getTime()),
+      score: Math.round(analysis.overallScore),
+      icon: Palette,
+      rating: analysis.vibe,
+      timestamp: analysis.timestamp.getTime(),
+    }));
+
+    const allActivities = [...glowActivities, ...styleActivities]
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 3);
+
+    return allActivities;
+  }, [analysisHistory, styleHistory]);
 
   const styles = useMemo(() => createStyles(palette), [palette]);
 
