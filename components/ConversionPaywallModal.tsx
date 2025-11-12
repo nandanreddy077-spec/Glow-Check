@@ -11,14 +11,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { X, Check, Sparkles, TrendingUp, Heart, Zap, Clock } from 'lucide-react-native';
+import { X, Check, Sparkles, TrendingUp } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
 import { 
   getConversionCopy, 
-  getTrialSpotsLeft,
-  getUpgradesThisWeek,
   getRandomTestimonial,
   premiumFeatures 
 } from '@/lib/conversion-helpers';
@@ -45,17 +43,7 @@ export default function ConversionPaywallModal({
   const gradient = getGradient(theme);
   const [scaleAnim] = useState(new Animated.Value(0.95));
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [trialSpotsLeft, setTrialSpotsLeft] = useState(getTrialSpotsLeft());
-  const [upgradesThisWeek, setUpgradesThisWeek] = useState(getUpgradesThisWeek());
   const [testimonial] = useState(getRandomTestimonial());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTrialSpotsLeft(getTrialSpotsLeft());
-      setUpgradesThisWeek(getUpgradesThisWeek());
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
   const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly');
 
   const conversionCopy = getConversionCopy(isFreeUser, isTrialUser, scansUsed);
@@ -165,13 +153,7 @@ export default function ConversionPaywallModal({
                 </View>
               </View>
 
-              {/* Urgency Banner */}
-              {isFreeUser && (
-                <View style={styles.urgencyBanner}>
-                  <Clock color="#FFF" size={18} strokeWidth={2.5} />
-                  <Text style={styles.urgencyText}>{conversionCopy.urgency}</Text>
-                </View>
-              )}
+
 
               {/* Premium Features */}
               <View style={styles.featuresSection}>
@@ -256,17 +238,7 @@ export default function ConversionPaywallModal({
                 </View>
               </View>
 
-              {/* Social Proof */}
-              <View style={styles.socialProofSection}>
-                <View style={styles.socialProofItem}>
-                  <Zap color={palette.gold} size={20} fill={palette.gold} strokeWidth={2.5} />
-                  <Text style={styles.socialProofText}>{trialSpotsLeft} trial spots left today</Text>
-                </View>
-                <View style={styles.socialProofItem}>
-                  <Heart color={palette.blush} size={20} fill={palette.blush} strokeWidth={2.5} />
-                  <Text style={styles.socialProofText}>{upgradesThisWeek.toLocaleString()} women upgraded this week</Text>
-                </View>
-              </View>
+
 
               {/* CTA Buttons */}
               <View style={styles.ctaSection}>

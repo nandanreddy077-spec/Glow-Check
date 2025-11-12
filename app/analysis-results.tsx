@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { Stack, router } from 'expo-router';
-import { Sparkles, Award, Crown, Share2, TrendingUp, Heart, Star, Gem, Clock, Zap } from 'lucide-react-native';
+import { Sparkles, Award, Crown, Share2, TrendingUp, Heart, Star, Gem, Zap } from 'lucide-react-native';
 import { useAnalysis } from '@/contexts/AnalysisContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useFreemium } from '@/contexts/FreemiumContext';
@@ -21,12 +21,12 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getPalette, getGradient, shadow } from '@/constants/theme';
 import BlurredContent from '@/components/BlurredContent';
 import TrialUpgradeModal from '@/components/TrialUpgradeModal';
-import CountdownTimer from '@/components/CountdownTimer';
+
 
 export default function AnalysisResultsScreen() {
   const { currentResult, analysisHistory } = useAnalysis();
   const { incrementScanCount } = useSubscription();
-  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeGlowScan, glowScansToday, showTrialUpgradeModal, setShowTrialUpgradeModal, resultsUnlockedUntil } = useFreemium();
+  const { isFreeUser, isTrialUser, isPaidUser, hasUsedFreeGlowScan, glowScansToday, showTrialUpgradeModal, setShowTrialUpgradeModal } = useFreemium();
   const { theme } = useTheme();
   const [revealedScore, setRevealedScore] = useState<number>(0);
   const [badge, setBadge] = useState<string>('');
@@ -207,9 +207,6 @@ export default function AnalysisResultsScreen() {
   // Note: The scan is incremented in analysis-loading.tsx before navigating here
   const shouldBlurContent = isFreeUser && glowScansToday > 1;
 
-  // Check if countdown should be shown (free users within 48-hour window)
-  const showCountdown = isFreeUser && resultsUnlockedUntil && glowScansToday === 1;
-
   const resultsContent = (
     <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap} testID="hero-wrap">
@@ -258,21 +255,7 @@ export default function AnalysisResultsScreen() {
               {streakProtected && <Text style={styles.streakProtect}>🛡️ Protected</Text>}
             </View>
 
-            {showCountdown && (
-              <View style={styles.urgencySection}>
-                <CountdownTimer 
-                  expiryTime={resultsUnlockedUntil}
-                  style={styles.countdownBanner}
-                />
-                <TouchableOpacity 
-                  style={styles.saveNowButton}
-                  onPress={() => router.push('/start-trial')}
-                  activeOpacity={0.9}
-                >
-                  <Text style={styles.saveNowButtonText}>Save Results Forever →</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+
           </LinearGradient>
         </View>
 
