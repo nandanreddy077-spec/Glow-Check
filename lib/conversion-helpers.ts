@@ -3,7 +3,36 @@
  * Based on female psychology and beauty app best practices
  */
 
-// Removed fake scarcity functions - these were manipulative dark patterns
+/**
+ * Generate dynamic scarcity numbers (realistic but attention-grabbing)
+ */
+export function getTrialSpotsLeft(): number {
+  const hour = new Date().getHours();
+  const baseSpots = 7;
+  const variation = Math.floor(Math.sin(hour) * 3);
+  return Math.max(3, Math.min(12, baseSpots + variation));
+}
+
+/**
+ * Generate social proof numbers (upgrades this week)
+ */
+export function getUpgradesThisWeek(): number {
+  const dayOfWeek = new Date().getDay();
+  const baseNumber = 12487;
+  const dailyIncrease = 1247;
+  return baseNumber + (dayOfWeek * dailyIncrease);
+}
+
+/**
+ * Generate active users count
+ */
+export function getActiveUsersCount(): number {
+  const hour = new Date().getHours();
+  const isPeakTime = hour >= 19 && hour <= 22;
+  const baseUsers = 47283;
+  const peakBonus = isPeakTime ? 3421 : 0;
+  return baseUsers + peakBonus;
+}
 
 /**
  * Generate testimonials for conversion optimization
@@ -138,24 +167,24 @@ export function getConversionCopy(
 ): ConversionCopy {
   if (isFreeUser && scansUsed === 0) {
     return {
-      heading: '✨ Discover Your Unique Beauty',
-      subheading: 'Start your personalized glow journey today',
+      heading: '🎁 Your Personal Glow Journey Awaits',
+      subheading: 'Join 50,000+ women discovering their unique beauty',
       cta: 'Start 7-Day Free Trial',
-      urgency: ''
+      urgency: 'Only 7 trial spots left today!'
     };
   } else if (isFreeUser && scansUsed >= 1) {
     return {
-      heading: '💫 Continue Your Glow Journey',
-      subheading: 'Get unlimited scans and track your progress over time',
-      cta: 'Start Free Trial',
-      urgency: ''
+      heading: '✨ Ready to Transform Your Glow?',
+      subheading: 'Join 50,000+ women tracking their beauty journey',
+      cta: 'Unlock Unlimited Access',
+      urgency: 'Don\'t lose your results! They expire in 72 hours'
     };
   } else if (isTrialUser) {
     return {
-      heading: '💎 Upgrade to Keep Your Progress',
-      subheading: 'Continue tracking your transformation',
+      heading: '💎 Keep Your Transformation Going',
+      subheading: 'Don\'t lose your progress, photos, and insights',
       cta: 'Upgrade to Premium',
-      urgency: ''
+      urgency: 'Your trial ends soon - Save your progress!'
     };
   }
 
@@ -173,28 +202,38 @@ export function getConversionCopy(
 export const premiumFeatures = [
   {
     icon: '📸',
-    title: 'Unlimited Skin Analysis',
-    description: 'Scan as many times as you want, track changes over time'
+    title: 'Unlimited AI Analysis',
+    description: 'Daily scans + track your glow score over time'
   },
   {
     icon: '✨',
-    title: 'Progress Tracking',
-    description: 'Visual timeline showing your skin improvements'
+    title: 'Progress Photo Timeline',
+    description: 'See your transformation with before/after tracking'
   },
   {
     icon: '🧠',
-    title: 'Personalized Recommendations',
-    description: 'Custom skincare advice based on your skin type'
+    title: 'Personal Beauty AI Coach',
+    description: 'Get daily personalized tips and advice'
   },
   {
-    icon: '📊',
-    title: 'Detailed Reports',
-    description: 'In-depth analysis of all skin metrics and trends'
+    icon: '👗',
+    title: 'Style Guide & Outfit AI',
+    description: 'Discover your aesthetic + AI outfit suggestions'
+  },
+  {
+    icon: '🔮',
+    title: 'Glow Forecast',
+    description: 'Predict your skin changes and prep ahead'
   },
   {
     icon: '💕',
-    title: 'Save Your History',
-    description: 'Keep all your scan results forever'
+    title: 'Supportive Community',
+    description: 'Join 50k+ women on their beauty journey'
+  },
+  {
+    icon: '📊',
+    title: 'Progress Tracking',
+    description: 'Track products, routines, and results'
   }
 ];
 
