@@ -391,6 +391,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 20. Function to get user referral stats
+-- Drop old version first if it exists
+DROP FUNCTION IF EXISTS get_user_referral_stats(uuid);
+
 CREATE OR REPLACE FUNCTION get_user_referral_stats(user_uuid UUID)
 RETURNS TABLE (
   referral_code TEXT,
@@ -428,6 +431,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 21. Function to get user referral history
+-- Drop old version first if it exists
+DROP FUNCTION IF EXISTS get_user_referral_history(uuid);
+
 CREATE OR REPLACE FUNCTION get_user_referral_history(user_uuid UUID)
 RETURNS TABLE (
   referral_id UUID,
