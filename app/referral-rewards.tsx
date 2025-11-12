@@ -58,7 +58,10 @@ export default function ReferralRewardsScreen() {
   const pendingEarnings = stats?.totalPending || 0;
   const totalEarnings = stats?.totalEarned || 0;
   const totalReferrals = stats?.totalReferrals || 0;
+  const activeReferrals = stats?.activeReferrals || 0;
   const conversions = stats?.totalConversions || 0;
+  const monthlyRecurringRevenue = stats?.monthlyRecurringRevenue || 0;
+  const lifetimeMonths = stats?.lifetimeMonthsPaid || 0;
 
   return (
     <View style={styles.container}>
@@ -95,7 +98,7 @@ export default function ReferralRewardsScreen() {
             <Text style={styles.heroTitle}>Share the Glow,</Text>
             <Text style={styles.heroTitle}>Earn Rewards</Text>
             <Text style={styles.heroSubtitle}>
-              Get $1 for every friend who subscribes
+              Earn $1/month for every active subscriber
             </Text>
 
             <View style={styles.statsGrid}>
@@ -105,12 +108,12 @@ export default function ReferralRewardsScreen() {
                   style={styles.statCardGradient}
                 >
                   <View style={styles.statIconWrapper}>
-                    <DollarSign size={24} color={palette.success} strokeWidth={2.5} />
+                    <TrendingUp size={24} color={palette.primary} strokeWidth={2.5} />
                   </View>
                   <Text style={styles.statValue}>
-                    ${totalEarnings.toFixed(2)}
+                    ${monthlyRecurringRevenue.toFixed(2)}/mo
                   </Text>
-                  <Text style={styles.statLabel}>Total Earned</Text>
+                  <Text style={styles.statLabel}>Monthly Revenue</Text>
                 </LinearGradient>
               </View>
 
@@ -122,24 +125,54 @@ export default function ReferralRewardsScreen() {
                   <View style={styles.statIconWrapper}>
                     <Users size={24} color={palette.info} strokeWidth={2.5} />
                   </View>
-                  <Text style={styles.statValue}>{totalReferrals}</Text>
-                  <Text style={styles.statLabel}>Friends Invited</Text>
+                  <Text style={styles.statValue}>{activeReferrals}</Text>
+                  <Text style={styles.statLabel}>Active Subscribers</Text>
                 </LinearGradient>
               </View>
             </View>
 
-            {pendingEarnings > 0 && (
+            <View style={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <LinearGradient
+                  colors={['#FFFFFF', '#F0FFF4']}
+                  style={styles.statCardGradient}
+                >
+                  <View style={styles.statIconWrapper}>
+                    <DollarSign size={24} color={palette.success} strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.statValue}>
+                    ${totalEarnings.toFixed(2)}
+                  </Text>
+                  <Text style={styles.statLabel}>Lifetime Earnings</Text>
+                </LinearGradient>
+              </View>
+
+              <View style={styles.statCard}>
+                <LinearGradient
+                  colors={['#FFFFFF', '#FFF0F5']}
+                  style={styles.statCardGradient}
+                >
+                  <View style={styles.statIconWrapper}>
+                    <Sparkles size={24} color={palette.rose} strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.statValue}>{lifetimeMonths}</Text>
+                  <Text style={styles.statLabel}>Total Months Paid</Text>
+                </LinearGradient>
+              </View>
+            </View>
+
+            {activeReferrals > 0 && (
               <View style={styles.pendingCard}>
                 <LinearGradient
-                  colors={[palette.warning, '#FFE6B3']}
+                  colors={['#E6F9F0', '#DAFFF0']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.pendingGradient}
                 >
-                  <Sparkles size={20} color={palette.textPrimary} />
+                  <Sparkles size={20} color={palette.success} />
                   <Text style={styles.pendingText}>
-                    ${pendingEarnings.toFixed(2)} pending from {conversions}{' '}
-                    {conversions === 1 ? 'conversion' : 'conversions'}!
+                    💰 You're earning ${monthlyRecurringRevenue.toFixed(2)}/month from {activeReferrals}{' '}
+                    {activeReferrals === 1 ? 'active subscriber' : 'active subscribers'}!
                   </Text>
                 </LinearGradient>
               </View>
@@ -249,9 +282,9 @@ export default function ReferralRewardsScreen() {
                   <Text style={styles.stepNumberText}>3</Text>
                 </View>
                 <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>Earn $1</Text>
+                  <Text style={styles.stepTitle}>Earn $1/Month</Text>
                   <Text style={styles.stepDescription}>
-                    Get $1 for every successful referral - it&apos;s that simple!
+                    Get $1 every month while they stay subscribed - recurring income!
                   </Text>
                 </View>
               </View>
@@ -295,16 +328,16 @@ export default function ReferralRewardsScreen() {
                       <Text
                         style={[
                           styles.historyReward,
-                          item.status === 'converted' && styles.historyRewardActive,
+                          item.status === 'active' && styles.historyRewardActive,
                         ]}
                       >
-                        ${item.rewardAmount.toFixed(2)}
+                        ${item.totalEarned.toFixed(2)}
                       </Text>
                       <Text style={styles.historyStatusText}>
-                        {item.status === 'converted'
-                          ? '✓ Earned'
-                          : item.status === 'paid'
-                          ? '✓ Paid'
+                        {item.status === 'active'
+                          ? `✓ ${item.totalMonthsPaid} ${item.totalMonthsPaid === 1 ? 'month' : 'months'}`
+                          : item.status === 'inactive' || item.status === 'cancelled'
+                          ? `Ended (${item.totalMonthsPaid}mo)`
                           : 'Pending'}
                       </Text>
                     </View>

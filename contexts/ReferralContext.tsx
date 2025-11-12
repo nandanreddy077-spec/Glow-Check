@@ -67,10 +67,13 @@ export const [ReferralProvider, useReferral] = createContextHook<ReferralContext
           setStats({
             referralCode: codeData.code,
             totalReferrals: 0,
+            activeReferrals: 0,
             totalConversions: 0,
             totalEarned: 0,
             totalPending: 0,
             totalPaidOut: 0,
+            monthlyRecurringRevenue: 0,
+            lifetimeMonthsPaid: 0,
             conversionRate: 0,
           });
         } else {
@@ -82,10 +85,13 @@ export const [ReferralProvider, useReferral] = createContextHook<ReferralContext
             setStats({
               referralCode: newCode,
               totalReferrals: 0,
+              activeReferrals: 0,
               totalConversions: 0,
               totalEarned: 0,
               totalPending: 0,
               totalPaidOut: 0,
+              monthlyRecurringRevenue: 0,
+              lifetimeMonthsPaid: 0,
               conversionRate: 0,
             });
           }
@@ -96,10 +102,13 @@ export const [ReferralProvider, useReferral] = createContextHook<ReferralContext
         setStats({
           referralCode: stat.referral_code,
           totalReferrals: Number(stat.total_referrals),
+          activeReferrals: Number(stat.active_referrals || 0),
           totalConversions: Number(stat.total_conversions),
           totalEarned: Number(stat.total_earned),
           totalPending: Number(stat.total_pending),
           totalPaidOut: Number(stat.total_paid_out),
+          monthlyRecurringRevenue: Number(stat.monthly_recurring_revenue || 0),
+          lifetimeMonthsPaid: Number(stat.lifetime_months_paid || 0),
           conversionRate: Number(stat.conversion_rate),
         });
       }
@@ -114,9 +123,13 @@ export const [ReferralProvider, useReferral] = createContextHook<ReferralContext
           referralId: item.referral_id,
           referredUserEmail: item.referred_user_email,
           status: item.status,
-          rewardAmount: Number(item.reward_amount),
+          subscriptionStatus: item.subscription_status,
+          monthlyRewardAmount: Number(item.monthly_reward_amount || 1),
+          totalEarned: Number(item.total_earned || 0),
+          totalMonthsPaid: Number(item.total_months_paid || 0),
           createdAt: item.created_at,
           convertedAt: item.converted_at,
+          lastPaymentDate: item.last_payment_date,
         })));
       }
     } catch (err) {
@@ -134,7 +147,7 @@ export const [ReferralProvider, useReferral] = createContextHook<ReferralContext
   const shareReferralLink = useCallback(async () => {
     if (!referralLink || !referralCode) return;
 
-    const message = `Join me on Lumyn - Your AI Beauty & Style Coach! Get personalized skincare routines and style advice. Use my code ${referralCode} to start your glow journey! ${referralLink}`;
+    const message = `Join me on Lumyn - Your AI Beauty & Style Coach! Get personalized skincare routines and style advice. Use my code ${referralCode} and I'll earn $1/month while you transform your beauty routine! ${referralLink}`;
 
     try {
       if (Platform.OS === 'web') {
