@@ -421,11 +421,22 @@ Respond with ONLY this exact JSON format:
       console.log('🤖 Sending style AI request with image length:', imageBase64?.length || 0);
       console.log('⏱️ Starting AI analysis at:', new Date().toISOString());
       
+      // Validate image data before sending
+      if (!imageBase64 || imageBase64.length === 0) {
+        console.error('❌ Empty base64 image data');
+        throw new Error('Empty image data');
+      }
+      
+      if (imageBase64.length > 10 * 1024 * 1024) {
+        console.warn('⚠️ Large image detected:', imageBase64.length, 'bytes');
+      }
+      
       let analysisData;
       try {
         const startTime = Date.now();
+        console.log('🔄 Calling generateObject with timeout...');
         
-        const analysisPromise = generateObject({
+        analysisData = await generateObject({
           messages: [
             {
               role: 'user',
@@ -441,31 +452,37 @@ Respond with ONLY this exact JSON format:
               ]
             }
           ],
-          schema: StyleAnalysisSchema
-        });
-        
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('AI request timeout after 30s')), 30000);
-        });
-        
-        analysisData = await Promise.race([analysisPromise, timeoutPromise]) as z.infer<typeof StyleAnalysisSchema>;
+          schema: StyleAnalysisSchema,
+          timeout: 40000
+        }) as z.infer<typeof StyleAnalysisSchema>;
         
         const endTime = Date.now();
         console.log(`✅ Style AI response received in ${endTime - startTime}ms`);
         console.log('📊 Result type:', typeof analysisData);
+        console.log('📊 Result keys:', analysisData ? Object.keys(analysisData).join(', ') : 'null');
         
         if (!analysisData || typeof analysisData !== 'object') {
           console.error('❌ Invalid analysis data type:', typeof analysisData);
-          throw new Error('Invalid analysis data');
+          throw new Error('Invalid analysis data: expected object, got ' + typeof analysisData);
         }
         
         if (!analysisData.outfitBreakdown || !analysisData.colorAnalysis) {
           console.error('❌ Missing required fields in analysis data');
+          console.error('Available keys:', Object.keys(analysisData));
           throw new Error('Incomplete analysis data');
         }
+        
+        console.log('✅ Analysis data validated successfully');
       } catch (error) {
-        console.log('🔄 AI API failed, using fallback analysis:', error);
+        console.error('❌ AI API error:', error);
+        if (error instanceof Error) {
+          console.error('Error name:', error.name);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
+        console.log('🔄 Using fallback analysis');
         console.log('⏱️ Fallback triggered at:', new Date().toISOString());
+        
         const fallbackAnalysis = createFallbackStyleAnalysis(occasion);
         const result: StyleAnalysisResult = {
           id: Date.now().toString(),

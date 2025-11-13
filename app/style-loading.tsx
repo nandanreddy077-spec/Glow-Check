@@ -130,22 +130,25 @@ export default function StyleLoadingScreen() {
 
   useEffect(() => {
     let isMounted = true;
-    let isAnalyzing = false;
+    let analysisStarted = false;
     
     const performAnalysis = async () => {
       if (!currentImage || !selectedOccasion) {
         console.log('❌ Missing required data:', { hasImage: !!currentImage, hasOccasion: !!selectedOccasion });
-        router.replace('/style-check');
+        if (isMounted) {
+          router.replace('/style-check');
+        }
         return;
       }
 
-      if (isAnalyzing) {
+      if (analysisStarted) {
         console.log('⚠️ Analysis already in progress, skipping...');
         return;
       }
 
-      isAnalyzing = true;
+      analysisStarted = true;
       console.log('🚀 Starting style analysis flow...');
+      console.log('🕒 Timestamp:', new Date().toISOString());
 
       try {
         console.log('🔢 Step 1: Incrementing style scan count...');
@@ -153,11 +156,29 @@ export default function StyleLoadingScreen() {
         console.log('✅ Style scan count incremented');
         
         console.log('🎨 Step 2: Analyzing outfit...');
-        console.log('📸 Image URI:', currentImage?.substring(0, 100));
+        console.log('📸 Image URI length:', currentImage.length);
+        console.log('📸 Image URI type:', currentImage.startsWith('data:') ? 'base64' : currentImage.startsWith('file://') ? 'file' : 'unknown');
         console.log('🎯 Occasion:', selectedOccasionData?.name || selectedOccasion);
         
+        if (!isMounted) {
+          console.log('⚠️ Component unmounted before analysis');
+          return;
+        }
+        
         const result = await analyzeOutfit(currentImage, selectedOccasionData?.name || selectedOccasion);
-        console.log('✅ Analysis result received:', { hasResult: !!result, score: result?.overallScore });
+        console.log('✅ Analysis result received:', { 
+          hasResult: !!result, 
+          score: result?.overallScore,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (!isMounted) {
+          console.log('⚠️ Component unmounted after analysis');
+          return;
+        }
+        
+        // Add a small delay to ensure the result is fully set
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         if (isMounted) {
           console.log('✅ Navigating to style results...');
@@ -166,22 +187,29 @@ export default function StyleLoadingScreen() {
       } catch (error) {
         console.error('❌ Style analysis error:', error);
         if (error instanceof Error) {
-          console.error('Error details:', error.message, error.stack);
+          console.error('Error name:', error.name);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
         }
         
-        if (isMounted) {
-          console.log('➡️ Attempting navigation despite error...');
-          setTimeout(() => {
-            if (isMounted) {
-              router.replace('/style-results');
-            }
-          }, 1000);
+        if (!isMounted) {
+          console.log('⚠️ Component unmounted during error handling');
+          return;
         }
+        
+        // Give it more time before navigating on error
+        console.log('➡️ Attempting navigation despite error in 2 seconds...');
+        setTimeout(() => {
+          if (isMounted) {
+            router.replace('/style-results');
+          }
+        }, 2000);
       }
     };
 
-    console.log('⏱️ Scheduling analysis in 1 second...');
-    const timer = setTimeout(performAnalysis, 1000);
+    console.log('⏱️ Scheduling analysis in 800ms...');
+    const timer = setTimeout(performAnalysis, 800);
+    
     return () => {
       console.log('🧹 Cleaning up style loading screen...');
       isMounted = false;
