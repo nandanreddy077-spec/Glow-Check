@@ -130,37 +130,60 @@ export default function StyleLoadingScreen() {
 
   useEffect(() => {
     let isMounted = true;
+    let isAnalyzing = false;
     
     const performAnalysis = async () => {
       if (!currentImage || !selectedOccasion) {
+        console.log('❌ Missing required data:', { hasImage: !!currentImage, hasOccasion: !!selectedOccasion });
         router.replace('/style-check');
         return;
       }
 
+      if (isAnalyzing) {
+        console.log('⚠️ Analysis already in progress, skipping...');
+        return;
+      }
+
+      isAnalyzing = true;
+      console.log('🚀 Starting style analysis flow...');
+
       try {
-        console.log('🔢 Incrementing style scan count...');
+        console.log('🔢 Step 1: Incrementing style scan count...');
         await incrementStyleScan();
-        console.log('✅ Style scan count incremented successfully');
+        console.log('✅ Style scan count incremented');
         
-        console.log('🎨 Starting outfit analysis...');
-        await analyzeOutfit(currentImage, selectedOccasionData?.name || selectedOccasion);
-        console.log('✅ Analysis completed successfully');
+        console.log('🎨 Step 2: Analyzing outfit...');
+        console.log('📸 Image URI:', currentImage?.substring(0, 100));
+        console.log('🎯 Occasion:', selectedOccasionData?.name || selectedOccasion);
+        
+        const result = await analyzeOutfit(currentImage, selectedOccasionData?.name || selectedOccasion);
+        console.log('✅ Analysis result received:', { hasResult: !!result, score: result?.overallScore });
         
         if (isMounted) {
+          console.log('✅ Navigating to style results...');
           router.replace('/style-results');
         }
       } catch (error) {
         console.error('❌ Style analysis error:', error);
-        // The analyzeOutfit function has built-in fallback, so we can still navigate
+        if (error instanceof Error) {
+          console.error('Error details:', error.message, error.stack);
+        }
+        
         if (isMounted) {
-          console.log('➡️ Navigating to results with fallback data');
-          router.replace('/style-results');
+          console.log('➡️ Attempting navigation despite error...');
+          setTimeout(() => {
+            if (isMounted) {
+              router.replace('/style-results');
+            }
+          }, 1000);
         }
       }
     };
 
-    const timer = setTimeout(performAnalysis, 2000);
+    console.log('⏱️ Scheduling analysis in 1 second...');
+    const timer = setTimeout(performAnalysis, 1000);
     return () => {
+      console.log('🧹 Cleaning up style loading screen...');
       isMounted = false;
       clearTimeout(timer);
     };

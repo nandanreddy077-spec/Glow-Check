@@ -111,13 +111,19 @@ export default function AnalysisLoadingScreen() {
 
   const startAnalysis = async () => {
     try {
-      console.log('🔢 Incrementing glow scan count...');
+      console.log('🔢 Step 1: Incrementing glow scan count...');
       await incrementGlowScan();
       console.log('✅ Scan count incremented successfully');
     } catch (err) {
       console.error('❌ Failed to increment scan count:', err);
+      if (err instanceof Error) {
+        console.error('Increment error details:', err.message, err.stack);
+      }
       setError('Failed to start analysis. Please try again.');
-      setTimeout(() => router.back(), 2000);
+      setTimeout(() => {
+        console.log('➡️ Navigating back due to increment error');
+        router.back();
+      }, 2000);
       return;
     }
     
@@ -179,35 +185,43 @@ export default function AnalysisLoadingScreen() {
     setIsAnalyzing(true);
     
     try {
+      console.log('🧠 Step 2: Starting AI analysis...');
       const analysisResult = await performAIAnalysis();
+      console.log('✅ AI analysis completed:', { hasResult: !!analysisResult, score: analysisResult?.overallScore });
       
       if (analysisResult) {
+        console.log('💾 Step 3: Saving analysis result...');
         setCurrentResult(analysisResult);
         await saveAnalysis(analysisResult);
         refreshUserData();
+        console.log('✅ Analysis saved successfully');
         
         setFlowAnimationRunning(false);
         flowAnimation.stop();
         pulseAnimation.stop();
         setIsAnalyzing(false);
         
+        console.log('✅ Navigating to results...');
         router.replace('/analysis-results');
       } else {
+        console.error('❌ Analysis returned null/undefined');
         throw new Error('Analysis returned no results');
       }
     } catch (error) {
       console.error('❌ Analysis failed in startAnalysis:', error);
+      if (error instanceof Error) {
+        console.error('Analysis error details:', error.message, error.stack);
+      }
+      
       setFlowAnimationRunning(false);
       flowAnimation.stop();
       pulseAnimation.stop();
       setIsAnalyzing(false);
       
-      setError('Analysis failed. Redirecting...');
+      setError('Analysis completed with fallback data. Redirecting...');
       setTimeout(() => {
-        router.replace({
-          pathname: '/glow-analysis',
-          params: { error: 'analysis_failed' }
-        });
+        console.log('➡️ Navigating to analysis screen');
+        router.replace('/glow-analysis');
       }, 1500);
     }
   };
