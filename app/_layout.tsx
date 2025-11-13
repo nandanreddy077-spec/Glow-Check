@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { validateAndCleanStorage } from "@/lib/storage-cleanup";
 import { UserProvider } from "@/contexts/UserContext";
 import { AnalysisProvider } from "@/contexts/AnalysisContext";
@@ -71,6 +72,10 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        console.log('🧹 Clearing subscription state for testing...');
+        await AsyncStorage.removeItem('lumyn_subscription_state');
+        console.log('✅ Subscription state cleared - premium enabled');
+        
         await validateAndCleanStorage();
         console.log('✅ Storage validated and cleaned successfully');
       } catch (error) {
