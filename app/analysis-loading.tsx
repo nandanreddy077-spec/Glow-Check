@@ -702,7 +702,7 @@ Respond with ONLY this exact JSON structure:
       const analysisResult = await generateObject({
         messages: messages,
         schema: analysisSchema,
-        timeout: 60000
+        timeout: 120000
       });
       
       console.log('✅ AI analysis completed successfully!');

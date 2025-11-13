@@ -30,7 +30,7 @@ export async function generateObject<T extends z.ZodType>(
   }));
   
   try {
-    const timeoutMs = params.timeout || 60000;
+    const timeoutMs = params.timeout || 120000;
     console.log(`⏱️ Setting timeout to ${timeoutMs}ms`);
     
     const resultPromise = rorkGenerateObject({
@@ -50,34 +50,46 @@ export async function generateObject<T extends z.ZodType>(
     
     console.log('✅ Rork Toolkit success');
     console.log('📦 Result type:', typeof result);
-    console.log('📦 Result keys:', result ? Object.keys(result).join(', ') : 'null');
     
-    // Validate the result is an object, not a string
+    if (!result) {
+      console.error('❌ Received null/undefined result');
+      throw new Error('AI returned null or undefined');
+    }
+    
     if (typeof result === 'string') {
-      console.error('❌ Rork returned string instead of object:', result.substring(0, 100));
+      console.error('❌ Rork returned string instead of object');
       console.log('🔄 Attempting to parse string as JSON...');
       try {
-        const parsed = JSON.parse(result);
-        console.log('✅ Successfully parsed string to object');
-        return parsed;
+        const cleaned = result.trim();
+        if (cleaned.startsWith('{') || cleaned.startsWith('[')) {
+          const parsed = JSON.parse(cleaned);
+          console.log('✅ Successfully parsed JSON string');
+          console.log('📦 Parsed keys:', Object.keys(parsed).join(', '));
+          return parsed;
+        } else {
+          console.error('❌ String does not look like JSON:', cleaned.substring(0, 200));
+          throw new Error('Response is not valid JSON');
+        }
       } catch (parseError) {
-        console.error('❌ Failed to parse string as JSON:', parseError);
-        throw new Error('Invalid response format: expected object, got unparseable string');
+        console.error('❌ Failed to parse JSON:', parseError);
+        console.error('Raw response (first 500 chars):', result.substring(0, 500));
+        throw new Error('Invalid response format: could not parse JSON');
       }
     }
     
-    if (!result || typeof result !== 'object') {
-      console.error('❌ Invalid result:', result);
+    if (typeof result !== 'object') {
+      console.error('❌ Invalid result type:', typeof result);
       throw new Error('Invalid response: expected object, got ' + typeof result);
     }
     
+    console.log('📦 Result keys:', Object.keys(result).join(', '));
     return result;
   } catch (error) {
     console.error('❌ Rork Toolkit failed:', error);
     if (error instanceof Error) {
       console.error('Error name:', error.name);
       console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+      console.error('Error stack:', error.stack?.substring(0, 500));
     }
     throw error;
   }
