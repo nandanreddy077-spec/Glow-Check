@@ -28,14 +28,11 @@ import {
   Moon,
   Heart,
   Flower2,
-  Gift,
-  Palette,
 } from "lucide-react-native";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAnalysis } from "@/contexts/AnalysisContext";
-import { useStyle } from "@/contexts/StyleContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import Logo from "@/components/Logo";
@@ -68,7 +65,6 @@ export default function ProfileScreen() {
   const { user: authUser, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { analysisHistory } = useAnalysis();
-  const { analysisHistory: styleHistory } = useStyle();
   const { state: subscriptionState, inTrial, daysLeft, scansLeft, setPremium, setSubscriptionData } = useSubscription();
   const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
@@ -225,34 +221,16 @@ export default function ProfileScreen() {
   }, [authUser?.email, user?.email]);
 
   const recentActivities = useMemo(() => {
-    const glowActivities = analysisHistory.map((analysis) => ({
+    return analysisHistory.slice(0, 3).map((analysis, index) => ({
       id: analysis.timestamp,
-      type: 'glow' as const,
+      type: 'glow',
       title: 'Glow Analysis',
       time: formatAnalysisTime(analysis.timestamp),
       score: Math.round(analysis.overallScore),
       icon: Camera,
       rating: analysis.rating,
-      timestamp: analysis.timestamp,
     }));
-
-    const styleActivities = styleHistory.map((analysis) => ({
-      id: analysis.timestamp.getTime(),
-      type: 'style' as const,
-      title: 'Style Check',
-      time: formatAnalysisTime(analysis.timestamp.getTime()),
-      score: Math.round(analysis.overallScore),
-      icon: Palette,
-      rating: analysis.vibe,
-      timestamp: analysis.timestamp.getTime(),
-    }));
-
-    const allActivities = [...glowActivities, ...styleActivities]
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 3);
-
-    return allActivities;
-  }, [analysisHistory, styleHistory]);
+  }, [analysisHistory]);
 
   const styles = useMemo(() => createStyles(palette), [palette]);
 
@@ -464,22 +442,6 @@ export default function ProfileScreen() {
                 ) : (
                   <Text style={styles.subscriptionStatus}>Free • Upgrade to Premium</Text>
                 )}
-              </View>
-              <ChevronRight color={palette.gold} size={22} strokeWidth={2.5} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={() => router.push('/referral-rewards')}
-              activeOpacity={0.7}
-              testID="referralRewardsBtn"
-            >
-              <View style={styles.settingIconContainer}>
-                <Gift color={palette.success} size={22} strokeWidth={2} />
-              </View>
-              <View style={styles.subscriptionInfo}>
-                <Text style={styles.settingText}>Earn Rewards</Text>
-                <Text style={styles.subscriptionStatus}>$1 per friend who subscribes</Text>
               </View>
               <ChevronRight color={palette.gold} size={22} strokeWidth={2.5} />
             </TouchableOpacity>

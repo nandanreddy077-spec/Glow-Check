@@ -19,7 +19,6 @@ import { ProductTrackingProvider } from "@/contexts/ProductTrackingContext";
 import { SeasonalAdvisorProvider } from "@/contexts/SeasonalAdvisorContext";
 import { GlowForecastContext as GlowForecastProvider } from "@/contexts/GlowForecastContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-import { ReferralProvider } from "@/contexts/ReferralContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 
@@ -62,7 +61,6 @@ function RootLayoutNav() {
       <Stack.Screen name="progress-tracker" options={{ headerShown: false }} />
       <Stack.Screen name="product-library" options={{ headerShown: false }} />
       <Stack.Screen name="premium-unlock" options={{ headerShown: true, headerBackTitle: "Back" }} />
-      <Stack.Screen name="referral-rewards" options={{ headerShown: true, headerBackTitle: "Back" }} />
     </Stack>
   );
 }
@@ -90,13 +88,12 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
             <AuthProvider>
-              <ReferralProvider>
-                <UserProvider>
-                  <GamificationProvider>
-                    <AnalysisProvider>
-                      <SkincareProvider>
-                        <StyleProvider>
-                          <SubscriptionProvider>
+              <UserProvider>
+                <GamificationProvider>
+                  <AnalysisProvider>
+                    <SkincareProvider>
+                      <StyleProvider>
+                        <SubscriptionProvider>
                           <FreemiumProvider>
                             <NotificationProvider>
                               <ProgressTrackingProvider>
@@ -121,7 +118,6 @@ export default function RootLayout() {
                   </AnalysisProvider>
                 </GamificationProvider>
               </UserProvider>
-              </ReferralProvider>
             </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
