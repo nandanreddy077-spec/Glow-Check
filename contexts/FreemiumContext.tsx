@@ -55,35 +55,6 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   const [usageTracking, setUsageTracking] = useState<UsageTracking>({ glow_analysis: 0, style_analysis: 0, last_reset_date: new Date().toISOString().split('T')[0] });
   const [showTrialUpgradeModal, setShowTrialUpgradeModal] = useState<boolean>(false);
 
-  const noop = useCallback(async () => {}, []);
-
-  const freemiumDisabled =
-    (process.env.EXPO_PUBLIC_ENABLE_FREEMIUM ?? 'false').toLowerCase() === 'false';
-
-  if (freemiumDisabled) {
-    return useMemo(() => ({
-      canScanGlow: true,
-      canScanStyle: true,
-      glowScansLeft: Infinity,
-      styleScansLeft: Infinity,
-      isFreemiumUser: !subState.isPremium,
-      isFreeUser: !subState.isPremium,
-      isTrialUser: false,
-      isPaidUser: subState.isPremium,
-      hasUsedFreeGlowScan: false,
-      hasUsedFreeStyleScan: false,
-      glowScansToday: 0,
-      styleScansToday: 0,
-      incrementGlowScan: noop,
-      incrementStyleScan: noop,
-      refreshUsage: noop,
-      showTrialUpgradeModal: false,
-      setShowTrialUpgradeModal: () => {},
-      resultsUnlockedUntil: null,
-      canAccessGlowForecast: subState.isPremium,
-    }), [subState.isPremium, noop]);
-  }
-
   const isFreeUser = useMemo(() => {
     return !subState.isPremium && !subState.hasStartedTrial;
   }, [subState.isPremium, subState.hasStartedTrial]);

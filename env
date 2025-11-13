@@ -18,7 +18,6 @@ EXPO_PUBLIC_GOOGLE_PLAY_PACKAGE_NAME=com.glowcheck01.app
 EXPO_PUBLIC_TOOLKIT_URL=https://toolkit.rork.com
 
 # OpenAI API Key (for AI features)
-EXPO_PUBLIC_OPENAI_API_KEY=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
-
-# Freemium Configuration (temporary bypass while Supabase freemium tables are being set up)
-EXPO_PUBLIC_ENABLE_FREEMIUM=false
+# IMPORTANT: Replace with a valid OpenAI API key from https://platform.openai.com/api-keys
+# Current key format appears invalid - please generate a new one
+EXPO_PUBLIC_OPENAI_API_KEY=
