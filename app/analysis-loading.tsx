@@ -281,7 +281,10 @@ export default function AnalysisLoadingScreen() {
       });
       
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Analysis timeout')), 40000);
+        setTimeout(() => {
+          console.error('⏰ Analysis hard timeout after 70 seconds');
+          reject(new Error('Analysis timeout'));
+        }, 70000);
       });
       
       const analysisData = await Promise.race([analysisPromise, timeoutPromise]).catch(error => {
@@ -478,7 +481,10 @@ export default function AnalysisLoadingScreen() {
           right: rightVisionData
         });
         const aiTimeout = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('AI analysis timeout')), 35000);
+          setTimeout(() => {
+            console.error('⏰ AI analysis timeout after 65 seconds');
+            reject(new Error('AI analysis timeout'));
+          }, 65000);
         });
         dermatologyData = await Promise.race([aiPromise, aiTimeout]);
       } catch (aiError) {
@@ -696,7 +702,7 @@ Respond with ONLY this exact JSON structure:
       const analysisResult = await generateObject({
         messages: messages,
         schema: analysisSchema,
-        timeout: 40000
+        timeout: 60000
       });
       
       console.log('✅ AI analysis completed successfully!');

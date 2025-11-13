@@ -30,7 +30,7 @@ export async function generateObject<T extends z.ZodType>(
   }));
   
   try {
-    const timeoutMs = params.timeout || 45000;
+    const timeoutMs = params.timeout || 60000;
     console.log(`⏱️ Setting timeout to ${timeoutMs}ms`);
     
     const resultPromise = rorkGenerateObject({
@@ -40,10 +40,12 @@ export async function generateObject<T extends z.ZodType>(
     
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
+        console.error(`⏰ AI request timeout after ${timeoutMs}ms`);
         reject(new Error(`AI request timeout after ${timeoutMs}ms`));
       }, timeoutMs);
     });
     
+    console.log('⏳ Waiting for AI response...');
     const result = await Promise.race([resultPromise, timeoutPromise]);
     
     console.log('✅ Rork Toolkit success');

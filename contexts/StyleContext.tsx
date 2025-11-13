@@ -453,7 +453,7 @@ Respond with ONLY this exact JSON format:
             }
           ],
           schema: StyleAnalysisSchema,
-          timeout: 40000
+          timeout: 60000
         }) as z.infer<typeof StyleAnalysisSchema>;
         
         const endTime = Date.now();
