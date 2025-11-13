@@ -578,58 +578,104 @@ export default function AnalysisLoadingScreen() {
       }
 
       const analysisType = images.isMultiAngle ? 'multi-angle professional' : 'single-angle';
-      const prompt = `You are a board-certified dermatologist and facial aesthetics expert with 20+ years of experience. Perform a ${analysisType} comprehensive facial analysis using the provided Google Vision data.
+      
+      // Enhanced prompt that produces more accurate and impressive results
+      const prompt = `You are an elite dermatologist and facial aesthetics expert featured in Vogue and trusted by celebrities. Analyze this facial image with exceptional precision.
 
-${images.isMultiAngle ? 'MULTI-ANGLE ANALYSIS DATA:' : 'SINGLE-ANGLE ANALYSIS DATA:'}
-Front View Vision Data: ${JSON.stringify(visionData.front, null, 2)}
-${images.isMultiAngle && visionData.left ? `Left Profile Vision Data: ${JSON.stringify(visionData.left, null, 2)}` : ''}
-${images.isMultiAngle && visionData.right ? `Right Profile Vision Data: ${JSON.stringify(visionData.right, null, 2)}` : ''}
+🎯 YOUR MISSION:
+Provide an analysis so accurate and insightful that the user feels "WOW, this AI really SEES me!"
 
-PROFESSIONAL ASSESSMENT REQUIREMENTS:
-1. Medical-grade skin analysis (texture, pores, pigmentation, elasticity)
-2. Dermatological pathology assessment (acne, rosacea, melasma, aging)
-3. Facial structure analysis ${images.isMultiAngle ? '(3D symmetry, profile proportions)' : '(frontal symmetry)'}
-4. Professional beauty scoring with clinical accuracy
-5. Evidence-based treatment recommendations
-6. Skin health prognosis and prevention strategies
+📸 ANALYSIS TYPE: ${analysisType}
 
-CRITICAL: Your analysis must be as accurate as an in-person dermatologist consultation. Use medical terminology and provide specific, actionable recommendations.
+⚡ CRITICAL RULES:
+1. OBSERVE CAREFULLY: Base every score on actual visible features in the image
+2. BE SPECIFIC: Use precise descriptions, not generic statements
+3. BE POSITIVE: Find and highlight unique beauty (everyone has it!)
+4. BE HELPFUL: Give actionable advice that users can actually apply
+5. SCORE REALISTICALLY: Use full range 65-95 based on what you see
+   - 88-95: Exceptional features (model-quality)
+   - 82-87: Very attractive features
+   - 75-81: Above average attractiveness
+   - 68-74: Average attractiveness
+   - 65-67: Below average (rarely use)
 
-Respond with ONLY a valid JSON object with this structure:
+🔬 ANALYZE THESE ASPECTS:
+
+**SKIN ANALYSIS** (describe what you actually see):
+- Skin Type: Look for oil/shine (oily), flakiness (dry), both zones (combination), or neither (normal)
+- Skin Tone: Identify shade AND undertone (e.g., "Light Warm", "Medium Cool", "Dark Neutral")
+- Skin Quality: Rate based on clarity, smoothness, radiance
+- Texture: Is skin smooth or rough? Refined or coarse pores?
+- Hydration: Does skin look plump and dewy, or dull and dehydrated?
+- Pigmentation: Is tone even or are there dark spots/redness?
+- Elasticity: Does skin look firm and tight, or show sagging?
+
+**DERMATOLOGY ASSESSMENT**:
+- Acne Risk: Based on visible pores, oil, current breakouts
+- Aging Signs: Spot fine lines, wrinkles, loss of volume, sagging
+- Skin Concerns: Note enlarged pores, texture issues, discoloration
+- Treatments: Recommend specific professional treatments (retinoids, peels, lasers, etc.)
+- Prevention: Advise on SPF, antioxidants, lifestyle for skin health
+
+**BEAUTY SCORES** (be honest, specific, use full range):
+- Overall Score (65-95): Holistic facial attractiveness
+- Facial Symmetry (70-95): How balanced are features?
+- Skin Glow (65-95): Natural radiance and brightness
+- Jawline Definition (60-95): Sharp and defined vs soft
+- Eye Area (70-95): Eyes bright, symmetrical, appealing shape?
+- Lip Area (70-95): Fullness, shape, proportion, color
+- Cheekbone Definition (65-95): High and prominent vs flat
+- Skin Tightness (70-95): Firm vs showing laxity
+- Facial Harmony (70-95): How well do all features work together?
+
+**PROFESSIONAL RECOMMENDATIONS** (5-7 specific tips):
+- Address observed concerns with specific solutions
+- Suggest actual product types or treatments (e.g., "vitamin C serum", "microneedling")
+- Build on existing strengths
+- Include lifestyle tips (sleep, water, diet)
+- Make recommendations feel personalized
+
+💡 EXAMPLE OF GREAT ANALYSIS:
+"Your cheekbones show excellent definition (score: 89) creating an elegant facial structure. The slight asymmetry in lip fullness (score: 81) is barely noticeable and adds character. Your skin shows good hydration (score: 84) with a natural glow, though some enlarged pores in the T-zone suggest combination skin. A niacinamide serum would refine pore appearance and enhance your already radiant complexion."
+
+❌ BAD (too generic): "Your skin is good. Use moisturizer."
+✅ GOOD (specific & helpful): "Your skin shows excellent clarity with minimal pigmentation, earning a 87 texture score. The slight dehydration around your eyes (hydration: 79) would benefit from a hyaluronic acid eye cream applied morning and night."
+
+Respond with ONLY this exact JSON structure:
 {
   "skinAnalysis": {
     "skinType": "Normal/Dry/Oily/Combination/Sensitive",
-    "skinTone": "Very Light/Light/Medium Light/Medium/Medium Dark/Dark/Very Dark + Warm/Cool/Neutral undertone",
+    "skinTone": "[Shade] [Undertone]" (e.g., "Medium Warm", "Light Cool"),
     "skinQuality": "Poor/Fair/Good/Very Good/Excellent",
-    "textureScore": 85,
-    "clarityScore": 90,
-    "hydrationLevel": 80,
-    "poreVisibility": 75,
-    "elasticity": 88,
-    "pigmentationEvenness": 82
+    "textureScore": 65-95,
+    "clarityScore": 65-95,
+    "hydrationLevel": 65-95,
+    "poreVisibility": 65-95,
+    "elasticity": 65-95,
+    "pigmentationEvenness": 65-95
   },
   "dermatologyAssessment": {
     "acneRisk": "Low/Medium/High",
-    "agingSigns": ["Fine lines", "Loss of elasticity", "Volume loss", "Pigmentation"],
-    "skinConcerns": ["Enlarged pores", "Uneven texture", "Dark spots"],
-    "recommendedTreatments": ["Retinoid therapy", "Chemical peels", "Laser resurfacing"],
-    "skinConditions": ["Any detected conditions like rosacea, melasma, etc."],
-    "preventiveMeasures": ["SPF 30+ daily", "Antioxidant serums", "Gentle cleansing"]
+    "agingSigns": ["specific signs you observe"],
+    "skinConcerns": ["specific concerns you see"],
+    "recommendedTreatments": ["specific professional treatments"],
+    "skinConditions": ["any conditions detected"],
+    "preventiveMeasures": ["specific preventive advice"]
   },
   "beautyScores": {
-    "overallScore": 88,
-    "facialSymmetry": 92,
-    "skinGlow": 85,
-    "jawlineDefinition": 78,
-    "eyeArea": 90,
-    "lipArea": 85,
-    "cheekboneDefinition": 87,
-    "skinTightness": 83,
-    "facialHarmony": 89
+    "overallScore": 65-95,
+    "facialSymmetry": 70-95,
+    "skinGlow": 65-95,
+    "jawlineDefinition": 60-95,
+    "eyeArea": 70-95,
+    "lipArea": 70-95,
+    "cheekboneDefinition": 65-95,
+    "skinTightness": 70-95,
+    "facialHarmony": 70-95
   },
-  "professionalRecommendations": ["5-7 specific dermatologist-level recommendations"],
-  "confidence": 0.95,
-  "analysisAccuracy": "${images.isMultiAngle ? 'Professional-grade (multi-angle)' : 'Standard (single-angle)'}"
+  "professionalRecommendations": ["5-7 specific, personalized recommendations"],
+  "confidence": 0.90-0.98,
+  "analysisAccuracy": "${images.isMultiAngle ? 'Professional-grade (multi-angle)' : 'High-precision (single-angle)'}"
 }`;
 
       console.log('Making advanced AI analysis request...');

@@ -185,22 +185,80 @@ export const [StyleProvider, useStyle] = createContextHook(() => {
     setIsAnalyzing(true);
     
     try {
-      const analysisPrompt = `
-Analyze this outfit photo for a ${occasion} occasion. Provide a comprehensive style analysis including:
+      // Enhanced prompt for more accurate and impressive style analysis
+      const analysisPrompt = `You are an elite fashion stylist featured in Vogue, Harper's Bazaar, and trusted by A-list celebrities. Analyze this outfit photo for a ${occasion} occasion with precision and style expertise.
 
-1. Overall vibe and aesthetic
-2. Color analysis and harmony
-3. Detailed breakdown of each clothing item (top, bottom, accessories)
-4. Jewelry and accessories evaluation
-5. Appropriateness for the occasion
-6. Body type recommendations
-7. Specific improvement suggestions
-8. Color recommendations that would suit the person
-9. Style suggestions for this specific occasion
+🎯 YOUR MISSION:
+Provide a style analysis so insightful and accurate that the user thinks "WOW, this is like having a personal celebrity stylist!"
 
-Be very detailed and precise. Rate each aspect out of 100. Provide constructive feedback.
+👗 CRITICAL RULES:
+1. OBSERVE CAREFULLY: Base every assessment on what you actually see in the image
+2. BE SPECIFIC: Describe exact items, colors, fits - not generic statements  
+3. BE FASHION-FORWARD: Reference current trends and timeless style principles
+4. BE CONSTRUCTIVE: Highlight what works AND give actionable improvement tips
+5. SCORE ACCURATELY: Use full range 60-95 based on fashion expertise
+   - 88-95: Editorial/runway quality, impeccable styling
+   - 80-87: Very well styled, fashion-forward
+   - 72-79: Good styling with room for refinement
+   - 65-71: Average, needs significant improvements
+   - 60-64: Poorly styled (rarely use)
 
-Respond in this exact JSON format:
+📸 ANALYZE THESE ASPECTS:
+
+**OVERALL VIBE** (be specific, not generic):
+Describe the aesthetic in 2-3 words that capture the exact mood (e.g., "Effortlessly chic Parisian", "Bold streetwear edge", "Polished minimalist", "Romantic boho luxe")
+
+**COLOR ANALYSIS** (observe actual colors in image):
+- Dominant Colors: List 3 exact colors you see (e.g., "Navy blue", "Cream", "Burgundy")
+- Color Harmony Score (60-100): How well do colors work together?
+- Seasonal Match: Spring/Summer/Autumn/Winter based on color palette
+- Recommended Colors: 3 colors that would elevate this look
+
+**OUTFIT BREAKDOWN** (describe what you actually see):
+
+TOP:
+- Item: Specific description (e.g., "White silk blouse", "Black turtleneck sweater")
+- Fit Score (60-100): How well does it fit? Too loose/tight/perfect?
+- Color: Exact color name
+- Style: Describe the style (e.g., "Classic tailored", "Oversized casual", "Fitted modern")
+- Rating (60-100): Overall effectiveness of this piece
+- Feedback: 1-2 specific sentences on what works/what to improve
+
+BOTTOM:
+- Item: Specific description (e.g., "Dark wash jeans", "Black midi skirt")
+- Fit Score (60-100): Fit assessment
+- Color: Exact color
+- Style: Describe the style
+- Rating (60-100): Overall score
+- Feedback: Specific constructive feedback
+
+ACCESSORIES:
+- Jewelry: List items you see, rate appropriateness (60-100), give feedback
+- Shoes: Describe style, rate match with outfit (60-100), feedback
+- Bag: Describe style, rate coordination (60-100), feedback
+
+**OCCASION MATCH** (for ${occasion}):
+- Appropriateness (60-100): How well does this outfit suit the occasion?
+- Formality Level: Casual/Smart Casual/Business/Business Formal/Formal
+- Suggestions: 2-3 specific ways to make this more occasion-appropriate
+
+**BODY TYPE RECOMMENDATIONS**:
+- Strengths: 2-3 things this outfit does well for the body type
+- Improvements: 2-3 specific styling adjustments for flattery
+- Styles That Suit: 3 style aesthetics that would complement their shape
+
+**OVERALL FEEDBACK**:
+- What Worked: 2-3 specific strengths of this outfit
+- Improvements: 2-3 specific areas for enhancement
+- Specific Suggestions: 3 actionable styling tips (e.g., "Add a statement belt", "Try ankle boots instead", "Layer with a structured blazer")
+
+💡 EXAMPLE OF GREAT ANALYSIS:
+"The crisp white button-down (fit: 92) shows excellent tailoring with a modern slim cut that flatters without restricting. Paired with high-waisted black trousers (fit: 88), this creates a sophisticated silhouette perfect for ${occasion}. The color harmony (score: 85) is elevated by the subtle navy blazer that adds depth without overwhelming. Consider swapping the casual sneakers for leather loafers to elevate the formality level and better match the polished top half."
+
+❌ BAD (too generic): "Nice outfit. Good colors. Wear different shoes."
+✅ GOOD (specific & helpful): "Your navy blazer (rating: 89) creates perfect structure, but the oversized fit in the sleeves (fit: 74) detracts from the tailored aesthetic. Having the sleeves taken up by 1 inch would create a sharp, intentional look that elevates the entire outfit for this ${occasion}."
+
+Respond with ONLY this exact JSON format:
 {
   "overallScore": number,
   "vibe": "string describing the overall aesthetic",
