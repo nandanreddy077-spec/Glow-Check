@@ -94,9 +94,13 @@ export default function SubscriptionGuard({ children, requiresPremium = false, s
     );
   }
 
-  // Return null while redirecting
+  // Return loading indicator while redirecting to prevent blank screen flash
   if (!hasAccess && !isPublicRoute) {
-    return null;
+    return (
+      <View style={[styles.loading, { backgroundColor: palette.backgroundStart }]}>
+        <ActivityIndicator size="large" color={palette.gold} />
+      </View>
+    );
   }
 
   return <>{children}</>;
