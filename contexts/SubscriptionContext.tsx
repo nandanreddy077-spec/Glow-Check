@@ -49,14 +49,14 @@ export interface SubscriptionContextType {
 const STORAGE_KEY = 'lumyn_subscription_state';
 
 const DEFAULT_STATE: SubscriptionState = {
-  isPremium: true,
+  isPremium: false,
   scanCount: 0,
   weeklyScansUsed: 0,
-  maxWeeklyScans: 999,
+  maxWeeklyScans: 1,
   maxScansInTrial: 999,
-  hasStartedTrial: true,
-  hasAddedPayment: true,
-  trialRequiresPayment: false,
+  hasStartedTrial: false,
+  hasAddedPayment: false,
+  trialRequiresPayment: true,
 };
 
 export const [SubscriptionProvider, useSubscription] = createContextHook<SubscriptionContextType>(() => {
