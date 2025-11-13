@@ -66,8 +66,8 @@ export default function StartTrialScreen() {
         await setSubscriptionData({ hasAddedPayment: true });
         
         Alert.alert(
-          '🎉 Welcome to Your Free Trial!', 
-          'Your 7-day free trial is now active! Enjoy unlimited scans and all premium features. You won\'t be charged until the trial ends.',
+          '🎉 Welcome to Your 7-Day Free Trial!', 
+          `Your free trial is now active! Enjoy unlimited scans and all premium features at no cost for 7 days.\n\nYou'll be charged ${selectedPlan === 'yearly' ? '$99/year' : '$8.99/month'} on day 8 unless you cancel before then.`,
           [{ 
             text: 'Start Your Glow Journey ✨', 
             style: 'default', 
@@ -84,7 +84,7 @@ export default function StartTrialScreen() {
           [{ text: 'OK', style: 'default' }]
         );
       } else {
-        const errorMessage = result.error || 'We couldn\'t process your request. Please try again.';
+        const errorMessage = result.error || 'We could not process your request. Please try again.';
         console.log('Trial start failed:', errorMessage);
         Alert.alert(
           'Unable to Start Trial', 
@@ -307,29 +307,29 @@ export default function StartTrialScreen() {
           </View>
 
           <View style={styles.trialDetails}>
-            <Text style={styles.trialDetailsTitle}>How Your Trial Works:</Text>
+            <Text style={styles.trialDetailsTitle}>How Your Free Trial Works:</Text>
             <View style={styles.trialStep}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>1</Text>
               </View>
-              <Text style={styles.stepText}>Add payment method to unlock 7-day free trial</Text>
+              <Text style={styles.stepText}>Confirm your subscription with payment details (required to start trial)</Text>
             </View>
             <View style={styles.trialStep}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
-              <Text style={styles.stepText}>Enjoy unlimited scans & full access for 7 days - free</Text>
+              <Text style={styles.stepText}>Get instant access to all premium features for 7 days - completely free</Text>
             </View>
             <View style={styles.trialStep}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
-              <Text style={styles.stepText}>Cancel anytime before day 7 - no charge if you cancel</Text>
+              <Text style={styles.stepText}>You will only be charged on day 8 - cancel anytime before to avoid any charge</Text>
             </View>
           </View>
 
           <Text style={styles.legalText}>
-            By starting your trial, you agree to our Terms of Service and Privacy Policy. Your subscription will automatically renew unless cancelled at least 24 hours before the end of the trial period.
+            By starting your trial, you agree to our Terms of Service and Privacy Policy. Payment method required to begin trial, but you will not be charged for 7 days. Your subscription will automatically renew and charge on day 8 unless cancelled at least 24 hours before the trial ends. Cancel anytime in {Platform.OS === 'ios' ? 'Settings → Apple ID → Subscriptions' : 'Google Play → Subscriptions'}.
           </Text>
         </View>
       </ScrollView>
