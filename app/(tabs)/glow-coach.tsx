@@ -55,6 +55,7 @@ import AnimatedProgressBar from '@/components/AnimatedProgressBar';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import BlurredContent from '@/components/BlurredContent';
+import { useDailyCheckIn } from '@/contexts/DailyCheckInContext';
 
 interface DailyReward {
   id: string;
@@ -79,12 +80,33 @@ export default function GlowCoachScreen() {
   const { isFreeUser, isTrialUser, isPaidUser } = useFreemium();
   const { state: subState, hoursLeft } = useSubscription();
   const { triggerStreakNotification } = useNotifications();
+  const { 
+    streak, 
+    hasMorningCheckIn, 
+    hasEveningCheckIn, 
+    createCheckIn,
+    unclaimedRewards: dailyCheckInRewards 
+  } = useDailyCheckIn();
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [selectedMood, setSelectedMood] = useState<'great' | 'good' | 'okay' | 'bad' | null>(null);
   const [showPlansModal, setShowPlansModal] = useState(false);
   const [showRewardsModal, setShowRewardsModal] = useState(false);
   const [dailyRewards, setDailyRewards] = useState<DailyReward[]>([]);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [checkInRating, setCheckInRating] = useState<{
+    mood: number;
+    energy: number;
+    skin_feeling: number;
+    confidence: number;
+  }>({
+    mood: 0,
+    energy: 0,
+    skin_feeling: 0,
+    confidence: 0,
+  });
+  const [checkInNotes, setCheckInNotes] = useState('');
+  const [isSubmittingCheckIn, setIsSubmittingCheckIn] = useState(false);
 
   // Move useEffect to the top, before any conditional returns
   useEffect(() => {
@@ -514,6 +536,51 @@ export default function GlowCoachScreen() {
           </View>
         </View>
 
+        {/* Daily Check-In Streak Card */}
+        <View style={styles.streakSection}>
+          <LinearGradient colors={gradient.rose} style={styles.streakCard}>
+            <View style={styles.streakHeader}>
+              <View style={styles.streakIconContainer}>
+                <Flame color={palette.textLight} size={28} fill={palette.gold} />
+              </View>
+              <View style={styles.streakInfo}>
+                <Text style={styles.streakNumber}>{streak.currentStreak}</Text>
+                <Text style={styles.streakLabel}>day streak</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.checkInButton}
+                onPress={() => setShowCheckInModal(true)}
+                activeOpacity={0.9}
+              >
+                <Heart color={palette.textLight} size={18} />
+                <Text style={styles.checkInButtonText}>Check In</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.streakStats}>
+              <View style={styles.streakStatItem}>
+                <CheckCircle 
+                  color={hasMorningCheckIn() ? palette.success : palette.textLight} 
+                  size={16} 
+                  fill={hasMorningCheckIn() ? palette.success : 'transparent'}
+                />
+                <Text style={styles.streakStatText}>Morning</Text>
+              </View>
+              <View style={styles.streakStatItem}>
+                <Moon 
+                  color={hasEveningCheckIn() ? palette.success : palette.textLight} 
+                  size={16}
+                  fill={hasEveningCheckIn() ? palette.success : 'transparent'}
+                />
+                <Text style={styles.streakStatText}>Evening</Text>
+              </View>
+              <View style={styles.streakStatItem}>
+                <Star color={palette.textLight} size={16} fill={palette.gold} />
+                <Text style={styles.streakStatText}>{streak.totalCheckIns} total</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </View>
+
         {/* Luxurious Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -934,6 +1001,210 @@ export default function GlowCoachScreen() {
         rewards={dailyRewards}
         onClose={() => setShowRewardsModal(false)}
       />
+
+      {/* Daily Check-In Modal */}
+      <Modal
+        visible={showCheckInModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <LinearGradient colors={gradient.hero} style={StyleSheet.absoluteFillObject} />
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Daily Check-In</Text>
+            <TouchableOpacity onPress={() => setShowCheckInModal(false)}>
+              <X color={palette.textSecondary} size={24} />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.checkInHero}>
+              <View style={styles.checkInIconContainer}>
+                <Heart color={palette.rose} size={48} fill={palette.rose} />
+              </View>
+              <Text style={styles.checkInTitle}>How are you feeling?</Text>
+              <Text style={styles.checkInSubtitle}>
+                Track your daily progress and watch your transformation unfold
+              </Text>
+            </View>
+
+            {/* Mood Rating */}
+            <View style={styles.ratingSection}>
+              <View style={styles.ratingHeader}>
+                <Heart color={palette.rose} size={20} />
+                <Text style={styles.ratingTitle}>Mood</Text>
+              </View>
+              <View style={styles.starRating}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={`mood-${star}`}
+                    onPress={() => setCheckInRating(prev => ({ ...prev, mood: star }))}
+                    style={styles.starButton}
+                  >
+                    <Star
+                      color={star <= checkInRating.mood ? palette.rose : palette.textMuted}
+                      size={36}
+                      fill={star <= checkInRating.mood ? palette.rose : 'transparent'}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Energy Rating */}
+            <View style={styles.ratingSection}>
+              <View style={styles.ratingHeader}>
+                <Flame color={palette.gold} size={20} />
+                <Text style={styles.ratingTitle}>Energy</Text>
+              </View>
+              <View style={styles.starRating}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={`energy-${star}`}
+                    onPress={() => setCheckInRating(prev => ({ ...prev, energy: star }))}
+                    style={styles.starButton}
+                  >
+                    <Star
+                      color={star <= checkInRating.energy ? palette.gold : palette.textMuted}
+                      size={36}
+                      fill={star <= checkInRating.energy ? palette.gold : 'transparent'}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Skin Feeling Rating */}
+            <View style={styles.ratingSection}>
+              <View style={styles.ratingHeader}>
+                <Sparkles color={palette.primary} size={20} />
+                <Text style={styles.ratingTitle}>Skin Feeling</Text>
+              </View>
+              <View style={styles.starRating}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={`skin-${star}`}
+                    onPress={() => setCheckInRating(prev => ({ ...prev, skin_feeling: star }))}
+                    style={styles.starButton}
+                  >
+                    <Star
+                      color={star <= checkInRating.skin_feeling ? palette.primary : palette.textMuted}
+                      size={36}
+                      fill={star <= checkInRating.skin_feeling ? palette.primary : 'transparent'}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Confidence Rating */}
+            <View style={styles.ratingSection}>
+              <View style={styles.ratingHeader}>
+                <Crown color={palette.lavender} size={20} />
+                <Text style={styles.ratingTitle}>Confidence</Text>
+              </View>
+              <View style={styles.starRating}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={`confidence-${star}`}
+                    onPress={() => setCheckInRating(prev => ({ ...prev, confidence: star }))}
+                    style={styles.starButton}
+                  >
+                    <Star
+                      color={star <= checkInRating.confidence ? palette.lavender : palette.textMuted}
+                      size={36}
+                      fill={star <= checkInRating.confidence ? palette.lavender : 'transparent'}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Notes */}
+            <View style={styles.notesSectionModal}>
+              <Text style={styles.notesLabel}>How do you feel today? (Optional)</Text>
+              <TextInput
+                style={styles.checkInInput}
+                placeholder="Share your thoughts, feelings, or any changes you noticed..."
+                placeholderTextColor={palette.textMuted}
+                value={checkInNotes}
+                onChangeText={setCheckInNotes}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.submitCheckInButton,
+                (isSubmittingCheckIn || 
+                  (checkInRating.mood === 0 && 
+                   checkInRating.energy === 0 && 
+                   checkInRating.skin_feeling === 0 && 
+                   checkInRating.confidence === 0)) && styles.submitCheckInButtonDisabled
+              ]}
+              onPress={async () => {
+                if (isSubmittingCheckIn) return;
+                if (checkInRating.mood === 0 && checkInRating.energy === 0 && 
+                    checkInRating.skin_feeling === 0 && checkInRating.confidence === 0) {
+                  Alert.alert('Rate Your Day', 'Please rate at least one aspect to complete your check-in.');
+                  return;
+                }
+
+                setIsSubmittingCheckIn(true);
+                try {
+                  const currentHour = new Date().getHours();
+                  const ritualType: 'morning' | 'evening' = (currentHour >= 5 && currentHour < 17) ? 'morning' : 'evening';
+                  
+                  const rewards = await createCheckIn({
+                    date: new Date().toISOString().split('T')[0],
+                    ritualType,
+                    checklist: {
+                      skincare: currentPlan ? currentPlan.progress.completedSteps.length > 0 : false,
+                    },
+                    ratings: checkInRating,
+                    notes: checkInNotes.trim() || undefined,
+                  });
+
+                  if (rewards.length > 0) {
+                    setDailyRewards(rewards);
+                    setShowRewardsModal(true);
+                  } else {
+                    Alert.alert(
+                      '✨ Check-In Complete!',
+                      `Great job! You're building consistency. Current streak: ${streak.currentStreak + 1} days 🔥`,
+                      [{ text: 'Amazing!', style: 'default' }]
+                    );
+                  }
+
+                  setCheckInRating({ mood: 0, energy: 0, skin_feeling: 0, confidence: 0 });
+                  setCheckInNotes('');
+                  setShowCheckInModal(false);
+                } catch (error) {
+                  console.error('Error submitting check-in:', error);
+                  Alert.alert('Error', 'Failed to submit check-in. Please try again.');
+                } finally {
+                  setIsSubmittingCheckIn(false);
+                }
+              }}
+              disabled={isSubmittingCheckIn || 
+                (checkInRating.mood === 0 && 
+                 checkInRating.energy === 0 && 
+                 checkInRating.skin_feeling === 0 && 
+                 checkInRating.confidence === 0)}
+              activeOpacity={0.9}
+            >
+              <LinearGradient colors={gradient.primary} style={styles.submitCheckInGradient}>
+                <Sparkles color={palette.textLight} size={20} />
+                <Text style={styles.submitCheckInText}>
+                  {isSubmittingCheckIn ? 'Saving...' : 'Complete Check-In'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1368,6 +1639,9 @@ const styles = StyleSheet.create({
   notesSection: {
     paddingHorizontal: 20,
     marginBottom: 24,
+  },
+  notesSectionModal: {
+    marginBottom: spacing.xxl,
   },
   notesTitle: {
     fontSize: 18,
@@ -1831,5 +2105,166 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontWeight: typography.medium,
     marginTop: 2,
+  },
+  streakSection: {
+    paddingHorizontal: spacing.xxl,
+    marginBottom: spacing.xl,
+  },
+  streakCard: {
+    borderRadius: 20,
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: palette.borderLight,
+    ...shadow.elevated,
+  },
+  streakHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.md,
+  },
+  streakIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  streakInfo: {
+    flex: 1,
+  },
+  streakNumber: {
+    fontSize: 32,
+    fontWeight: typography.black,
+    color: palette.textLight,
+    letterSpacing: -0.5,
+  },
+  streakLabel: {
+    fontSize: 14,
+    fontWeight: typography.semibold,
+    color: palette.textLight,
+    opacity: 0.9,
+  },
+  checkInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 20,
+    gap: 6,
+  },
+  checkInButtonText: {
+    fontSize: 14,
+    fontWeight: typography.bold,
+    color: palette.textLight,
+  },
+  streakStats: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  streakStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  streakStatText: {
+    fontSize: 13,
+    fontWeight: typography.medium,
+    color: palette.textLight,
+    opacity: 0.9,
+  },
+  checkInHero: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+    marginBottom: spacing.xl,
+  },
+  checkInIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: palette.overlayBlush,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    ...shadow.floating,
+  },
+  checkInTitle: {
+    fontSize: typography.h2,
+    fontWeight: typography.black,
+    color: palette.textPrimary,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  checkInSubtitle: {
+    fontSize: typography.body,
+    color: palette.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: spacing.xl,
+  },
+  ratingSection: {
+    marginBottom: spacing.xxl,
+  },
+  ratingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  ratingTitle: {
+    fontSize: typography.h6,
+    fontWeight: typography.bold,
+    color: palette.textPrimary,
+    letterSpacing: 0.2,
+  },
+  starRating: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  starButton: {
+    padding: spacing.xs,
+  },
+  notesLabel: {
+    fontSize: typography.body,
+    fontWeight: typography.semibold,
+    color: palette.textPrimary,
+    marginBottom: spacing.md,
+  },
+  checkInInput: {
+    backgroundColor: palette.surface,
+    borderRadius: 16,
+    padding: spacing.lg,
+    fontSize: typography.body,
+    color: palette.textPrimary,
+    borderWidth: 1,
+    borderColor: palette.border,
+    minHeight: 100,
+  },
+  submitCheckInButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: spacing.xxl,
+    ...shadow.elevated,
+  },
+  submitCheckInButtonDisabled: {
+    opacity: 0.5,
+  },
+  submitCheckInGradient: {
+    flexDirection: 'row',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  submitCheckInText: {
+    color: palette.textLight,
+    fontSize: typography.body,
+    fontWeight: typography.bold,
+    letterSpacing: 0.2,
   },
 });
