@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Heart, Wand2, Users, User, Calendar } from "lucide-react-native";
+import { Heart, Wand2, Users, User } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
 import { View, Platform } from "react-native";
 import AuthGuard from "@/components/AuthGuard";
@@ -85,25 +85,7 @@ export default function TabLayout() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="daily-ritual"
-          options={{
-            title: "Ritual",
-            tabBarIcon: ({ color, size, focused }) => (
-              <View style={{ 
-                padding: 8, 
-                borderRadius: 16, 
-                backgroundColor: focused ? palette.overlayGold : 'transparent' 
-              }}>
-                <Calendar 
-                  color={focused ? palette.gold : color} 
-                  size={focused ? 22 : 20}
-                  strokeWidth={focused ? 2.5 : 2}
-                />
-              </View>
-            ),
-          }}
-        />
+
         <Tabs.Screen
           name="glow-coach"
           options={{
