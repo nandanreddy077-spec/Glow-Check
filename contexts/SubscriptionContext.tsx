@@ -49,14 +49,14 @@ export interface SubscriptionContextType {
 const STORAGE_KEY = 'lumyn_subscription_state';
 
 const DEFAULT_STATE: SubscriptionState = {
-  isPremium: false,
+  isPremium: true,
   scanCount: 0,
   weeklyScansUsed: 0,
-  maxWeeklyScans: 1,
+  maxWeeklyScans: 999,
   maxScansInTrial: 999,
-  hasStartedTrial: false,
-  hasAddedPayment: false,
-  trialRequiresPayment: true,
+  hasStartedTrial: true,
+  hasAddedPayment: true,
+  trialRequiresPayment: false,
 };
 
 export const [SubscriptionProvider, useSubscription] = createContextHook<SubscriptionContextType>(() => {
@@ -252,7 +252,10 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
         // Load local state first
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
-          setState(JSON.parse(raw) as SubscriptionState);
+          const loaded = JSON.parse(raw) as SubscriptionState;
+          setState(loaded);
+        } else {
+          await persist(DEFAULT_STATE);
         }
         
         // Sync with backend if user is authenticated (non-blocking)
