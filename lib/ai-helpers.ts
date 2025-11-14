@@ -209,6 +209,7 @@ export async function generateObject<T = any>(
     console.log('📤 Trying Toolkit API...');
     responseText = await callToolkitAPI(params.messages, timeoutMs);
     console.log('✅ Toolkit API succeeded');
+    console.log('📦 Raw response sample:', responseText.substring(0, 300));
   } catch (toolkitError) {
     console.warn('⚠️ Toolkit API failed:', toolkitError);
     
@@ -227,8 +228,32 @@ export async function generateObject<T = any>(
   
   // Parse the response
   console.log('🔍 Parsing AI response...');
-  const fallbackObject = {} as T;
-  const result = parseJsonWithFallback<T>(responseText, fallbackObject);
+  
+  // First try to parse as-is
+  let result: any;
+  try {
+    const cleaned = sanitizeJsonString(responseText);
+    const parsed = JSON.parse(cleaned);
+    
+    // Check if the response is wrapped in a completion field
+    if (parsed && typeof parsed === 'object' && 'completion' in parsed && typeof parsed.completion === 'string') {
+      console.log('🔄 Detected wrapped response, extracting completion field...');
+      console.log('📦 Completion sample:', parsed.completion.substring(0, 300));
+      
+      // Parse the completion string
+      const completionCleaned = sanitizeJsonString(parsed.completion);
+      result = JSON.parse(completionCleaned);
+      console.log('✅ Successfully parsed completion field');
+    } else {
+      result = parsed;
+      console.log('✅ Response already in correct format');
+    }
+  } catch (error) {
+    console.warn('⚠️ JSON parse failed, using fallback');
+    console.error('Parse error:', error instanceof Error ? error.message : String(error));
+    console.error('Text sample:', responseText.substring(0, 500));
+    result = {} as T;
+  }
   
   console.log('✅ AI generation complete');
   console.log('📦 Result type:', typeof result);
@@ -237,7 +262,7 @@ export async function generateObject<T = any>(
     console.log('📦 Result keys:', Object.keys(result).join(', '));
   }
   
-  return result;
+  return result as T;
 }
 
 export async function generateText(params: GenerateTextParams | string): Promise<string> {
