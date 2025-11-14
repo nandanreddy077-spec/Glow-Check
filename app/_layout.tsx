@@ -19,6 +19,7 @@ import { ProductTrackingProvider } from "@/contexts/ProductTrackingContext";
 import { SeasonalAdvisorProvider } from "@/contexts/SeasonalAdvisorContext";
 import { GlowForecastContext as GlowForecastProvider } from "@/contexts/GlowForecastContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { DailyCheckInProvider } from "@/contexts/DailyCheckInContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 
@@ -100,12 +101,14 @@ export default function RootLayout() {
                               <ProductTrackingProvider>
                                 <SeasonalAdvisorProvider>
                                   <GlowForecastProvider>
-                                    <GestureHandlerRootView style={styles.container}>
-                                      <CommunityProvider>
-                                        <TrialStarter />
-                                        <RootLayoutNav />
-                                      </CommunityProvider>
-                                    </GestureHandlerRootView>
+                                    <DailyCheckInProvider>
+                                      <GestureHandlerRootView style={styles.container}>
+                                        <CommunityProvider>
+                                          <TrialStarter />
+                                          <RootLayoutNav />
+                                        </CommunityProvider>
+                                      </GestureHandlerRootView>
+                                    </DailyCheckInProvider>
                                   </GlowForecastProvider>
                                 </SeasonalAdvisorProvider>
                               </ProductTrackingProvider>
