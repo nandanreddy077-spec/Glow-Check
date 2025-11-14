@@ -142,7 +142,7 @@ export default function DailyRitualScreen() {
       const today = new Date().toISOString().split('T')[0];
       const rewards = await createCheckIn({
         date: today,
-        ritualType,
+        ritualType: ritualTime,
         checklist,
         ratings,
         notes: notes.trim() || undefined,

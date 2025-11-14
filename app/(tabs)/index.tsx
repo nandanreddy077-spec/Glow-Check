@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Wand2, Sun, Zap, Compass, ArrowRight, TrendingUp, Package, AlertCircle, Flame } from "lucide-react-native";
+import { Camera, Sparkles, ChevronRight, User, Star, Heart, Flower2, Palette, Crown, Wand2, Sun, Zap, Compass, ArrowRight, TrendingUp, Package, AlertCircle, Flame, Moon, Calendar } from "lucide-react-native";
 import { router } from "expo-router";
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ import { useProgressTracking } from "@/contexts/ProgressTrackingContext";
 import { useProductTracking } from "@/contexts/ProductTrackingContext";
 import { useSeasonalAdvisor } from "@/contexts/SeasonalAdvisorContext";
 import { useGamification } from "@/contexts/GamificationContext";
+import { useDailyCheckIn } from "@/contexts/DailyCheckInContext";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 import Logo from "@/components/Logo";
 import { getPalette, getGradient, shadow, spacing, radii, typography } from "@/constants/theme";
@@ -90,6 +91,7 @@ export default function HomeScreen() {
   const { products, alerts } = useProductTracking();
   const { recommendations, currentSeason, dismissRecommendation, getSeasonalTip } = useSeasonalAdvisor();
   const { unreadGlowBoosts } = useGamification();
+  const { streak, hasMorningCheckIn, hasEveningCheckIn } = useDailyCheckIn();
   const [showPhotoPicker, setShowPhotoPicker] = useState<boolean>(false);
   const [sparkleAnim] = useState(new Animated.Value(0));
   const [floatingAnim] = useState(new Animated.Value(0));
@@ -277,6 +279,63 @@ export default function HomeScreen() {
             <View style={styles.avatarGlow} />
           </TouchableOpacity>
         </View>
+
+        {(!hasMorningCheckIn() || !hasEveningCheckIn()) && (
+          <TouchableOpacity 
+            onPress={() => router.push('/(tabs)/daily-ritual')} 
+            activeOpacity={0.95} 
+            style={styles.dailyRitualCta}
+          >
+            <LinearGradient
+              colors={!hasMorningCheckIn() ? ['#FFF4E6', '#FFE5CC'] : ['#2D1B4E', '#1A1A2E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.dailyRitualGradient, shadow.elevated]}
+            >
+              <View style={styles.dailyRitualContent}>
+                <View style={styles.dailyRitualIcon}>
+                  {!hasMorningCheckIn() ? (
+                    <Sun color={palette.gold} size={28} strokeWidth={2.5} />
+                  ) : (
+                    <Moon color={palette.lavender} size={28} strokeWidth={2.5} />
+                  )}
+                </View>
+                <View style={styles.dailyRitualTextContainer}>
+                  <View style={styles.dailyRitualHeader}>
+                    <Text style={[styles.dailyRitualTitle, { color: !hasMorningCheckIn() ? palette.textPrimary : palette.textLight }]}>
+                      {!hasMorningCheckIn() ? '☀️ Morning Ritual' : '🌙 Evening Ritual'}
+                    </Text>
+                    <View style={[styles.streakBadge, { backgroundColor: !hasMorningCheckIn() ? palette.gold : palette.lavender }]}>
+                      <Flame color={palette.textLight} size={12} fill={palette.textLight} />
+                      <Text style={styles.streakBadgeText}>{streak.currentStreak}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.dailyRitualSubtitle, { color: !hasMorningCheckIn() ? palette.textSecondary : 'rgba(255,255,255,0.8)' }]}>
+                    {!hasMorningCheckIn() 
+                      ? 'Start your day with intention · 1 min'
+                      : 'Wind down with gratitude · 1 min'}
+                  </Text>
+                </View>
+                <ArrowRight 
+                  color={!hasMorningCheckIn() ? palette.gold : palette.lavender} 
+                  size={24} 
+                  strokeWidth={2.5} 
+                />
+              </View>
+              <View style={styles.dailyRitualProgress}>
+                <View 
+                  style={[
+                    styles.dailyRitualProgressBar, 
+                    { 
+                      width: hasMorningCheckIn() && !hasEveningCheckIn() ? '50%' : '0%',
+                      backgroundColor: palette.gold 
+                    }
+                  ]} 
+                />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity onPress={handleGlowAnalysis} activeOpacity={0.95} style={styles.mainCtaContainer}>
           <LinearGradient
@@ -1134,5 +1193,71 @@ const createStyles = (palette: ReturnType<typeof getPalette>) => StyleSheet.crea
     fontWeight: '700',
     color: palette.gold,
     letterSpacing: 0.3,
+  },
+  // Daily Ritual CTA
+  dailyRitualCta: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+  },
+  dailyRitualGradient: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  dailyRitualContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  dailyRitualIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dailyRitualTextContainer: {
+    flex: 1,
+  },
+  dailyRitualHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  dailyRitualTitle: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  streakBadgeText: {
+    fontSize: 12,
+    fontWeight: '800' as const,
+    color: palette.textLight,
+    letterSpacing: 0.3,
+  },
+  dailyRitualSubtitle: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    lineHeight: 20,
+  },
+  dailyRitualProgress: {
+    height: 4,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 2,
+  },
+  dailyRitualProgressBar: {
+    height: '100%',
+    borderRadius: 2,
   },
 });
