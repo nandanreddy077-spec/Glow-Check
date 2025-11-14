@@ -17,7 +17,7 @@ EXPO_PUBLIC_GOOGLE_PLAY_PACKAGE_NAME=com.glowcheck01.app
 # Rork Toolkit URL (for AI features)
 EXPO_PUBLIC_TOOLKIT_URL=https://toolkit.rork.com
 
-# OpenAI API Key (for AI features - fallback when Toolkit fails)
-# Get your key from https://platform.openai.com/api-keys
-# The app will use a hardcoded fallback key if this is not set
+# OpenAI API Key (for AI features)
+# IMPORTANT: Replace with a valid OpenAI API key from https://platform.openai.com/api-keys
+# Current key format appears invalid - please generate a new one
 EXPO_PUBLIC_OPENAI_API_KEY=
