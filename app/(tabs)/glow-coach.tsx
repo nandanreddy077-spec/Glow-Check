@@ -5,11 +5,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
+
   Alert,
   Modal,
   TextInput,
-  FlatList,
+
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -52,9 +52,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DailyRewardsModal from '@/components/DailyRewardsModal';
 import Logo from '@/components/Logo';
 import AnimatedProgressBar from '@/components/AnimatedProgressBar';
-import { useFreemium } from '@/contexts/FreemiumContext';
-import { useSubscription } from '@/contexts/SubscriptionContext';
-import BlurredContent from '@/components/BlurredContent';
+
 import { useDailyCheckIn } from '@/contexts/DailyCheckInContext';
 
 interface DailyReward {
@@ -77,8 +75,7 @@ export default function GlowCoachScreen() {
     canAddMorePlans 
   } = useSkincare();
   const { completeDailyRoutine, hasCompletedToday, hasCompletedForPlanDay } = useGamification();
-  const { isFreeUser, isTrialUser, isPaidUser } = useFreemium();
-  const { state: subState, hoursLeft } = useSubscription();
+
   const { triggerStreakNotification } = useNotifications();
   const { 
     streak, 
@@ -177,73 +174,6 @@ export default function GlowCoachScreen() {
 
 
 
-  // Show paywall for free users
-  if (isFreeUser) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient colors={gradient.hero} style={StyleSheet.absoluteFillObject} />
-        <View style={styles.emptyState}>
-          <LinearGradient colors={gradient.shimmer} style={styles.emptyIcon}>
-            <Crown color={palette.primary} size={72} />
-          </LinearGradient>
-          <Text style={styles.paywallTitle}>Unlock Your Beauty Coach</Text>
-          <Text style={styles.paywallSubtitle}>
-            Get personalized daily skincare routines, track your progress, and see real results in just 7 days.
-          </Text>
-          
-          {/* Social Proof */}
-          <View style={styles.socialProofContainer}>
-            <View style={styles.socialProofAvatars}>
-              <Image source={{ uri: 'https://i.pravatar.cc/100?img=1' }} style={[styles.socialAvatar, { zIndex: 4 }]} />
-              <Image source={{ uri: 'https://i.pravatar.cc/100?img=2' }} style={[styles.socialAvatar, { marginLeft: -12, zIndex: 3 }]} />
-              <Image source={{ uri: 'https://i.pravatar.cc/100?img=3' }} style={[styles.socialAvatar, { marginLeft: -12, zIndex: 2 }]} />
-              <Image source={{ uri: 'https://i.pravatar.cc/100?img=4' }} style={[styles.socialAvatar, { marginLeft: -12, zIndex: 1 }]} />
-            </View>
-            <Text style={styles.socialProofText}>
-              <Text style={styles.socialProofNumber}>12,487</Text> women upgraded this week
-            </Text>
-          </View>
-
-          {/* Scarcity Indicator */}
-          <View style={styles.scarcityBadge}>
-            <Sparkles color={palette.gold} size={16} />
-            <Text style={styles.scarcityText}>Only 7 trial spots left today!</Text>
-          </View>
-
-          <View style={styles.benefitsContainer}>
-            <View style={styles.benefitRow}>
-              <CheckCircle color={palette.success} size={20} fill={palette.success} />
-              <Text style={styles.benefitText}>Personalized daily routines</Text>
-            </View>
-            <View style={styles.benefitRow}>
-              <CheckCircle color={palette.success} size={20} fill={palette.success} />
-              <Text style={styles.benefitText}>Progress tracking & rewards</Text>
-            </View>
-            <View style={styles.benefitRow}>
-              <CheckCircle color={palette.success} size={20} fill={palette.success} />
-              <Text style={styles.benefitText}>Unlimited beauty scans</Text>
-            </View>
-            <View style={styles.benefitRow}>
-              <CheckCircle color={palette.success} size={20} fill={palette.success} />
-              <Text style={styles.benefitText}>Expert tips & community</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity 
-            style={styles.upgradeButton}
-            onPress={() => router.push('/start-trial')}
-            activeOpacity={0.9}
-          >
-            <LinearGradient colors={gradient.primary} style={styles.upgradeButtonGradient}>
-              <Crown color={palette.textLight} size={20} />
-              <Text style={styles.upgradeButtonText}>Start 7-Day Free Trial</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <Text style={styles.trialFinePrint}>Cancel anytime. No commitment.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   if (activePlans.length === 0) {
     return (
@@ -468,59 +398,38 @@ export default function GlowCoachScreen() {
   };
 
   const renderStepItem = (step: SkincareStep, isCompleted: boolean) => {
-    const shouldBlurContent = isFreeUser || isTrialUser;
-    
     return (
-      <View style={styles.stepItemWrapper}>
-        <TouchableOpacity
-          key={step.id}
-          style={[styles.stepItem, isCompleted && styles.completedStep]}
-          onPress={() => handleStepComplete(step.id)}
-          activeOpacity={0.8}
-          disabled={shouldBlurContent}
-        >
-          <View style={styles.stepCheckbox}>
-            {isCompleted ? (
-              <LinearGradient colors={gradient.success} style={styles.checkboxCompleted}>
-                <CheckCircle color={palette.textLight} size={18} />
-              </LinearGradient>
-            ) : (
-              <View style={styles.checkboxEmpty}>
-                <Circle color={palette.textMuted} size={18} />
-              </View>
-            )}
-          </View>
-          
-          <View style={styles.stepContent}>
-            <Text style={[styles.stepName, isCompleted && styles.completedStepText]}>
-              {step.name}
-            </Text>
-            <Text style={styles.stepDescription}>{step.description}</Text>
-            {step.products.length > 0 && (
-              <View style={styles.productsContainer}>
-                <Droplets color={palette.primary} size={12} />
-                <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-        
-        {shouldBlurContent && (
-          <View style={styles.stepBlurOverlay}>
-            <LinearGradient 
-              colors={['rgba(255, 255, 255, 0.98)', 'rgba(249, 244, 239, 0.98)']} 
-              style={styles.frostedGlass}
-            >
-              <View style={styles.opaqueLayer} />
-              <View style={styles.lockBadge}>
-                <Crown color={palette.primary} size={16} />
-                <Text style={styles.lockBadgeText}>Premium</Text>
-              </View>
-              <Text style={styles.lockSubtext}>Unlock full details</Text>
+      <TouchableOpacity
+        key={step.id}
+        style={[styles.stepItem, isCompleted && styles.completedStep]}
+        onPress={() => handleStepComplete(step.id)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.stepCheckbox}>
+          {isCompleted ? (
+            <LinearGradient colors={gradient.success} style={styles.checkboxCompleted}>
+              <CheckCircle color={palette.textLight} size={18} />
             </LinearGradient>
-          </View>
-        )}
-      </View>
+          ) : (
+            <View style={styles.checkboxEmpty}>
+              <Circle color={palette.textMuted} size={18} />
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.stepContent}>
+          <Text style={[styles.stepName, isCompleted && styles.completedStepText]}>
+            {step.name}
+          </Text>
+          <Text style={styles.stepDescription}>{step.description}</Text>
+          {step.products.length > 0 && (
+            <View style={styles.productsContainer}>
+              <Droplets color={palette.primary} size={12} />
+              <Text style={styles.stepProducts}>{step.products.join(' • ')}</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -692,44 +601,7 @@ export default function GlowCoachScreen() {
           </View>
         )}
 
-        {/* Trial Upgrade CTA with Urgency */}
-        {isTrialUser && hoursLeft > 0 && hoursLeft <= 48 && (
-          <View style={styles.trialUpgradeSection}>
-            <LinearGradient colors={gradient.warning} style={styles.trialUpgradeCard}>
-              <View style={styles.urgencyBadge}>
-                <Clock color={palette.rose} size={16} />
-                <Text style={styles.urgencyText}>EXPIRES IN {hoursLeft}H</Text>
-              </View>
-              <View style={styles.trialUpgradeHeader}>
-                <Crown color={palette.primary} size={24} />
-                <Text style={styles.trialUpgradeTitle}>Don't Lose Your Progress!</Text>
-              </View>
-              <Text style={styles.trialUpgradeText}>
-                Your trial expires soon! Upgrade now to keep your personalized routines, progress tracking, and all premium features forever.
-              </Text>
-              <View style={styles.urgencyStats}>
-                <View style={styles.urgencyStat}>
-                  <Text style={styles.urgencyStatNumber}>2,341</Text>
-                  <Text style={styles.urgencyStatLabel}>upgraded today</Text>
-                </View>
-                <View style={styles.urgencyStat}>
-                  <Text style={styles.urgencyStatNumber}>{Math.max(3, 15 - Math.floor(Math.random() * 10))}</Text>
-                  <Text style={styles.urgencyStatLabel}>spots left</Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                style={styles.trialUpgradeButton}
-                onPress={() => router.push('/plan-selection')}
-                activeOpacity={0.9}
-              >
-                <LinearGradient colors={gradient.primary} style={styles.trialUpgradeButtonGradient}>
-                  <Sparkles color={palette.textLight} size={18} />
-                  <Text style={styles.trialUpgradeButtonText}>Upgrade Now - Lock In Best Price</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
-        )}
+
 
         {/* Beautiful Routine Section */}
         <View style={styles.routineSection}>
@@ -749,11 +621,9 @@ export default function GlowCoachScreen() {
                   <Text style={styles.routineTimeTitle}>Morning Glow</Text>
                 </View>
                 
-                {todaySteps.morning.map((step: SkincareStep) => (
-                  <View key={step.id}>
-                    {renderStepItem(step, currentPlan.progress.completedSteps.includes(step.id))}
-                  </View>
-                ))}
+                {todaySteps.morning.map((step: SkincareStep) => 
+                  renderStepItem(step, currentPlan.progress.completedSteps.includes(step.id))
+                )}
               </LinearGradient>
             </View>
           )}
@@ -769,11 +639,9 @@ export default function GlowCoachScreen() {
                   <Text style={styles.routineTimeTitle}>Evening Renewal</Text>
                 </View>
                 
-                {todaySteps.evening.map((step: SkincareStep) => (
-                  <View key={step.id}>
-                    {renderStepItem(step, currentPlan.progress.completedSteps.includes(step.id))}
-                  </View>
-                ))}
+                {todaySteps.evening.map((step: SkincareStep) => 
+                  renderStepItem(step, currentPlan.progress.completedSteps.includes(step.id))
+                )}
               </LinearGradient>
             </View>
           )}
@@ -846,13 +714,7 @@ export default function GlowCoachScreen() {
               style={[styles.completeDayButton, {
                 opacity: currentPlan.progress.currentDay > currentPlan.duration ? 0.6 : 1
               }]}
-              onPress={() => {
-                if (isFreeUser || isTrialUser) {
-                  router.push('/plan-selection');
-                } else {
-                  handleCompleteDailyRoutine();
-                }
-              }}
+              onPress={handleCompleteDailyRoutine}
               disabled={currentPlan.progress.currentDay > currentPlan.duration}
               activeOpacity={0.8}
             >
