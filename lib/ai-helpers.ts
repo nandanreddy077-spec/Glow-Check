@@ -1,14 +1,11 @@
-import { generateObject as rorkGenerateObject, generateText as rorkGenerateText } from '@rork-ai/toolkit-sdk';
-import { z } from 'zod';
-
 type ImagePart = { type: 'image'; image: string };
 type TextPart = { type: 'text'; text: string };
 type UserMessage = { role: 'user'; content: string | (TextPart | ImagePart)[] };
 type AssistantMessage = { role: 'assistant'; content: string | TextPart[] };
 
-interface GenerateObjectParams<T extends z.ZodType> {
+interface GenerateObjectParams {
   messages: (UserMessage | AssistantMessage)[];
-  schema: T;
+  schema?: any;
   timeout?: number;
 }
 
@@ -17,10 +14,183 @@ interface GenerateTextParams {
   timeout?: number;
 }
 
-export async function generateObject<T extends z.ZodType>(
-  params: GenerateObjectParams<T>
-): Promise<z.infer<T>> {
-  console.log('🚀 Using Rork Toolkit SDK for AI generation');
+function sanitizeJsonString(text: string): string {
+  console.log('🧹 Sanitizing JSON string...');
+  
+  let cleaned = text.trim();
+  
+  // Remove markdown code blocks
+  cleaned = cleaned.replace(/```json\s*/g, '');
+  cleaned = cleaned.replace(/```\s*/g, '');
+  
+  // Remove leading/trailing text before first { or [
+  const jsonStart = Math.min(
+    cleaned.indexOf('{') >= 0 ? cleaned.indexOf('{') : Infinity,
+    cleaned.indexOf('[') >= 0 ? cleaned.indexOf('[') : Infinity
+  );
+  
+  if (jsonStart !== Infinity && jsonStart > 0) {
+    console.log('✂️ Removing text before JSON start');
+    cleaned = cleaned.substring(jsonStart);
+  }
+  
+  // Remove trailing text after last } or ]
+  const jsonEnd = Math.max(
+    cleaned.lastIndexOf('}'),
+    cleaned.lastIndexOf(']')
+  );
+  
+  if (jsonEnd >= 0 && jsonEnd < cleaned.length - 1) {
+    console.log('✂️ Removing text after JSON end');
+    cleaned = cleaned.substring(0, jsonEnd + 1);
+  }
+  
+  // Fix common JSON issues
+  cleaned = cleaned.replace(/\n/g, ' '); // Remove newlines
+  cleaned = cleaned.replace(/\r/g, ''); // Remove carriage returns
+  cleaned = cleaned.replace(/\t/g, ' '); // Replace tabs with spaces
+  cleaned = cleaned.replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas
+  
+  console.log('✅ JSON sanitized');
+  return cleaned;
+}
+
+function parseJsonWithFallback<T = any>(text: string, fallback: T): T {
+  console.log('🔍 Parsing JSON with fallback...');
+  
+  try {
+    const cleaned = sanitizeJsonString(text);
+    const parsed = JSON.parse(cleaned);
+    console.log('✅ JSON parsed successfully');
+    return parsed;
+  } catch (error) {
+    console.warn('⚠️ JSON parse failed, using fallback');
+    console.error('Parse error:', error instanceof Error ? error.message : String(error));
+    console.error('Text sample:', text.substring(0, 200));
+    return fallback;
+  }
+}
+
+async function callToolkitAPI(messages: (UserMessage | AssistantMessage)[], timeout: number = 120000): Promise<any> {
+  console.log('📡 Calling Toolkit API...');
+  
+  const toolkitUrl = process.env['EXPO_PUBLIC_TOOLKIT_URL'];
+  if (!toolkitUrl) {
+    throw new Error('EXPO_PUBLIC_TOOLKIT_URL not configured');
+  }
+  
+  const url = `${toolkitUrl}/text/llm/`;
+  console.log('🔗 URL:', url);
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ messages }),
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Toolkit API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const text = await response.text();
+    console.log('📦 Toolkit response length:', text.length);
+    console.log('📦 Response sample:', text.substring(0, 200));
+    
+    return text;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+async function callOpenAIFallback(messages: (UserMessage | AssistantMessage)[], timeout: number = 120000): Promise<any> {
+  console.log('🔄 Falling back to OpenAI...');
+  
+  const openaiKey = process.env['EXPO_PUBLIC_OPENAI_API_KEY'] || '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';
+  
+  if (!openaiKey) {
+    throw new Error('OpenAI API key not configured');
+  }
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    // Convert messages to OpenAI format
+    const openaiMessages = messages.map(msg => {
+      if (typeof msg.content === 'string') {
+        return { role: msg.role, content: msg.content };
+      }
+      
+      // Handle multimodal content
+      const content = msg.content.map(part => {
+        if (part.type === 'text') {
+          return { type: 'text', text: part.text };
+        }
+        if (part.type === 'image') {
+          return {
+            type: 'image_url',
+            image_url: {
+              url: `data:image/jpeg;base64,${part.image}`
+            }
+          };
+        }
+        return part;
+      });
+      
+      return { role: msg.role, content };
+    });
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: openaiMessages,
+        temperature: 0.7,
+      }),
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const completion = data.choices?.[0]?.message?.content;
+    
+    if (!completion) {
+      throw new Error('No completion from OpenAI');
+    }
+    
+    console.log('✅ OpenAI response length:', completion.length);
+    return completion;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+export async function generateObject<T = any>(
+  params: GenerateObjectParams
+): Promise<T> {
+  console.log('🚀 Starting AI generation');
   console.log('📸 Image data length:', params.messages.map(m => {
     if (typeof m.content !== 'string') {
       const imageParts = m.content.filter(p => p.type === 'image');
@@ -29,142 +199,72 @@ export async function generateObject<T extends z.ZodType>(
     return 0;
   }));
   
+  const timeoutMs = params.timeout || 120000;
+  console.log(`⏱️ Setting timeout to ${timeoutMs}ms`);
+  
+  let responseText: string;
+  
   try {
-    const timeoutMs = params.timeout || 120000;
-    console.log(`⏱️ Setting timeout to ${timeoutMs}ms`);
+    // Try Toolkit first
+    console.log('📤 Trying Toolkit API...');
+    responseText = await callToolkitAPI(params.messages, timeoutMs);
+    console.log('✅ Toolkit API succeeded');
+  } catch (toolkitError) {
+    console.warn('⚠️ Toolkit API failed:', toolkitError);
     
-    console.log('📤 Sending request to Rork Toolkit...');
-    console.log('📤 Schema provided:', !!params.schema);
-    console.log('📤 Messages count:', params.messages.length);
-    
-    const resultPromise = rorkGenerateObject({
-      messages: params.messages,
-      schema: params.schema
-    });
-    
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        console.error(`⏰ AI request timeout after ${timeoutMs}ms`);
-        reject(new Error(`AI request timeout after ${timeoutMs}ms`));
-      }, timeoutMs);
-    });
-    
-    console.log('⏳ Waiting for AI response...');
-    const result = await Promise.race([resultPromise, timeoutPromise]);
-    
-    console.log('✅ Rork Toolkit returned');
-    console.log('📦 Result type:', typeof result);
-    console.log('📦 Result constructor:', result?.constructor?.name || 'unknown');
-    
-    // Log more details about the result
-    if (result === null || result === undefined) {
-      console.error('❌ Received null/undefined result');
-      throw new Error('AI returned null or undefined');
+    try {
+      // Fall back to OpenAI
+      console.log('📤 Falling back to OpenAI...');
+      responseText = await callOpenAIFallback(params.messages, timeoutMs);
+      console.log('✅ OpenAI fallback succeeded');
+    } catch (openaiError) {
+      console.error('❌ Both Toolkit and OpenAI failed');
+      console.error('Toolkit error:', toolkitError);
+      console.error('OpenAI error:', openaiError);
+      throw new Error('AI generation failed');
     }
-    
-    // Check if result is a string and try to parse
-    if (typeof result === 'string') {
-      console.warn('⚠️ Rork returned string instead of object');
-      console.log('📝 String content (first 300 chars):', result.substring(0, 300));
-      console.log('🔄 Attempting to parse string as JSON...');
-      
-      try {
-        const cleaned = result.trim();
-        
-        // Check if it's JSON
-        if (cleaned.startsWith('{') || cleaned.startsWith('[')) {
-          const parsed = JSON.parse(cleaned);
-          console.log('✅ Successfully parsed JSON string');
-          console.log('📦 Parsed type:', typeof parsed);
-          if (parsed && typeof parsed === 'object') {
-            console.log('📦 Parsed keys:', Object.keys(parsed).join(', '));
-          }
-          return parsed;
-        } else {
-          console.error('❌ String does not look like JSON');
-          console.error('First 100 chars:', cleaned.substring(0, 100));
-          console.error('Last 50 chars:', cleaned.substring(Math.max(0, cleaned.length - 50)));
-          throw new Error('Response is not valid JSON: ' + cleaned.substring(0, 100));
-        }
-      } catch (parseError) {
-        console.error('❌ Failed to parse JSON:', parseError);
-        if (parseError instanceof Error) {
-          console.error('Parse error message:', parseError.message);
-        }
-        console.error('Raw response (first 500 chars):', result.substring(0, 500));
-        throw new Error('Invalid response format: could not parse JSON - ' + (parseError instanceof Error ? parseError.message : 'unknown error'));
-      }
-    }
-    
-    // Check if result is actually an object
-    if (typeof result !== 'object') {
-      console.error('❌ Invalid result type:', typeof result);
-      console.error('Result value:', String(result).substring(0, 200));
-      throw new Error('Invalid response: expected object, got ' + typeof result);
-    }
-    
-    // Validate it's a plain object (not an array, not null)
-    if (Array.isArray(result)) {
-      console.error('❌ Received array instead of object');
-      console.error('Array length:', result.length);
-      console.error('First element:', JSON.stringify(result[0]).substring(0, 200));
-      throw new Error('Invalid response: received array instead of object');
-    }
-    
-    console.log('✅ Valid object received');
-    console.log('📦 Result keys:', Object.keys(result).join(', '));
-    
-    // Log key counts for debugging
-    const keyCount = Object.keys(result).length;
-    console.log('📊 Total keys:', keyCount);
-    
-    if (keyCount === 0) {
-      console.warn('⚠️ Empty object received');
-    }
-    
-    return result;
-  } catch (error) {
-    console.error('❌ Rork Toolkit failed:', error);
-    if (error instanceof Error) {
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack?.substring(0, 500));
-    } else {
-      console.error('Non-Error object thrown:', String(error));
-    }
-    throw error;
   }
+  
+  // Parse the response
+  console.log('🔍 Parsing AI response...');
+  const fallbackObject = {} as T;
+  const result = parseJsonWithFallback<T>(responseText, fallbackObject);
+  
+  console.log('✅ AI generation complete');
+  console.log('📦 Result type:', typeof result);
+  
+  if (result && typeof result === 'object') {
+    console.log('📦 Result keys:', Object.keys(result).join(', '));
+  }
+  
+  return result;
 }
 
 export async function generateText(params: GenerateTextParams | string): Promise<string> {
-  console.log('🚀 Using Rork Toolkit SDK for text generation');
+  console.log('🚀 Starting text generation');
   
   const messages: (UserMessage | AssistantMessage)[] = typeof params === 'string' 
     ? [{ role: 'user', content: params }]
     : params.messages;
-
+  
+  const timeoutMs = typeof params === 'object' ? params.timeout || 120000 : 120000;
+  
   try {
-    const result = await rorkGenerateText({
-      messages
-    });
-    
-    console.log('✅ Rork Toolkit text success');
-    console.log('📦 Result length:', result?.length || 0);
-    
-    // Validate result is a string
-    if (typeof result !== 'string') {
-      console.error('❌ Rork returned non-string:', typeof result);
-      throw new Error('Invalid response format: expected string');
-    }
-    
+    // Try Toolkit first
+    const result = await callToolkitAPI(messages, timeoutMs);
+    console.log('✅ Toolkit text generation succeeded');
     return result;
-  } catch (error) {
-    console.error('❌ Rork Toolkit text failed:', error);
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+  } catch (toolkitError) {
+    console.warn('⚠️ Toolkit failed, trying OpenAI...');
+    
+    try {
+      const result = await callOpenAIFallback(messages, timeoutMs);
+      console.log('✅ OpenAI text generation succeeded');
+      return result;
+    } catch (openaiError) {
+      console.error('❌ Both APIs failed');
+      throw new Error('Text generation failed');
     }
-    throw error;
   }
 }
 
