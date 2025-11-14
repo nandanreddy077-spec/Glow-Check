@@ -62,6 +62,7 @@ const DEFAULT_STATE: SubscriptionState = {
 export const [SubscriptionProvider, useSubscription] = createContextHook<SubscriptionContextType>(() => {
   const [state, setState] = useState<SubscriptionState>(DEFAULT_STATE);
   const { user } = useAuth();
+  const isTestingMode = process.env.EXPO_PUBLIC_TESTING_MODE === 'true';
 
   const persist = useCallback(async (next: SubscriptionState) => {
     setState(next);
@@ -133,6 +134,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
   }, [inTrial, state.hasStartedTrial]);
 
   const canScan = useMemo(() => {
+    if (isTestingMode) return true;
     if (state.isPremium) return true;
     const trialActive = state.hasStartedTrial && inTrial && state.hasAddedPayment;
     if (trialActive) return true;
@@ -151,6 +153,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
   }, [state.isPremium, state.hasStartedTrial, state.hasAddedPayment, inTrial, state.weeklyScansUsed, state.maxWeeklyScans, state.lastScanResetDate]);
 
   const scansLeft = useMemo(() => {
+    if (isTestingMode) return Infinity;
     if (state.isPremium) return Infinity;
     const trialActive = state.hasStartedTrial && inTrial && state.hasAddedPayment;
     if (trialActive) return Infinity;
@@ -354,6 +357,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
 
   // Can view results (not blurred)
   const canViewResults = useMemo(() => {
+    if (isTestingMode) return true;
     if (state.isPremium) return true;
     const trialActive = state.hasStartedTrial && inTrial && state.hasAddedPayment;
     if (trialActive) return true;
@@ -367,6 +371,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook<Subscri
 
   // Needs premium (show paywall)
   const needsPremium = useMemo(() => {
+    if (isTestingMode) return false;
     if (state.isPremium) return false;
     const trialActive = state.hasStartedTrial && inTrial && state.hasAddedPayment;
     if (trialActive) return false;

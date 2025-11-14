@@ -54,6 +54,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   const [trialTracking, setTrialTracking] = useState<TrialTracking | null>(null);
   const [usageTracking, setUsageTracking] = useState<UsageTracking>({ glow_analysis: 0, style_analysis: 0, last_reset_date: new Date().toISOString().split('T')[0] });
   const [showTrialUpgradeModal, setShowTrialUpgradeModal] = useState<boolean>(false);
+  const isTestingMode = process.env.EXPO_PUBLIC_TESTING_MODE === 'true';
 
   const isFreeUser = useMemo(() => {
     return !subState.isPremium && !subState.hasStartedTrial;
@@ -132,6 +133,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   }, [usageTracking.style_analysis]);
 
   const canScanGlow = useMemo(() => {
+    if (isTestingMode) return true;
     if (subState.isPremium) return true;
 
     const trialActive = subState.hasStartedTrial && subState.hasAddedPayment;
@@ -147,6 +149,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment, usageTracking.glow_analysis]);
 
   const canScanStyle = useMemo(() => {
+    if (isTestingMode) return true;
     if (subState.isPremium) return true;
 
     const trialActive = subState.hasStartedTrial && subState.hasAddedPayment;
@@ -162,6 +165,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment, usageTracking.style_analysis]);
 
   const glowScansLeft = useMemo(() => {
+    if (isTestingMode) return Infinity;
     if (subState.isPremium) return Infinity;
 
     const trialActive = subState.hasStartedTrial && subState.hasAddedPayment;
@@ -174,6 +178,7 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment, usageTracking.glow_analysis]);
 
   const styleScansLeft = useMemo(() => {
+    if (isTestingMode) return Infinity;
     if (subState.isPremium) return Infinity;
 
     const trialActive = subState.hasStartedTrial && subState.hasAddedPayment;
@@ -300,8 +305,9 @@ export const [FreemiumProvider, useFreemium] = createContextHook<FreemiumContext
   }, [trialTracking?.results_unlocked_until]);
 
   const canAccessGlowForecast = useMemo(() => {
+    if (isTestingMode) return true;
     return subState.isPremium || (subState.hasStartedTrial && subState.hasAddedPayment);
-  }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment]);
+  }, [subState.isPremium, subState.hasStartedTrial, subState.hasAddedPayment, isTestingMode]);
 
   return useMemo(() => ({
     canScanGlow,
