@@ -33,6 +33,10 @@ export async function generateObject<T extends z.ZodType>(
     const timeoutMs = params.timeout || 120000;
     console.log(`⏱️ Setting timeout to ${timeoutMs}ms`);
     
+    console.log('📤 Sending request to Rork Toolkit...');
+    console.log('📤 Schema provided:', !!params.schema);
+    console.log('📤 Messages count:', params.messages.length);
+    
     const resultPromise = rorkGenerateObject({
       messages: params.messages,
       schema: params.schema
@@ -48,41 +52,76 @@ export async function generateObject<T extends z.ZodType>(
     console.log('⏳ Waiting for AI response...');
     const result = await Promise.race([resultPromise, timeoutPromise]);
     
-    console.log('✅ Rork Toolkit success');
+    console.log('✅ Rork Toolkit returned');
     console.log('📦 Result type:', typeof result);
+    console.log('📦 Result constructor:', result?.constructor?.name || 'unknown');
     
-    if (!result) {
+    // Log more details about the result
+    if (result === null || result === undefined) {
       console.error('❌ Received null/undefined result');
       throw new Error('AI returned null or undefined');
     }
     
+    // Check if result is a string and try to parse
     if (typeof result === 'string') {
-      console.error('❌ Rork returned string instead of object');
+      console.warn('⚠️ Rork returned string instead of object');
+      console.log('📝 String content (first 300 chars):', result.substring(0, 300));
       console.log('🔄 Attempting to parse string as JSON...');
+      
       try {
         const cleaned = result.trim();
+        
+        // Check if it's JSON
         if (cleaned.startsWith('{') || cleaned.startsWith('[')) {
           const parsed = JSON.parse(cleaned);
           console.log('✅ Successfully parsed JSON string');
-          console.log('📦 Parsed keys:', Object.keys(parsed).join(', '));
+          console.log('📦 Parsed type:', typeof parsed);
+          if (parsed && typeof parsed === 'object') {
+            console.log('📦 Parsed keys:', Object.keys(parsed).join(', '));
+          }
           return parsed;
         } else {
-          console.error('❌ String does not look like JSON:', cleaned.substring(0, 200));
-          throw new Error('Response is not valid JSON');
+          console.error('❌ String does not look like JSON');
+          console.error('First 100 chars:', cleaned.substring(0, 100));
+          console.error('Last 50 chars:', cleaned.substring(Math.max(0, cleaned.length - 50)));
+          throw new Error('Response is not valid JSON: ' + cleaned.substring(0, 100));
         }
       } catch (parseError) {
         console.error('❌ Failed to parse JSON:', parseError);
+        if (parseError instanceof Error) {
+          console.error('Parse error message:', parseError.message);
+        }
         console.error('Raw response (first 500 chars):', result.substring(0, 500));
-        throw new Error('Invalid response format: could not parse JSON');
+        throw new Error('Invalid response format: could not parse JSON - ' + (parseError instanceof Error ? parseError.message : 'unknown error'));
       }
     }
     
+    // Check if result is actually an object
     if (typeof result !== 'object') {
       console.error('❌ Invalid result type:', typeof result);
+      console.error('Result value:', String(result).substring(0, 200));
       throw new Error('Invalid response: expected object, got ' + typeof result);
     }
     
+    // Validate it's a plain object (not an array, not null)
+    if (Array.isArray(result)) {
+      console.error('❌ Received array instead of object');
+      console.error('Array length:', result.length);
+      console.error('First element:', JSON.stringify(result[0]).substring(0, 200));
+      throw new Error('Invalid response: received array instead of object');
+    }
+    
+    console.log('✅ Valid object received');
     console.log('📦 Result keys:', Object.keys(result).join(', '));
+    
+    // Log key counts for debugging
+    const keyCount = Object.keys(result).length;
+    console.log('📊 Total keys:', keyCount);
+    
+    if (keyCount === 0) {
+      console.warn('⚠️ Empty object received');
+    }
+    
     return result;
   } catch (error) {
     console.error('❌ Rork Toolkit failed:', error);
@@ -90,6 +129,8 @@ export async function generateObject<T extends z.ZodType>(
       console.error('Error name:', error.name);
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack?.substring(0, 500));
+    } else {
+      console.error('Non-Error object thrown:', String(error));
     }
     throw error;
   }

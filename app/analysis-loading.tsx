@@ -575,10 +575,12 @@ export default function AnalysisLoadingScreen() {
     try {
       const toolkitUrl = process.env['EXPO_PUBLIC_TOOLKIT_URL'];
       
-      console.log('🤖 Starting AI analysis, toolkit URL configured:', !!toolkitUrl);
+      console.log('🤖 Starting AI analysis...');
+      console.log('🔧 Toolkit URL configured:', !!toolkitUrl);
+      console.log('🌍 Toolkit URL value:', toolkitUrl);
       console.log('📱 Platform:', Platform.OS);
       
-      if (!toolkitUrl) {
+      if (!toolkitUrl || toolkitUrl === '') {
         console.log('⚠️ Toolkit URL not configured, using fallback analysis');
         return generateFallbackAnalysis(visionData);
       }
@@ -685,6 +687,10 @@ Respond with ONLY this exact JSON structure:
 }`;
 
       console.log('Making advanced AI analysis request...');
+      console.log('🔑 Environment check...');
+      console.log('- Toolkit URL present:', !!toolkitUrl);
+      console.log('- Image data present:', !!images.front);
+      console.log('- Image length:', images.front?.length || 0);
       
       const messages = [
         {
@@ -696,36 +702,80 @@ Respond with ONLY this exact JSON structure:
         }
       ];
 
-      console.log('🤖 Sending AI request with image length:', images.front?.length || 0);
-      console.log('⏱️ Starting AI analysis...');
+      console.log('🤖 Sending AI request...');
+      console.log('- Image length:', images.front?.length || 0);
+      console.log('- Schema provided:', !!analysisSchema);
+      console.log('⏱️ Starting AI call with 120s timeout...');
       
-      const analysisResult = await generateObject({
-        messages: messages,
-        schema: analysisSchema,
-        timeout: 120000
-      });
-      
-      console.log('✅ AI analysis completed successfully!');
-      console.log('📊 Result type:', typeof analysisResult);
-      console.log('📊 Scores:', {
-        overall: analysisResult.beautyScores?.overallScore,
-        confidence: analysisResult.confidence
-      });
-      
-      // Validate the result structure
-      if (!analysisResult || typeof analysisResult !== 'object') {
-        console.error('❌ Invalid analysis result type:', typeof analysisResult);
-        throw new Error('Invalid analysis result');
+      let analysisResult;
+      try {
+        analysisResult = await generateObject({
+          messages: messages,
+          schema: analysisSchema,
+          timeout: 120000
+        });
+        
+        console.log('✅ AI analysis returned');
+        console.log('📊 Result type:', typeof analysisResult);
+        
+        if (!analysisResult) {
+          console.error('❌ AI returned null/undefined');
+          throw new Error('AI returned no result');
+        }
+        
+        console.log('📊 Checking result structure...');
+        console.log('- Has beautyScores:', !!analysisResult.beautyScores);
+        console.log('- Has skinAnalysis:', !!analysisResult.skinAnalysis);
+        console.log('- Has dermatologyAssessment:', !!analysisResult.dermatologyAssessment);
+        
+        if (analysisResult.beautyScores) {
+          console.log('📊 Beauty Scores:', {
+            overall: analysisResult.beautyScores.overallScore,
+            symmetry: analysisResult.beautyScores.facialSymmetry,
+            glow: analysisResult.beautyScores.skinGlow
+          });
+        }
+        
+        if (analysisResult.confidence) {
+          console.log('📊 Confidence:', analysisResult.confidence);
+        }
+        
+        // Validate the result structure
+        if (typeof analysisResult !== 'object') {
+          console.error('❌ Invalid analysis result type:', typeof analysisResult);
+          throw new Error('Invalid analysis result type');
+        }
+        
+        if (!analysisResult.beautyScores || !analysisResult.skinAnalysis) {
+          console.error('❌ Missing required fields in analysis result');
+          console.error('- beautyScores present:', !!analysisResult.beautyScores);
+          console.error('- skinAnalysis present:', !!analysisResult.skinAnalysis);
+          console.error('- Available keys:', Object.keys(analysisResult).join(', '));
+          throw new Error('Incomplete analysis result - missing required fields');
+        }
+        
+        console.log('✅ Analysis result validated successfully');
+        return analysisResult;
+        
+      } catch (aiError) {
+        console.error('❌ AI call threw error:', aiError);
+        if (aiError instanceof Error) {
+          console.error('- Error name:', aiError.name);
+          console.error('- Error message:', aiError.message);
+          console.error('- Error stack (first 300):', aiError.stack?.substring(0, 300));
+        }
+        throw aiError; // Re-throw to outer catch
       }
       
-      if (!analysisResult.beautyScores || !analysisResult.skinAnalysis) {
-        console.error('❌ Missing required fields in analysis result');
-        throw new Error('Incomplete analysis result');
-      }
-      
-      return analysisResult;
     } catch (error) {
-      console.error('❌ AI analysis failed, using fallback:', error instanceof Error ? error.message : String(error));
+      console.error('\n❌❌❌ AI analysis failed ❌❌❌');
+      console.error('Error details:', error);
+      if (error instanceof Error) {
+        console.error('- Type:', error.constructor.name);
+        console.error('- Message:', error.message);
+        console.error('- Stack:', error.stack?.substring(0, 300));
+      }
+      console.log('🔄 Using fallback analysis instead');
       return generateFallbackAnalysis(visionData);
     }
   };
