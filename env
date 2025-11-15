@@ -21,7 +21,3 @@ EXPO_PUBLIC_TOOLKIT_URL=https://toolkit.rork.com
 # IMPORTANT: Replace with a valid OpenAI API key from https://platform.openai.com/api-keys
 # Current key format appears invalid - please generate a new one
 EXPO_PUBLIC_OPENAI_API_KEY=
-
-# Testing Configuration
-# Set to 'true' to enable all premium features for testing (no paywalls)
-EXPO_PUBLIC_TESTING_MODE=true

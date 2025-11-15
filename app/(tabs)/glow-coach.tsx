@@ -79,7 +79,6 @@ export default function GlowCoachScreen() {
   const { completeDailyRoutine, hasCompletedToday, hasCompletedForPlanDay } = useGamification();
   const { isFreeUser, isTrialUser, isPaidUser } = useFreemium();
   const { state: subState, hoursLeft } = useSubscription();
-  const isTestingMode = process.env.EXPO_PUBLIC_TESTING_MODE === 'true';
   const { triggerStreakNotification } = useNotifications();
   const { 
     streak, 
@@ -179,7 +178,7 @@ export default function GlowCoachScreen() {
 
 
   // Show paywall for free users
-  if (isFreeUser && !isTestingMode) {
+  if (isFreeUser) {
     return (
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={gradient.hero} style={StyleSheet.absoluteFillObject} />
@@ -469,7 +468,7 @@ export default function GlowCoachScreen() {
   };
 
   const renderStepItem = (step: SkincareStep, isCompleted: boolean) => {
-    const shouldBlurContent = (isFreeUser || isTrialUser) && !isTestingMode;
+    const shouldBlurContent = isFreeUser || isTrialUser;
     
     return (
       <View style={styles.stepItemWrapper}>
@@ -694,7 +693,7 @@ export default function GlowCoachScreen() {
         )}
 
         {/* Trial Upgrade CTA with Urgency */}
-        {isTrialUser && !isTestingMode && hoursLeft > 0 && hoursLeft <= 48 && (
+        {isTrialUser && hoursLeft > 0 && hoursLeft <= 48 && (
           <View style={styles.trialUpgradeSection}>
             <LinearGradient colors={gradient.warning} style={styles.trialUpgradeCard}>
               <View style={styles.urgencyBadge}>
@@ -848,7 +847,7 @@ export default function GlowCoachScreen() {
                 opacity: currentPlan.progress.currentDay > currentPlan.duration ? 0.6 : 1
               }]}
               onPress={() => {
-                if ((isFreeUser || isTrialUser) && !isTestingMode) {
+                if (isFreeUser || isTrialUser) {
                   router.push('/plan-selection');
                 } else {
                   handleCompleteDailyRoutine();
